@@ -50,7 +50,7 @@ public abstract class DFActor {
 		return consumeType;
 	}
 	
-	//event 1
+	//event
 	/**
 	 * 接收其它actor发过来的消息
 	 * @param srcId 发送者actor的id

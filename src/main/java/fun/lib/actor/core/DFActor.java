@@ -4,6 +4,7 @@ import com.funtag.util.log.DFLogFactory;
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorSystem;
+import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.DFUdpDispatcher;
@@ -33,7 +34,7 @@ public abstract class DFActor {
 			consumeType = DFActorDefine.CONSUME_AUTO;
 		}
 		this.consumeType = consumeType;
-		_mgr = DFActorManager.getInstance();
+		_mgr = DFActorManager.get();
 		//
 		log = new DFActorLogWrapper();
 		sys = new DFActorSystemWrapper();
@@ -215,24 +216,32 @@ public abstract class DFActor {
 	//net api
 	private class DFActorNetWrapper implements DFActorNet{
 		public final void doTcpListen(final DFTcpServerCfg cfg, final int requestId){
-			final DFSocketManager mgr = DFSocketManager.getInstance();
+			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListen(cfg, id, requestId);
 		}
+		public void doTcpListen(final DFTcpServerCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher) {
+			final DFSocketManager mgr = DFSocketManager.get();
+			mgr.doTcpListen(cfg, dispatcher, requestId);
+		}
 		public final void doTcpListenClose(int port){
-			final DFSocketManager mgr = DFSocketManager.getInstance();
+			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListenClose(port);
 		}
 		public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId){
 			return _mgr.doTcpConnect(cfg, id, requestId);
 		}
+		public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher){
+			return _mgr.doTcpConnect(cfg, dispatcher, requestId);
+		}
 		//udp
 		public final void doUdpListen(final DFUdpServerCfg cfg, DFUdpDispatcher listener, final int requestId){
-			final DFSocketManager mgr = DFSocketManager.getInstance();
+			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doUdpListen(cfg, id, listener, requestId);
 		}
 		public final void doUdpListenClose(int port){
-			final DFSocketManager mgr = DFSocketManager.getInstance();
+			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doUdpListenClose(port);
 		}
+		
 	}
 }

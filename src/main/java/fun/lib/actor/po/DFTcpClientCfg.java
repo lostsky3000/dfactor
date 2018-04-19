@@ -16,7 +16,6 @@ public final class DFTcpClientCfg {
 	private volatile int tcpDecodeType = DFActorDefine.TCP_DECODE_RAW;
 	private volatile int tcpMsgMaxLength = 4096;
 	
-	private volatile DFActorTcpDispatcher notify = null;
 	/**
 	 * 
 	 * @param host 目标主机地址
@@ -84,15 +83,6 @@ public final class DFTcpClientCfg {
 	}
 	public DFTcpClientCfg setTcpMsgMaxLength(int maxLength){
 		this.tcpMsgMaxLength = maxLength;
-		return this;
-	}
-
-	public DFActorTcpDispatcher getNotify() {
-		return notify;
-	}
-
-	public DFTcpClientCfg setNotify(DFActorTcpDispatcher notify) {
-		this.notify = notify;
 		return this;
 	}
 	

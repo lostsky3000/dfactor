@@ -55,19 +55,12 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 public final class DFSocketManager {
 
-	private static volatile DFSocketManager instance = null;
+	private static DFSocketManager instance = new DFSocketManager();
 	private final DFActorManager actorMgr;
 	private DFSocketManager(){
-		actorMgr = DFActorManager.getInstance();
+		actorMgr = DFActorManager.get();
 	}
-	protected static DFSocketManager getInstance(){
-		if(instance == null){
-			synchronized (DFSocketManager.class) {
-				if(instance == null){
-					instance = new DFSocketManager();
-				}
-			}
-		}
+	protected static DFSocketManager get(){
 		return instance;
 	}
 	
@@ -227,7 +220,15 @@ public final class DFSocketManager {
 	}
 	
 	//tcp
-	protected int doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, 
+	protected int doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId,
+			final EventLoopGroup ioGroup, final int requestId){
+		return _doTcpConnect(cfg, srcActorId, null, ioGroup, requestId);
+	}
+	protected int doTcpConnect(final DFTcpClientCfg cfg, DFActorTcpDispatcher dispatcher,
+			final EventLoopGroup ioGroup, final int requestId){
+		return _doTcpConnect(cfg, 0, dispatcher, ioGroup, requestId);
+	}
+	private int _doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, DFActorTcpDispatcher dispatcher,
 			final EventLoopGroup ioGroup, final int requestId){
 		if(ioGroup == null){
 			return 1;
@@ -242,7 +243,7 @@ public final class DFSocketManager {
 			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int)cfg.getConnTimeout())
 			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.handler(new TcpHandlerInit(cfg.getTcpDecodeType(), 
-					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, cfg.getNotify()));
+					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollSocketChannel.class);
 		}else{
@@ -278,6 +279,12 @@ public final class DFSocketManager {
 	private final StampedLock lockTcpSvr = new StampedLock();
 	
 	protected void doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, final int requestId){
+		_doTcpListen(cfg, srcActorId, null, requestId);
+	}
+	protected void doTcpListen(final DFTcpServerCfg cfg, DFActorTcpDispatcher notify, final int requestId){
+		_doTcpListen(cfg, 0, notify, requestId);
+	}
+	private void _doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, DFActorTcpDispatcher notify, final int requestId){
 		//start listen
 		final DFTcpIoGroup group = new DFTcpIoGroup(cfg, srcActorId, requestId);
 		ServerBootstrap boot = new ServerBootstrap();
@@ -292,7 +299,7 @@ public final class DFSocketManager {
 			.childOption(ChannelOption.SO_SNDBUF, cfg.getSoSendBufLen())
 			.childOption(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.childHandler(new TcpHandlerInit(cfg.getTcpDecodeType(), 
-					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), cfg.getNotify()));
+					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), notify));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollServerSocketChannel.class);
 		}else{
@@ -447,28 +454,29 @@ public final class DFSocketManager {
 		private final int _actorIdDef; //默认发送消息的actor
 		private final int _requestId;
 		private final int _decodeType;
-		private final DFActorTcpDispatcher _notify;
+		private final DFActorTcpDispatcher _dispatcher;
 		private volatile DFTcpChannelWrapper _session = null;
 		private volatile int _sessionId = 0;
 		private volatile InetSocketAddress _addrRemote = null;
-		private TcpHandler(final int actorIdDef, final int requestId, final int decodeType, DFActorTcpDispatcher notify) {
+		private TcpHandler(final int actorIdDef, final int requestId, final int decodeType, DFActorTcpDispatcher dispatcher) {
 			_actorIdDef = actorIdDef;
 			_requestId = requestId;
 			_decodeType = decodeType;
-			_notify = notify;
+			_dispatcher = dispatcher;
 		}
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			_addrRemote = (InetSocketAddress) ctx.channel().remoteAddress();
 			_session = new DFTcpChannelWrapper(_addrRemote.getHostString(), _addrRemote.getPort(), ctx.channel(), _decodeType);
+			_session.setOpenTime(System.currentTimeMillis());
+			_sessionId = _session.getChannelId();
+			//
 			int actorId = 0;
-			if(_notify != null){
-				actorId = _notify.onConnActive(_addrRemote);
+			if(_dispatcher != null){
+				actorId = _dispatcher.onConnActiveUnsafe(_sessionId, _addrRemote);
 			}else{ //没有notify指定
 				actorId = _actorIdDef;
 			}
-			_session.setOpenTime(System.currentTimeMillis());
-			_sessionId = _session.getChannelId();
 			if(actorId != 0){ //通知actor
 				_session.setStatusActor(actorId);
 				_session.setMessageActor(actorId);
@@ -482,8 +490,8 @@ public final class DFSocketManager {
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 			_session.onClose();
 			int actorId = 0;
-			if(_notify != null){
-				actorId = _notify.onConnInactive(_addrRemote);
+			if(_dispatcher != null){
+				actorId = _dispatcher.onConnInactiveUnsafe(_sessionId, _addrRemote);
 			}else{   //没有notify指定
 				actorId = _session.getStatusActor();
 			}
@@ -499,10 +507,10 @@ public final class DFSocketManager {
 		@Override
 		public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 			int actorId = 0;
-			if(_notify == null){
+			if(_dispatcher == null){
 				actorId = _session.getMsgActor();
 			}else{ //没有notify指定
-				actorId = _notify.onMessage(_addrRemote, msg);
+				actorId = _dispatcher.onMessageUnsafe(_sessionId, _addrRemote, msg);
 			}
 			if(actorId != 0){ //actor有效
 				//notify actor
@@ -523,15 +531,15 @@ public final class DFSocketManager {
 		private final int _actorIdDef;
 		private final int _requestId;
 		private final int _decodeType;
-		private final DFActorTcpDispatcher _notify;
+		private final DFActorTcpDispatcher _dispatcher;
 		private volatile DFTcpChannelWrapper _session = null;
 		private volatile int _sessionId = 0;
 		private volatile InetSocketAddress _addrRemote = null;
-		public TcpWsHandler(int actorIdDef, int requestId, int decodeType, DFActorTcpDispatcher notify) {
+		public TcpWsHandler(int actorIdDef, int requestId, int decodeType, DFActorTcpDispatcher dispatcher) {
 			_actorIdDef = actorIdDef;
 			_requestId = requestId;
 			_decodeType = decodeType;
-			_notify = notify;
+			_dispatcher = dispatcher;
 		}
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -541,8 +549,8 @@ public final class DFSocketManager {
 			_sessionId = _session.getChannelId();
 			//
 			int actorId = 0;
-			if(_notify != null){
-				actorId = _notify.onConnActive(_addrRemote);
+			if(_dispatcher != null){
+				actorId = _dispatcher.onConnActiveUnsafe(_sessionId, _addrRemote);
 			}else{  //没有notify指定
 				actorId = _actorIdDef;
 			}
@@ -559,8 +567,8 @@ public final class DFSocketManager {
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 			_session.onClose();
 			int actorId = 0;
-			if(_notify != null){
-				actorId = _notify.onConnInactive(_addrRemote);
+			if(_dispatcher != null){
+				actorId = _dispatcher.onConnInactiveUnsafe(_sessionId, _addrRemote);
 			}else{
 				actorId = _session.getStatusActor();
 			}
@@ -580,10 +588,10 @@ public final class DFSocketManager {
 					return ;
 				}else{
 					int actorId = 0;
-					if(_notify == null){
+					if(_dispatcher == null){
 						actorId = _session.getMsgActor();
 					}else{
-						actorId = _notify.onMessage(_addrRemote, msg);
+						actorId = _dispatcher.onMessageUnsafe(_sessionId, _addrRemote, msg);
 					}
 					if(actorId != 0){ //actor有效
 						if(msg instanceof BinaryWebSocketFrame){
@@ -620,14 +628,14 @@ public final class DFSocketManager {
 		private final int _actorId;
 		private final int _requestId;
 		private final String _wsSfx;
-		private final DFActorTcpDispatcher _notify;
-		private TcpHandlerInit(int decodeType, int maxLen, int actorId, int requestId, String wsSfx, DFActorTcpDispatcher notify) {
+		private final DFActorTcpDispatcher _dispatcher;
+		private TcpHandlerInit(int decodeType, int maxLen, int actorId, int requestId, String wsSfx, DFActorTcpDispatcher dispatcher) {
 			_decodeType = decodeType;
 			_maxLen = maxLen;
 			_actorId = actorId;
 			_requestId = requestId;
 			_wsSfx = wsSfx;
-			_notify = notify;
+			_dispatcher = dispatcher;
 		}
 		@Override
 		protected void initChannel(SocketChannel ch) throws Exception {
@@ -637,7 +645,7 @@ public final class DFSocketManager {
 				pipe.addLast(new HttpObjectAggregator(64*1024));
 				pipe.addLast(new DFWSRequestHandler("/"+_wsSfx));
 				pipe.addLast(new WebSocketServerProtocolHandler("/"+_wsSfx, null, true));
-				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, _notify));
+				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, _dispatcher));
 			}else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
 				pipe.addLast(new HttpServerCodec());
 				pipe.addLast(new HttpObjectAggregator(64*1024));
@@ -647,7 +655,7 @@ public final class DFSocketManager {
 				if(_decodeType == DFActorDefine.TCP_DECODE_LENGTH){ //length base field
 					pipe.addLast(new LengthFieldBasedFrameDecoder(_maxLen, 0, 2, 0, 2));
 				}
-				pipe.addLast(new TcpHandler(_actorId, _requestId, _decodeType, _notify));
+				pipe.addLast(new TcpHandler(_actorId, _requestId, _decodeType, _dispatcher));
 			}
 			
 		}

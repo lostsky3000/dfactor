@@ -19,7 +19,6 @@ public final class DFTcpServerCfg {
 	
 	private volatile String wsUri = "";
 	
-	private volatile DFActorTcpDispatcher notify = null;
 	
 	/**
 	 * 
@@ -104,13 +103,6 @@ public final class DFTcpServerCfg {
 	}
 	public DFTcpServerCfg setTcpMsgMaxLength(int maxLength){
 		this.tcpMsgMaxLength = maxLength;
-		return this;
-	}
-	public DFActorTcpDispatcher getNotify() {
-		return notify;
-	}
-	public DFTcpServerCfg setNotify(DFActorTcpDispatcher notify) {
-		this.notify = notify;
 		return this;
 	}
 	

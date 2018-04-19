@@ -24,7 +24,7 @@ public class TcpServerTest {
 
 	public static void main(String[] args) {
 		//
-		final DFActorManager mgr = DFActorManager.getInstance();
+		final DFActorManager mgr = DFActorManager.get();
 		DFActorManagerConfig cfg = new DFActorManagerConfig()
 				//.setTimerThreadNum(1)  //定时器线程数，默认为1
 				//.setLogLevel(DFActorLogLevel.DEBUG)   //框架日志级别，默认为debug

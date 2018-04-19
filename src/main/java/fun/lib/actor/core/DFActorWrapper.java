@@ -57,7 +57,7 @@ public final class DFActorWrapper {
 		_queueReadIdx = 1;
 		_queueWrite = _arrQueue[_queueWriteIdx];
 		//
-		_actorMgr = DFActorManager.getInstance();
+		_actorMgr = DFActorManager.get();
 	}
 	protected int pushMsg(int srcId, int sessionId, 
 			int subject, int cmd, Object payload, Object context, final boolean addTail){

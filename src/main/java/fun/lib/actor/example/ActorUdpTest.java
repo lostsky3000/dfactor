@@ -59,7 +59,7 @@ public final class ActorUdpTest extends DFActor implements DFUdpDispatcher{
 	
 	public static void main(String[] args) {
 		//
-		final DFActorManager mgr = DFActorManager.getInstance();
+		final DFActorManager mgr = DFActorManager.get();
 		DFActorManagerConfig cfg = new DFActorManagerConfig()
 				.setLogicWorkerThreadNum(4)
 				.setBlockWorkerThreadNum(0);

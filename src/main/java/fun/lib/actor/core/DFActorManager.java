@@ -25,6 +25,7 @@ import com.funtag.util.timer.DFHashWheelTimer;
 import com.funtag.util.timer.DFScheduleTick;
 import com.funtag.util.timer.DFTimeout;
 
+import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.helper.ActorLog;
 import fun.lib.actor.helper.DFActorLogLevel;
 import fun.lib.actor.po.DFTcpClientCfg;
@@ -47,7 +48,7 @@ public final class DFActorManager {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public static DFActorManager getInstance(){
+	public static DFActorManager get(){
 		return instance;
 	}
 	
@@ -183,7 +184,7 @@ public final class DFActorManager {
 			@Override
 			public void run() {
 				//close all listen socket
-				DFSocketManager.getInstance().doTcpListenCloseAll();
+				DFSocketManager.get().doTcpListenCloseAll();
 				//
 				if(_cdWorkerStop != null){
 					//stop timer thread
@@ -215,7 +216,10 @@ public final class DFActorManager {
 	}
 	
 	protected int doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, final int requestId){
-		return DFSocketManager.getInstance().doTcpConnect(cfg, srcActorId, _clientIoGroup, requestId);
+		return DFSocketManager.get().doTcpConnect(cfg, srcActorId, _clientIoGroup, requestId);
+	}
+	protected int doTcpConnect(final DFTcpClientCfg cfg, final DFActorTcpDispatcher dispatcher, final int requestId){
+		return DFSocketManager.get().doTcpConnect(cfg, dispatcher, _clientIoGroup, requestId);
 	}
 	//
 	private Map<Integer, DFActorWrapper> _mapActor = new HashMap<>();

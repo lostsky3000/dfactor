@@ -6,8 +6,6 @@ import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 import fun.lib.actor.core.DFActorManagerConfig;
 import fun.lib.actor.po.DFTcpServerCfg;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 
 /**
  * websocket服务示例

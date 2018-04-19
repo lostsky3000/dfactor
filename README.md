@@ -48,6 +48,9 @@ public void onStart(Object param) {
 
 ## 示例
 
+[Startup](src/test/java/fun/lib/actor/example/Startup.java)  快速启动一个dfactor示例
+
+
 
 
 

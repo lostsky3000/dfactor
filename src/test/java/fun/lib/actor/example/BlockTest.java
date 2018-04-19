@@ -36,6 +36,7 @@ public final class BlockTest {
 		@Override
 		public void onSchedule(long dltMilli) {
 			log.info("LogicActor send io task,  curThread="+Thread.currentThread().getName());
+			//send io task
 			sys.send("BlockActor", 0, 1001, new Integer(1999));
 		}
 		@Override

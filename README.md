@@ -22,4 +22,25 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 - 内置服务器开发常用模块，如计时器，定时任务等
 - 通信层使用netty，高性能网络io的保证
 - io和业务分离模型，使业务逻辑计算不受io瓶颈制约，达到最大效能
-- 开发接口简单易用，少量代码快速搭建模型
+- 开发接口简单易用，示例丰富，少量代码快速搭建模型
+
+
+## 快速开始
+```java
+DFActorManager mgr = DFActorManager.get();
+//启动配置参数
+DFActorManagerConfig cfg = new DFActorManagerConfig()
+				.setLogicWorkerThreadNum(2);  //设置逻辑线程数量
+//启动入口actor，开始消息循环		
+mgr.start(cfg, "EntryActor", EntryActor.class);
+...
+@Override
+public void onStart(Object param) {
+  //使用自带日志打印
+  log.info("EntryActor start, curThread="+Thread.currentThread().getName());
+}
+...
+```
+
+几行代码，完成一个最简单dfactor的启动
+

@@ -30,7 +30,7 @@ public class TcpTest {
 		mgr.start(cfg, "Server", Server.class);
 	}
 	//server
-	static class Server extends DFActor{
+	private static class Server extends DFActor{
 		public Server(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
 			// TODO Auto-generated constructor stub
@@ -79,7 +79,7 @@ public class TcpTest {
 		public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
 			log.info("onTcpServerListenResult, port="+requestId+", succ="+isSucc+", err="+errMsg);
 			//创建一个actor模拟客户端发送
-			sys.createActor("actorTcpCliTest", ActorTcpCliTest.class, new Integer(serverPort));
+			sys.createActor("actorTcpCliTest", Client.class, new Integer(serverPort));
 		}
 		@Override
 		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
@@ -88,8 +88,8 @@ public class TcpTest {
 		}
 	}	
 	//client
-	static class ActorTcpCliTest extends DFActor{
-		public ActorTcpCliTest(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
+	private static class Client extends DFActor{
+		public Client(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}		

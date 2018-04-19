@@ -22,7 +22,7 @@ public final class TomAndJerry {
 		mgr.start(cfg, "Director", Director.class);
 	}
 	//导演
-	static class Director extends DFActor{
+	private static class Director extends DFActor{
 		private final Random rand = new Random();
 		public Director(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
@@ -76,7 +76,7 @@ public final class TomAndJerry {
 		}
 	}
 	//Tom
-	static class Tom extends DFActor{
+	private static class Tom extends DFActor{
 		public Tom(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
 		}
@@ -109,7 +109,7 @@ public final class TomAndJerry {
 		}
 	}
 	//Jerry
-	static class Jerry extends DFActor{
+	private static class Jerry extends DFActor{
 		public Jerry(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
 		}

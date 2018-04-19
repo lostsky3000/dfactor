@@ -25,7 +25,7 @@ public final class ExitActor {
 	 * @author lostsky
 	 *
 	 */
-	static class EntryActor extends DFActor{
+	private static class EntryActor extends DFActor{
 		public EntryActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
 			// TODO Auto-generated constructor stub

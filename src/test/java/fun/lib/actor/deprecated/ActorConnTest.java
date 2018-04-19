@@ -1,4 +1,4 @@
-package fun.lib.actor.demo;
+package fun.lib.actor.deprecated;
 
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;

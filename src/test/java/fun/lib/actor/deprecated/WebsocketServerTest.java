@@ -1,4 +1,4 @@
-package fun.lib.actor.demo;
+package fun.lib.actor.deprecated;
 
 import java.util.HashMap;
 

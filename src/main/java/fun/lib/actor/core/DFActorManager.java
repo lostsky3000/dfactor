@@ -83,6 +83,52 @@ public final class DFActorManager {
 	public int getLogLevel(){
 		return logLevel;
 	}
+	
+	/**
+	 * 启动dfactor
+	 * @param cfg 启动配置
+	 * @param entryName 入口actor名字(全局唯一)
+	 * @param entryClassz 入口actor class
+	 * @return 创建成功or失败
+	 */
+	public boolean start(DFActorManagerConfig cfg, String entryName, Class<? extends DFActor> entryClassz){
+		return start(cfg, entryName, entryClassz, null, 0, DFActorDefine.CONSUME_AUTO);
+	}
+	/**
+	 * 启动dfactor
+	 * @param cfg 启动配置
+	 * @param entryName 入口actor名字(全局唯一)
+	 * @param entryClassz 入口actor class
+	 * @param entryParam 入口actor传入参数
+	 * @return 创建成功or失败
+	 */
+	public boolean start(DFActorManagerConfig cfg, String entryName, Class<? extends DFActor> entryClassz,
+			Object entryParam){
+		return start(cfg, entryName, entryClassz, entryParam, 0, DFActorDefine.CONSUME_AUTO);
+	}
+	/**
+	 * 启动dfactor
+	 * @param cfg 启动配置
+	 * @param entryName 入口actor名字(全局唯一)
+	 * @param entryClassz 入口actor class
+	 * @param entryParam 入口actor传入参数
+	 * @param entryScheduleUnit schedule周期
+	 * @return 创建成功or失败
+	 */
+	public boolean start(DFActorManagerConfig cfg, String entryName, Class<? extends DFActor> entryClassz,
+			Object entryParam, int entryScheduleUnit){
+		return start(cfg, entryName, entryClassz, entryParam, entryScheduleUnit, DFActorDefine.CONSUME_AUTO);
+	}
+	/**
+	 * 启动dfactor
+	 * @param cfg 启动配置
+	 * @param entryName 入口actor名字(全局唯一)
+	 * @param entryClassz 入口actor class
+	 * @param entryParam 入口actor传入参数
+	 * @param entryScheduleUnit schedule周期
+	 * @param entryConsumeType 消息消费策略
+	 * @return 创建成功or失败
+	 */
 	public boolean start(DFActorManagerConfig cfg, String entryName, 
 			Class<? extends DFActor> entryClassz, Object entryParam, 
 			int entryScheduleUnit, int entryConsumeType){

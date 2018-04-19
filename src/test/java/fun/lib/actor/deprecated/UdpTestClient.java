@@ -1,5 +1,4 @@
-package fun.lib.actor.example;
-
+package fun.lib.actor.deprecated;
 
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -8,11 +7,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import com.funtag.util.log.DFLogFactory;
 import com.funtag.util.log.DFLogger;
-
-import fun.lib.actor.example.KcpTestServer.KcpTestHandlerServer;
 import fun.lib.actor.kcp.Kcp;
 import fun.lib.actor.kcp.KcpChannel;
 import fun.lib.actor.kcp.KcpConfig;
@@ -33,15 +29,14 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
-public final class KcpTestClient {
+public final class UdpTestClient {
 
-	static final DFLogger log = DFLogFactory.create(KcpTestClient.class);
+static final DFLogger log = DFLogFactory.create(UdpTestClient.class);
 	
 	static volatile Channel channel = null;
 	static final String host = "127.0.0.1"; // "106.15.37.38"; //    
 	static final int port = 13500;
 	
-	static volatile Kcp kcp = null;
 	public static void main(String[] args) {
 		final EventLoopGroup ioGroup = new NioEventLoopGroup(1);
 		//start listen
@@ -52,7 +47,7 @@ public final class KcpTestClient {
 					.option(ChannelOption.SO_SNDBUF, 1024*10)
 					.option(ChannelOption.SO_RCVBUF, 1024*10)
 					.channel(NioDatagramChannel.class)
-					.handler(new KcpHandlerTestClient());
+					.handler(new UdpHandlerTestClient());
 				try{
 					ChannelFuture future = boot.bind(0).sync(); 
 					channel = future.channel();
@@ -73,74 +68,11 @@ public final class KcpTestClient {
 				}catch(Throwable e){
 					e.printStackTrace();
 				}
-				//
-				final KcpListener l = new KcpListener() {
-					@Override
-					public void onOutput(DatagramPacket pack) {
-						final ByteBuf buf = pack.content();
-						channel.writeAndFlush(pack);
-					}
-					
-					private int analyzeCount = 0;
-					private long tmCostSum = 0;
-					private long tmLastAnalyze = 0;
-					private long tmCostMin = 0;
-					private long tmCostMax = 0;
-					@Override
-					public void onInput(DatagramPacket pack, KcpChannel kcpChannel) {
-						final ByteBuf buf = pack.content();
-						final long tmSend = buf.readLong();
-						final String data = (String) buf.readCharSequence(buf.readableBytes(), Charset.forName("utf-8"));
-						pack.release();
-						final long tmNow = System.currentTimeMillis(); 
-						final long tmCost = tmNow - tmSend;
-						if(tmCostMin == 0){
-							tmCostMin = tmCost;
-						}else{
-							tmCostMin = Math.min(tmCost, tmCostMin);
-						}
-						tmCostMax = Math.max(tmCost, tmCostMax);
-						//
-						tmCostSum += tmCost;
-						++analyzeCount;
-						if(tmNow - tmLastAnalyze >= 5000){
-							final int tmAvr = (int) (tmCostSum/analyzeCount);
-							if(tmAvr > 50 || tmCostMax >= 100){
-								log.I("Kcp last 5 sec tmCostAvr="+tmAvr
-										+", tmCostMin="+tmCostMin
-										+", tmCostMax="+tmCostMax
-										+", packNum="+analyzeCount
-										+", connId="+kcpChannel.getConnId()
-										+", data="+data);
-							}
-							tmLastAnalyze = tmNow;
-							tmCostSum = 0;
-							analyzeCount = 0;
-							tmCostMin = 0;
-							tmCostMax = 0;
-						}
-						
-					}
-					@Override
-					public void onChannelInactive(KcpChannel kcpChannel, int code) {
-						log.I("Kcp onChannelInactive, connId="+kcpChannel.getConnId()+", code="+code);
-					}
-					@Override
-					public void onChannelActive(KcpChannel kcpChannel, int connId) {
-						log.I("Kcp onChannelActive, connId="+connId);
-					}
-				};
-				KcpConfig cfg = new KcpConfig();
-				KcpConfigInner cfgInner = KcpConfigInner.copyConfig(cfg);
-				InetSocketAddress addr = new InetSocketAddress(host, port);
-				kcp = new Kcp(l, cfgInner, addr, 1, System.currentTimeMillis());
 				//start loop
 				ExecutorService thPool = Executors.newFixedThreadPool(1);
-				thPool.submit(new KcpTestClientLoop());
-				
+				thPool.submit(new UdpTestClientLoop());
 	}
-	static class KcpHandlerTestClient extends SimpleChannelInboundHandler<DatagramPacket>{
-		
+	static class UdpHandlerTestClient extends SimpleChannelInboundHandler<DatagramPacket>{
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			log.I("channelActive");
@@ -172,7 +104,7 @@ public final class KcpTestClient {
 	}
 	
 	static LinkedBlockingQueue<DatagramPacket> queueRecv = new LinkedBlockingQueue<>();
-	static class KcpTestClientLoop implements Runnable{
+	static class UdpTestClientLoop implements Runnable{
 		@Override
 		public void run() {
 			int dataCount = 0;
@@ -185,30 +117,29 @@ public final class KcpTestClient {
 					final DatagramPacket pack = queueRecv.poll(10, TimeUnit.MILLISECONDS);
 					if(pack != null){
 						final ByteBuf buf = pack.content();
-						final int connId = buf.readInt();
-						kcp.onReceiveRaw(pack);
+						pack.release();
 					}
 					//
 					tmNow = System.currentTimeMillis();
-					final int ret = kcp.onUpdate(tmNow);
-					if(ret != 0){
-//						log.I("kcp closed, code="+ret);
-						break;
-					}
-					if(tmNow - tmLastSend > 5000 && ++sendCount < 2000000){
+					if(tmNow - tmLastSend >= 1000 && ++sendCount < 2000000){
 						tmLastSend = tmNow;
 						//send
-						try {
-							byte[] bufData = ("hehe_"+(++dataCount)).getBytes("utf-8");
-							final ByteBuf bufRsp = PooledByteBufAllocator.DEFAULT.buffer(
-									Kcp.KCP_HEAD_SIZE + 8 + bufData.length);
-							bufRsp.writeZero(Kcp.KCP_HEAD_SIZE);
-							bufRsp.writeLong(tmNow);
-							bufRsp.writeBytes(bufData);
-							kcp.write(bufRsp);
-						} catch (UnsupportedEncodingException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+						if(channel != null){
+							try {
+								byte[] bufData = ("hehe_"+(++dataCount)).getBytes("utf-8");
+								final ByteBuf bufRsp = PooledByteBufAllocator.DEFAULT.buffer(
+//										8 + 
+										bufData.length);
+//								bufRsp.writeLong(tmNow);
+								bufRsp.writeBytes(bufData);
+								//
+								InetSocketAddress addr = new InetSocketAddress(host, port);
+								
+								channel.writeAndFlush(new DatagramPacket(bufRsp, addr));
+							} catch (UnsupportedEncodingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 					}
 				}catch(Throwable e){
@@ -219,4 +150,5 @@ public final class KcpTestClient {
 		}
 		
 	}
+
 }

@@ -244,4 +244,13 @@ public abstract class DFActor {
 		}
 		
 	}
+	
+	/**
+	 * 将真实时长转换为actor计时器格式时长
+	 * @param timeMilli 真实时长(毫秒)
+	 * @return actor计时器格式时长
+	 */
+	public static int transTimeRealToTimer(long timeMilli){
+		return (int) (timeMilli/TIMER_UNIT_MILLI);
+	}
 }

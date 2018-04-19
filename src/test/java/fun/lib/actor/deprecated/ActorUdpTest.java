@@ -1,4 +1,4 @@
-package fun.lib.actor.example;
+package fun.lib.actor.deprecated;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;

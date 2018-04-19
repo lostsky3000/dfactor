@@ -273,10 +273,10 @@ public final class DFSocketManager {
 	}
 	
 	private final HashMap<Integer, DFTcpIoGroup> mapTcpGroup = new HashMap<>();
-//	private final ReentrantReadWriteLock lockTcpSvr = new ReentrantReadWriteLock();
-//	private final ReadLock readLockTcpSvr = lockTcpSvr.readLock();
-//	private final WriteLock writeLockTcpSvr = lockTcpSvr.writeLock();
-	private final StampedLock lockTcpSvr = new StampedLock();
+	private final ReentrantReadWriteLock lockTcpSvr = new ReentrantReadWriteLock();
+	private final ReadLock lockTcpSvrRead = lockTcpSvr.readLock();
+	private final WriteLock lockTcpSvrWrite = lockTcpSvr.writeLock();
+//	private final StampedLock lockTcpSvr = new StampedLock();
 	
 	protected void doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, final int requestId){
 		_doTcpListen(cfg, srcActorId, null, requestId);
@@ -314,11 +314,11 @@ public final class DFSocketManager {
 					boolean isSucc = f.isSuccess();
 					boolean isCancel = f.isCancelled();
 					if(isDone && isSucc){  //listen
-						long stamp = lockTcpSvr.writeLock();
+						lockTcpSvrWrite.lock();
 						try{
 							mapTcpGroup.put(cfg.port, group);
 						}finally{
-							lockTcpSvr.unlockWrite(stamp);
+							lockTcpSvrWrite.unlock();
 						}
 						//notify actor
 						final DFActorEvent event = new DFActorEvent(DFActorErrorCode.SUCC)
@@ -351,20 +351,20 @@ public final class DFSocketManager {
 	
 	protected void doTcpListenClose(int port){
 		DFTcpIoGroup group = null;
-		long stamp = lockTcpSvr.readLock();
+		lockTcpSvrRead.lock();
 		try{
 			group = mapTcpGroup.get(port);
 		}finally{
-			lockTcpSvr.unlockRead(stamp);
+			lockTcpSvrRead.unlock();
 		}
 		int retClose = -1;
 		if(group != null){
-			stamp = lockTcpSvr.writeLock();
+			lockTcpSvrWrite.lock();
 			try{
 				retClose = group.shutdownIoGroup();
 				mapTcpGroup.remove(port);
 			}finally{
-				lockTcpSvr.unlockWrite(stamp);
+				lockTcpSvrWrite.unlock();
 			}
 			if(retClose == 0){ //shutdown succ
 				// notify actor
@@ -378,7 +378,7 @@ public final class DFSocketManager {
 	}
 	
 	protected void doTcpListenCloseAll(){
-		long stamp = lockTcpSvr.writeLock();
+		lockTcpSvrWrite.lock();
 		try{
 			final Iterator<Entry<Integer, DFTcpIoGroup>> it = mapTcpGroup.entrySet().iterator();
 			while(it.hasNext()){
@@ -386,7 +386,7 @@ public final class DFSocketManager {
 			}
 			mapTcpGroup.clear();
 		}finally{
-			lockTcpSvr.unlockWrite(stamp);
+			lockTcpSvrWrite.unlock();
 		}
 	}
 	

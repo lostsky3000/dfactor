@@ -271,10 +271,9 @@ public final class DFActorManager {
 	private Map<Integer, DFActorWrapper> _mapActor = new HashMap<>();
 	private Map<String, DFActorWrapper> _mapActorName = new HashMap<>();
 	//
-//	private final ReentrantReadWriteLock _lockMapActor = new ReentrantReadWriteLock();
-//	private final ReadLock _lockActorRead = _lockMapActor.readLock();
-//	private final WriteLock _lockActorWrite = _lockMapActor.writeLock();
-	private final StampedLock _lockActor = new StampedLock();
+	private final ReentrantReadWriteLock _lockMapActor = new ReentrantReadWriteLock();
+	private final ReadLock _lockActorRead = _lockMapActor.readLock();
+	private final WriteLock _lockActorWrite = _lockMapActor.writeLock();
 	
 	private int _actorNum = 0;
 	private int _idCount = DFActorDefine.ACTOR_ID_APP_BEGIN;
@@ -305,7 +304,7 @@ public final class DFActorManager {
 		}
 		final DFActorWrapper wrapper = new DFActorWrapper(actor);
 		//
-		long stamp = _lockActor.writeLock();
+		_lockActorWrite.lock();
 		try{
 			if(_mapActorName.containsKey(name)){ //name duplicated
 				return -3;
@@ -314,7 +313,7 @@ public final class DFActorManager {
 			_mapActor.put(id, wrapper);
 			++_actorNum;
 		}finally{
-			_lockActor.unlockWrite(stamp);
+			_lockActorWrite.unlock();
 		}
 		//call actor start
 		try{
@@ -340,7 +339,7 @@ public final class DFActorManager {
 	protected int removeActor(int id){
 		DFActorWrapper wrap = null;
 		//
-		long stamp = _lockActor.writeLock();
+		_lockActorWrite.lock();
 		try{
 			wrap = _mapActor.remove(id);
 			if(wrap != null){
@@ -348,7 +347,7 @@ public final class DFActorManager {
 				--_actorNum;
 			}
 		}finally{
-			_lockActor.unlockWrite(stamp);
+			_lockActorWrite.unlock();
 		}
 		//
 		if(wrap != null){
@@ -357,11 +356,11 @@ public final class DFActorManager {
 		return wrap==null?1:0;
 	}
 	public int getActorNum(){
-		long stamp = _lockActor.readLock();
+		_lockActorRead.lock();
 		try{
 			return _actorNum;
 		}finally{
-			_lockActor.unlockRead(stamp);
+			_lockActorRead.unlock();
 		}
 	}
 	
@@ -373,11 +372,11 @@ public final class DFActorManager {
 			int subject, int cmd, Object payload, final boolean addTail, Object context){
 		DFActorWrapper wrap = null;
 		//
-		long stamp = _lockActor.readLock();
+		_lockActorRead.lock();
 		try{
 			wrap = _mapActor.get(dstId);
 		}finally{
-			_lockActor.unlockRead(stamp);
+			_lockActorRead.unlock();
 		}
 		if(wrap != null){
 			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail) == 0){ //add to global queue
@@ -394,11 +393,11 @@ public final class DFActorManager {
 	protected int send(int srcId, String dstName, int requestId, 
 			int subject, int cmd, Object payload, final boolean addTail, Object context){
 		DFActorWrapper wrap = null;
-		long stamp = _lockActor.readLock();
+		_lockActorRead.lock();
 		try{
 			wrap = _mapActorName.get(dstName);
 		}finally{
-			_lockActor.unlockRead(stamp);
+			_lockActorRead.unlock();
 		}
 		if(wrap != null){
 			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail) == 0){ //add to global queue

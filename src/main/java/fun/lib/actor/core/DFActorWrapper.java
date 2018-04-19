@@ -28,9 +28,11 @@ public final class DFActorWrapper {
 	private int _queueWriteIdx = 0;
 	private int _queueReadIdx = 1;
 	
-//	private final ReentrantReadWriteLock _lockQueue = new ReentrantReadWriteLock();
+	private final ReentrantReadWriteLock _lockQueue = new ReentrantReadWriteLock();
+//	private final ReadLock _lockQueueRead = _lockQueue.readLock();
+	private final WriteLock _lockQueueWrite = _lockQueue.writeLock();
 //	private final DFSpinLock _lockQueue = new DFSpinLock();
-	private final StampedLock _lockQueue = new StampedLock();
+//	private final StampedLock _lockQueue = new StampedLock();
 	
 	private final DFActor _actor;
 	private final int _actorConsumeType;
@@ -67,7 +69,7 @@ public final class DFActorWrapper {
 		final DFActorMessage msg = _actorMgr.newActorMessage(srcId, _actorId, sessionId, subject, cmd, payload, context);
 				//new DFActorMessage(srcId, _actorId, sessionId, subject, cmd, payload);
 		//
-		long stamp = _lockQueue.writeLock();
+		_lockQueueWrite.lock();
 		try{
 			if(addTail){
 				_queueWrite.offer(msg);
@@ -80,7 +82,7 @@ public final class DFActorWrapper {
 				return 0;
 			}
 		}finally{
-			_lockQueue.unlockWrite(stamp);
+			_lockQueueWrite.unlock();
 		}
 		return 2;
 	}
@@ -91,7 +93,7 @@ public final class DFActorWrapper {
 		//
 		int queueMsgLeft = 0;
 		final LinkedList<DFActorMessage> queueRead;
-		long stamp = _lockQueue.writeLock();
+		_lockQueueWrite.lock();
 		try{
 			final int curReadQueueSize = _arrQueueSize[_queueReadIdx];
 			if(curReadQueueSize > 0){  //cur readQueue not empty, continue reading
@@ -106,7 +108,7 @@ public final class DFActorWrapper {
 				_queueWrite = _arrQueue[_queueWriteIdx];
 			}
 		}finally{
-			_lockQueue.unlockWrite(stamp);
+			_lockQueueWrite.unlock();
 		}
 		//
 		int targetNum = 1;  //default proc num 
@@ -185,7 +187,7 @@ public final class DFActorWrapper {
 			return 1;
 		}
 		//check
-		stamp = _lockQueue.writeLock();
+		_lockQueueWrite.lock();
 		try{
 			if(queueMsgLeft > 0 || _arrQueueSize[_queueWriteIdx] > 0){ //still has msg in either queue, back to global queue
 				_bInGlobalQueue = true;
@@ -194,7 +196,7 @@ public final class DFActorWrapper {
 				_bInGlobalQueue = false;
 			}
 		}finally{
-			_lockQueue.unlockWrite(stamp);
+			_lockQueueWrite.unlock();
 		}
 		return 2;
 	}
@@ -216,7 +218,7 @@ public final class DFActorWrapper {
 	}
 	
 	private void _release(){
-		long stamp = _lockQueue.writeLock();
+		_lockQueueWrite.lock();
 		try{
 			for(int i=0; i<2; ++i){
 				final LinkedList<DFActorMessage> q = _arrQueue[i];
@@ -232,7 +234,7 @@ public final class DFActorWrapper {
 				q.clear();
 			}
 		}finally{
-			_lockQueue.unlockWrite(stamp);
+			_lockQueueWrite.unlock();
 		}
 	}
 }

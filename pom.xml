@@ -48,7 +48,13 @@
 	    <artifactId>tomcat-juli</artifactId>
 	    <version>7.0.59</version>
 	</dependency>
-	
+	<dependency>
+	    <groupId>redis.clients</groupId>
+	    <artifactId>jedis</artifactId>
+	    <version>2.9.0</version>
+	    <type>jar</type>
+	    <scope>compile</scope>
+	</dependency>
   	
   	
   </dependencies>

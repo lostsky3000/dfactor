@@ -7,7 +7,7 @@ import fun.lib.actor.core.DFActorManagerConfig;
 
 /**
  * block类型actor示例
- * @author admin
+ * @author lostsky
  *
  */
 public final class BlockTest {
@@ -60,7 +60,7 @@ public final class BlockTest {
 		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
 			if(cmd == 1001){ //io操作 比如数据库操作
 				int param = (Integer)payload;
-				//do io
+				// do io
 				log.info("do io work! param="+param+",  curThread="+Thread.currentThread().getName());
 			}
 			return 0;

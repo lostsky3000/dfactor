@@ -50,6 +50,22 @@ public void onStart(Object param) {
 
 [Startup](src/test/java/fun/lib/actor/example/Startup.java)  快速启动一个dfactor示例
 
+[Timeout](src/test/java/fun/lib/actor/example/Timeout.java)  计时器使用示例
+
+[Schedule](src/test/java/fun/lib/actor/example/Schedule.java)  定时任务使用示例
+
+[ExitActor](src/test/java/fun/lib/actor/example/ExitActor.java)  退出actor示例
+
+[Shutdown](src/test/java/fun/lib/actor/example/Shutdown.java)  关闭dfactor示例
+
+[TomAndJerry](src/test/java/fun/lib/actor/example/TomAndJerry.java)  多actor通信示例(猫捉老鼠游戏)
+
+[BlockTest](src/test/java/fun/lib/actor/example/BlockTest.java)  block类型actor使用示例(适用数据库操作等io场景)
+
+[TcpTest](src/test/java/fun/lib/actor/example/TcpTest.java)  tcp服务端客户端通信示例
+
+
+## FAQ
 
 
 

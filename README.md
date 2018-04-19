@@ -64,6 +64,8 @@ public void onStart(Object param) {
 
 [TcpTest](src/test/java/fun/lib/actor/example/TcpTest.java)  tcp服务端客户端通信示例
 
+[WebsocketServer](src/test/java/fun/lib/actor/example/WebsocketServer.java)  websocket服务端示例
+
 
 ## FAQ
 

@@ -10,7 +10,7 @@ import fun.lib.actor.core.DFActorManagerConfig;
  * @author lostsky
  *
  */
-public final class BlockTest {
+public final class BlockActor {
 
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
@@ -31,13 +31,13 @@ public final class BlockTest {
 		public void onStart(Object param) {
 			log.info("LogicActor onStart");
 			//create block actor
-			sys.createActor("BlockActor", BlockActor.class, null, 0, DFActorDefine.CONSUME_AUTO, true);
+			sys.createActor("DbActor", DbActor.class, null, 0, DFActorDefine.CONSUME_AUTO, true);
 		}
 		@Override
 		public void onSchedule(long dltMilli) {
 			log.info("LogicActor send io task,  curThread="+Thread.currentThread().getName());
 			//send io task
-			sys.send("BlockActor", 0, 1001, new Integer(1999));
+			sys.send("DbActor", 0, 1001, new Integer(1999));
 		}
 		@Override
 		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
@@ -47,8 +47,8 @@ public final class BlockTest {
 	}
 	
 	//block actor
-	private static class BlockActor extends DFActor{
-		public BlockActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
+	private static class DbActor extends DFActor{
+		public DbActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}

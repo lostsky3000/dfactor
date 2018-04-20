@@ -64,7 +64,7 @@ public void onStart(Object param) {
 
 [TomAndJerry](src/test/java/fun/lib/actor/example/TomAndJerry.java)  多actor通信示例(猫捉老鼠游戏)
 
-[BlockTest](src/test/java/fun/lib/actor/example/BlockTest.java)  block类型actor使用示例(适用数据库操作等io场景)
+[BlockActor](src/test/java/fun/lib/actor/example/BlockActor.java)  block类型actor使用示例(适用数据库操作等io场景)
 
 [TcpTest](src/test/java/fun/lib/actor/example/TcpTest.java)  tcp服务端客户端通信示例
 

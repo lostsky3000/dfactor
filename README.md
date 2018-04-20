@@ -81,9 +81,9 @@ public void onStart(Object param) {
 
 ## 后续计划
 
-- mysql,redis,mongodb 异步操作
-
 - http, ssl通信支持
+
+- mysql,redis,mongodb 异步操作
 
 - 可靠udp协议kcp支持
 

@@ -40,7 +40,7 @@ public final class DFActorDefine {
 	public static final int TCP_DECODE_LENGTH = 1;
 	public static final int TCP_DECODE_RAW = 2;
 	public static final int TCP_DECODE_WEBSOCKET = 3;
-	public static final int TCP_DECODE_HTTP = 4;
+//	public static final int TCP_DECODE_HTTP = 4;
 	
 	//
 	protected static final String ACTOR_NAME_LOG = "SYSTEM_LOG_lostsky";

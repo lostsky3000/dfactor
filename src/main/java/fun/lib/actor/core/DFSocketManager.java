@@ -703,12 +703,14 @@ public final class DFSocketManager {
 				pipe.addLast(new DFWSRequestHandler("/"+_wsSfx));
 				pipe.addLast(new WebSocketServerProtocolHandler("/"+_wsSfx, null, true));
 				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, _dispatcher, _decoder, _encoder));
-			}else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
-				pipe.addLast(new HttpServerCodec());
-				pipe.addLast(new HttpObjectAggregator(64*1024));
-//				pipe.addLast(new HttpServerExpectContinueHandler());
-				pipe.addLast(new DFHttpHandler());
-			}else{
+			}
+//			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
+//				pipe.addLast(new HttpServerCodec());
+//				pipe.addLast(new HttpObjectAggregator(64*1024));
+////				pipe.addLast(new HttpServerExpectContinueHandler());
+//				pipe.addLast(new DFHttpHandler());
+//			}
+			else{
 				if(_decodeType == DFActorDefine.TCP_DECODE_LENGTH){ //length base field
 					pipe.addLast(new LengthFieldBasedFrameDecoder(_maxLen, 0, 2, 0, 2));
 				}

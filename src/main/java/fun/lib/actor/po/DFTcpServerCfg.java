@@ -90,10 +90,11 @@ public final class DFTcpServerCfg {
 		return tcpDecodeType;
 	}
 	public DFTcpServerCfg setTcpDecodeType(int tcpDecodeType){
-		if(tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH ||
-				tcpDecodeType == DFActorDefine.TCP_DECODE_RAW ||
-				tcpDecodeType == DFActorDefine.TCP_DECODE_WEBSOCKET ||
-				tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){ //valid
+		if(tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH 
+				||tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
+				||tcpDecodeType == DFActorDefine.TCP_DECODE_WEBSOCKET 
+//				||tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP
+				){ //valid
 			
 		}else{ //invalid
 			tcpDecodeType = DFActorDefine.TCP_DECODE_RAW;

@@ -17,7 +17,8 @@ dfactor 参考了 [skynet](https://github.com/cloudwu/skynet) 的设计，某种
 ## dfactor 能做什么?
 
 dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(特别是游戏)常用的网络通信，定时任务等
-功能，原则上说可以用于任何想充分利用多核性能的业务模型，比如mmorpg,moba,卡牌棋牌等开房类型游戏
+功能，原则上说可以用于任何想充分利用多核性能的业务模型，
+常见的比如聊天室, mmorpg, moba, rts, slg, 卡牌棋牌等类型游戏
 
 
 ## dfactor 有哪些特性?

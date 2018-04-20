@@ -1,6 +1,8 @@
 package fun.lib.actor.po;
 
 import fun.lib.actor.api.DFActorTcpDispatcher;
+import fun.lib.actor.api.DFTcpDecoder;
+import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.core.DFActorDefine;
 
 public final class DFTcpClientCfg {
@@ -16,6 +18,8 @@ public final class DFTcpClientCfg {
 	private volatile int tcpDecodeType = DFActorDefine.TCP_DECODE_RAW;
 	private volatile int tcpMsgMaxLength = 4096;
 	
+	private volatile DFTcpDecoder decoder = null;
+	private volatile DFTcpEncoder encoder = null;
 	/**
 	 * 
 	 * @param host 目标主机地址
@@ -83,6 +87,23 @@ public final class DFTcpClientCfg {
 	}
 	public DFTcpClientCfg setTcpMsgMaxLength(int maxLength){
 		this.tcpMsgMaxLength = maxLength;
+		return this;
+	}
+
+	public DFTcpDecoder getDecoder() {
+		return decoder;
+	}
+	public DFTcpClientCfg setDecoder(DFTcpDecoder decoder) {
+		this.decoder = decoder;
+		return this;
+	}
+
+	public DFTcpEncoder getEncoder() {
+		return encoder;
+	}
+
+	public DFTcpClientCfg setEncoder(DFTcpEncoder encoder) {
+		this.encoder = encoder;
 		return this;
 	}
 	

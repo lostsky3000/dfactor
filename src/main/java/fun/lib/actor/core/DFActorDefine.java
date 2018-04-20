@@ -22,14 +22,15 @@ public final class DFActorDefine {
 	public static final int NET_TCP_CONNECT_CLOSE = 5;
 	public static final int NET_TCP_MESSAGE = 6;
 	public static final int NET_TCP_MESSAGE_TEXT = 7;
+	public static final int NET_TCP_MESSAGE_CUSTOM = 8;
 	
-	protected static final int NET_UDP_LISTEN_RESULT = 8;
-	protected static final int NET_UDP_LISTEN_CLOSED = 9;
-	protected static final int NET_UDP_MESSAGE = 10;
+	protected static final int NET_UDP_LISTEN_RESULT = 9;
+	protected static final int NET_UDP_LISTEN_CLOSED = 10;
+	protected static final int NET_UDP_MESSAGE = 11;
 	
-	public static final int NET_KCP_MESSAGE = 11;
-	public static final int NET_KCP_ACTIVE = 12;
-	public static final int NET_KCP_INACTIVE = 13;
+	public static final int NET_KCP_MESSAGE = 12;
+	public static final int NET_KCP_ACTIVE = 13;
+	public static final int NET_KCP_INACTIVE = 14;
 	
 	//
 	public static final int MSG_AUTO_RELEASE = 1;

@@ -1,6 +1,8 @@
 package fun.lib.actor.po;
 
 import fun.lib.actor.api.DFActorTcpDispatcher;
+import fun.lib.actor.api.DFTcpDecoder;
+import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.core.DFActorDefine;
 
 public final class DFTcpServerCfg {
@@ -19,7 +21,8 @@ public final class DFTcpServerCfg {
 	
 	private volatile String wsUri = "";
 	
-	
+	private volatile DFTcpDecoder decoder = null;
+	private volatile DFTcpEncoder encoder = null;
 	/**
 	 * 
 	 * @param port 监听端口
@@ -103,6 +106,20 @@ public final class DFTcpServerCfg {
 	}
 	public DFTcpServerCfg setTcpMsgMaxLength(int maxLength){
 		this.tcpMsgMaxLength = maxLength;
+		return this;
+	}
+	public DFTcpDecoder getDecoder() {
+		return decoder;
+	}
+	public DFTcpServerCfg setDecoder(DFTcpDecoder decoder) {
+		this.decoder = decoder;
+		return this;
+	}
+	public DFTcpEncoder getEncoder() {
+		return encoder;
+	}
+	public DFTcpServerCfg setEncoder(DFTcpEncoder encoder) {
+		this.encoder = encoder;
 		return this;
 	}
 	

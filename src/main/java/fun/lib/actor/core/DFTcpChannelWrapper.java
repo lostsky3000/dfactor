@@ -3,6 +3,7 @@ package fun.lib.actor.core;
 import com.alibaba.fastjson.JSONObject;
 
 import fun.lib.actor.api.DFTcpChannel;
+import fun.lib.actor.api.DFTcpEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
@@ -21,13 +22,15 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 	private volatile int _msgActorId = 0;
 	private volatile int _sessionId = 0;
 	private long _openTime = 0;
+	private final DFTcpEncoder _encoder;
 	//
 	protected DFTcpChannelWrapper(String remoteHost, int remotePort, final Channel channel, 
-			final int decodeType){
+			final int decodeType, DFTcpEncoder encoder){
 		this._remoteHost = remoteHost;
 		this._remotePort = remotePort;
 		this._channel = channel;
 		this._tcpDecodeType = decodeType;
+		this._encoder = encoder;
 		//
 		synchronized (DFTcpChannelWrapper.class) {
 			this._sessionId = s_sessionIdCount;
@@ -64,16 +67,26 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 			return 1;
 		}
 		if(_tcpDecodeType == DFActorDefine.TCP_DECODE_WEBSOCKET){ //web socket frame
+			if(_encoder != null){ //有编码器
+				msg = _encoder.onEncode(msg);
+			}
 			if(msg instanceof String){
 				_channel.writeAndFlush(new TextWebSocketFrame((String) msg));
 			}else if(msg instanceof ByteBuf){
 				_channel.writeAndFlush(new BinaryWebSocketFrame((ByteBuf) msg));
-			}else{  //按json消息处理
+			}else if(msg instanceof JSONObject){
 				final String str = JSONObject.toJSONString(msg);
 				_channel.writeAndFlush(new TextWebSocketFrame(str));
+			}else{  
+				_channel.writeAndFlush(msg);
 			}
-		}else{
-			_channel.writeAndFlush(msg);
+		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_RAW){ //底层为二进制buff
+			if(_encoder != null){ //有解码器
+				Object msgOut = _encoder.onEncode(msg);
+				_channel.writeAndFlush(msgOut);
+			}else{  //无解码器
+				_channel.writeAndFlush(msg);
+			}
 		}
 		return 0;
 	}

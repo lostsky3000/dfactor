@@ -110,6 +110,14 @@ public abstract class DFActor {
 	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
 	 */
 	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, final String msg){return DFActorDefine.MSG_AUTO_RELEASE;}
+	/**
+	 * 收到自定义解码消息时调用
+	 * @param requestId 启动监听时传入的id
+	 * @param channel tcp连接对象
+	 * @param msg 解码后的消息
+	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
+	 */
+	public int onTcpRecvMsgCustom(int requestId, DFTcpChannel channel, Object msg){return DFActorDefine.MSG_AUTO_RELEASE;}
 	//tcp server
 	
 	/**

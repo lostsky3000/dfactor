@@ -5,6 +5,8 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import fun.lib.actor.api.DFTcpChannel;
+import fun.lib.actor.api.DFTcpDecoder;
+import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -15,11 +17,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 
 /**
- * tcp服务端和客户端通信示例代码
+ * tcp自定义消息编解码示例
  * @author lostsky
  *
  */
-public class TcpTest {
+public class TcpCustomDecAndEnc {
 
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
@@ -30,7 +32,7 @@ public class TcpTest {
 		mgr.start(cfg, "Server", Server.class);
 	}
 	//server
-	private static class Server extends DFActor{
+	private static class Server extends DFActor implements DFTcpDecoder, DFTcpEncoder{
 		public Server(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);
 			// TODO Auto-generated constructor stub
@@ -39,8 +41,9 @@ public class TcpTest {
 		@Override
 		public void onStart(Object param) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 2, 1);
-			cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW); //设置tcp server编码类型为raw,接收原始socket二进制流，前两个字节标识消息长度
-			
+			cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW) //设置tcp server编码类型为raw,接收原始socket二进制流，前两个字节标识消息长度
+				.setDecoder(this)  //设置自定义消息解码器  ByteBuf->String
+				.setEncoder(this); //设置自定义消息编码器  String->ByteBuf
 			log.info("onStart, ready to listen on port "+serverPort);
 			//启动端口监听
 			net.doTcpListen(cfg, serverPort);
@@ -60,18 +63,13 @@ public class TcpTest {
 				+", channelId="+channelId);
 		}
 		@Override
-		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg) {
-			//获取消息体长度
-			final int msgLen = msg.readableBytes();
-			log.info("recv cli msg, len="+msgLen);
-			//构造返回的消息
-			final ByteBuf bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen);
-			//拷贝收到的消息数据
-			bufOut.writeBytes(msg);
+		public int onTcpRecvMsgCustom(int requestId, DFTcpChannel channel, Object msg) {
+			//msg已由解码器转换为String
+			log.info("server onTcpRecvMsgCustom: msg="+msg);
 			//向客户端返回
-			channel.write(bufOut);
+			channel.write("echo from server, tm="+System.currentTimeMillis());  //写入String，由编码器负责编码
 			//消息对象交由框架释放
-			return DFActorDefine.MSG_AUTO_RELEASE;  //DFActorDefine.MSG_MANUAL_RELEASE
+			return DFActorDefine.MSG_AUTO_RELEASE; 
 		}
 		@Override
 		public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
@@ -79,11 +77,36 @@ public class TcpTest {
 			//创建一个actor模拟客户端发送
 			sys.createActor("actorTcpCliTest", Client.class, new Integer(serverPort));
 		}
+		//消息解码  ByteBuf->String
+		@Override
+		public Object onDecode(Object msgRaw) {
+			ByteBuf msg = (ByteBuf) msgRaw;  //收到的原始二进制数据
+			//获取消息体长度
+			final int msgLen = msg.readableBytes();
+			//模拟解码
+			String dataDec = "recv cli msg: len="+msgLen;
+			return dataDec;
+		}
+		//消息编码 String->ByteBuf
+		@Override
+		public Object onEncode(Object msgRaw) {
+			ByteBuf bufOut = null;
+			try {
+				byte[] bufRaw = ((String)msgRaw).getBytes("utf-8");
+				bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(bufRaw.length); //分配内存
+				bufOut.writeBytes(bufRaw); //写入数据
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return bufOut;
+		}
 		@Override
 		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
 			// TODO Auto-generated method stub
 			return 0;
 		}
+		
 	}	
 	//client
 	private static class Client extends DFActor{

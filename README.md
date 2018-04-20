@@ -23,6 +23,7 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 - 通信层使用netty，高性能网络io的保证
 - io和业务分离模型，使业务逻辑计算不受io瓶颈制约，达到最大效能
 - 开发接口简单易用，示例丰富，少量代码快速搭建模型
+- 封装好的tcp,udp,websocket模块直接使用
 
 
 ## 快速开始
@@ -63,6 +64,8 @@ public void onStart(Object param) {
 [BlockTest](src/test/java/fun/lib/actor/example/BlockTest.java)  block类型actor使用示例(适用数据库操作等io场景)
 
 [TcpTest](src/test/java/fun/lib/actor/example/TcpTest.java)  tcp服务端客户端通信示例
+
+[TcpCustomDecAndEnc](src/test/java/fun/lib/actor/example/TcpCustomDecAndEnc.java)  tcp自定义消息编解码器示例
 
 [WebsocketServer](src/test/java/fun/lib/actor/example/WebsocketServer.java)  websocket服务端示例
 

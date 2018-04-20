@@ -94,3 +94,10 @@ public void onStart(Object param) {
 
 交流QQ群：726932841
 
+
+
+## dfactor 开发哲学
+
+- 尽量用dfactor实现所有需求
+- 用，不要学
+

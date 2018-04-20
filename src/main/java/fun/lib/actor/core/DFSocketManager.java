@@ -637,11 +637,9 @@ public final class DFSocketManager {
 					}
 					//
 					Object msg = null;
-					boolean hasDecode = false;
 					if(_decoder != null){  //有自定义解码器
 						msg = _decoder.onDecode(msgTmp);
 						if(msg != null && msg != msgTmp){ //已经过解码
-							hasDecode = true;
 							msgType = DFActorDefine.NET_TCP_MESSAGE_CUSTOM;
 							msgIsBin = false;
 						}

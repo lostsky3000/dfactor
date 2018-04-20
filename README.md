@@ -10,6 +10,9 @@ dfactor 充分利用多核处理器，平衡业务负载
 
 dfactor 提供易用的api，上手简单，示例丰富，编写少量代码即可快速构建从通信层到存储层的服务端程序
 
+dfactor 参考了[skynet](https://github.com/cloudwu/skynet)的设计，某种程度上是一个java版skynet，
+但依托java丰富的第三方资源，提供了更多服务端常用功能
+
 
 ## dfactor 能做什么?
 
@@ -72,6 +75,14 @@ public void onStart(Object param) {
 
 ## FAQ
 
+
+## 后续计划
+
+- mysql,redis,mongodb 异步操作
+
+- http, ssl通信支持
+
+欢迎提供建议
 
 
 ## 问题

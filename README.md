@@ -4,13 +4,15 @@
 
 dfactor 是一个基于actor模型的消息处理框架
 
-dfactor 使用java编写
+dfactor 使用java编写，天生多平台支持，开发调试方便
 
 dfactor 充分利用多核处理器，平衡业务负载
 
-dfactor 提供易用的api，上手简单，示例丰富，编写少量代码即可快速构建从通信层到存储层的服务端程序
+dfactor 提供易用的api，上手简单，编写少量代码即可快速构建从通信层到存储层的服务端程序
 
-dfactor 参考了 [skynet](https://github.com/cloudwu/skynet) 的设计，某种程度上是一个java版skynet，
+dfactor 示例丰富，持续增加各种类型的服务器开发示例，简单业务做些修改就可使用
+
+dfactor 参考了 [skynet](https://github.com/cloudwu/skynet) 的设计(谢谢作者云风)，某种程度上是一个java版skynet，
 但依托java丰富的第三方资源，提供了更多服务端常用功能
 
 

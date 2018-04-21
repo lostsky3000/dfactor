@@ -264,8 +264,8 @@ public final class DFActorManager {
 	protected int doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, final int requestId){
 		return DFSocketManager.get().doTcpConnect(cfg, srcActorId, _clientIoGroup, requestId);
 	}
-	protected int doTcpConnect(final DFTcpClientCfg cfg, final DFActorTcpDispatcher dispatcher, final int requestId){
-		return DFSocketManager.get().doTcpConnect(cfg, dispatcher, _clientIoGroup, requestId);
+	protected int doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, final DFActorTcpDispatcher dispatcher, final int requestId){
+		return DFSocketManager.get().doTcpConnect(cfg, srcActorId, dispatcher, _clientIoGroup, requestId);
 	}
 	//
 	private Map<Integer, DFActorWrapper> _mapActor = new HashMap<>();

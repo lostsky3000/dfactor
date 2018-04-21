@@ -6,6 +6,11 @@ import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFTcpEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
@@ -90,6 +95,19 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 		}
 		return 0;
 	}
+	@Override
+	public int writeHttpRspWithError(int errCode) {
+		if(_isClosed){
+			return 1;
+		}
+		if(_tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){ //http协议
+			FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(errCode));
+			_channel.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+		}else{
+			return 2;
+		}
+		return 0;
+	}
 
 	@Override
 	public boolean isClosed() {
@@ -127,4 +145,6 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 	protected void setOpenTime(long tm){
 		_openTime = tm;
 	}
+
+	
 }

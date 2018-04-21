@@ -229,7 +229,7 @@ public abstract class DFActor {
 		}
 		public void doTcpListen(final DFTcpServerCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher) {
 			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListen(cfg, dispatcher, requestId);
+			mgr.doTcpListen(cfg, id, dispatcher, requestId);
 		}
 		public final void doTcpListenClose(int port){
 			final DFSocketManager mgr = DFSocketManager.get();
@@ -239,7 +239,7 @@ public abstract class DFActor {
 			return _mgr.doTcpConnect(cfg, id, requestId);
 		}
 		public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher){
-			return _mgr.doTcpConnect(cfg, dispatcher, requestId);
+			return _mgr.doTcpConnect(cfg, id, dispatcher, requestId);
 		}
 		//udp
 		public final void doUdpListen(final DFUdpServerCfg cfg, DFUdpDispatcher listener, final int requestId){

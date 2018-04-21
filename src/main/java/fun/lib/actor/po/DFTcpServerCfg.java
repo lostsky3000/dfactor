@@ -93,7 +93,7 @@ public final class DFTcpServerCfg {
 		if(tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH 
 				||tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
 				||tcpDecodeType == DFActorDefine.TCP_DECODE_WEBSOCKET 
-//				||tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP
+				||tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP
 				){ //valid
 			
 		}else{ //invalid

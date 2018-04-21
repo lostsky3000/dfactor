@@ -10,7 +10,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.concurrent.locks.StampedLock;
 
 import com.funtag.util.system.DFSysUtil;
-
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
@@ -226,11 +225,12 @@ public final class DFSocketManager {
 			final EventLoopGroup ioGroup, final int requestId){
 		return _doTcpConnect(cfg, srcActorId, null, ioGroup, requestId);
 	}
-	protected int doTcpConnect(final DFTcpClientCfg cfg, DFActorTcpDispatcher dispatcher,
+	protected int doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, DFActorTcpDispatcher dispatcher,
 			final EventLoopGroup ioGroup, final int requestId){
-		return _doTcpConnect(cfg, 0, dispatcher, ioGroup, requestId);
+		return _doTcpConnect(cfg, srcActorId, dispatcher, ioGroup, requestId);
 	}
-	private int _doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, DFActorTcpDispatcher dispatcher,
+	private int _doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, 
+			DFActorTcpDispatcher dispatcher,
 			final EventLoopGroup ioGroup, final int requestId){
 		if(ioGroup == null){
 			return 1;
@@ -284,8 +284,8 @@ public final class DFSocketManager {
 	protected void doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, final int requestId){
 		_doTcpListen(cfg, srcActorId, null, requestId);
 	}
-	protected void doTcpListen(final DFTcpServerCfg cfg, DFActorTcpDispatcher notify, final int requestId){
-		_doTcpListen(cfg, 0, notify, requestId);
+	protected void doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, DFActorTcpDispatcher dispatcher, final int requestId){
+		_doTcpListen(cfg, srcActorId, dispatcher, requestId);
 	}
 	private void _doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, DFActorTcpDispatcher dispatcher, final int requestId){
 		//start listen
@@ -704,12 +704,12 @@ public final class DFSocketManager {
 				pipe.addLast(new WebSocketServerProtocolHandler("/"+_wsSfx, null, true));
 				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, _dispatcher, _decoder, _encoder));
 			}
-//			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
-//				pipe.addLast(new HttpServerCodec());
-//				pipe.addLast(new HttpObjectAggregator(64*1024));
-////				pipe.addLast(new HttpServerExpectContinueHandler());
-//				pipe.addLast(new DFHttpHandler());
-//			}
+			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
+				pipe.addLast(new HttpServerCodec());
+				pipe.addLast(new HttpObjectAggregator(64*1024));
+//				pipe.addLast(new HttpServerExpectContinueHandler());
+				pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, _dispatcher));
+			}
 			else{
 				if(_decodeType == DFActorDefine.TCP_DECODE_LENGTH){ //length base field
 					pipe.addLast(new LengthFieldBasedFrameDecoder(_maxLen, 0, 2, 0, 2));

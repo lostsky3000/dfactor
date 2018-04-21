@@ -19,6 +19,13 @@ public interface DFTcpChannel {
 	public int write(Object msg);
 	
 	/**
+	 * 返回http错误响应
+	 * @param errCode 错误码
+	 * @return
+	 */
+	public int writeHttpRspWithError(int errCode);
+	
+	/**
 	 * 关闭连接
 	 */
 	public void close();

@@ -29,6 +29,7 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 - 通信层使用netty，高性能网络io的保证
 - io和业务分离模型，使业务逻辑计算不受io瓶颈制约，达到最大效能
 - 开发接口简单易用，示例丰富，少量代码快速搭建模型
+- 内置mysql,redis第三方驱动
 - 封装好的tcp,udp,websocket模块直接使用
 
 
@@ -75,15 +76,16 @@ public void onStart(Object param) {
 
 [WebsocketServer](src/test/java/fun/lib/actor/example/WebsocketServer.java)  websocket服务端示例
 
+[HttpServer](src/test/java/fun/lib/actor/example/HttpServer.java)  http服务器示例(支持get+post及多种Content-Type)
 
 ## FAQ
 
 
 ## 后续计划
 
-- http, ssl通信支持
+- ssl通信支持
 
-- mysql,redis,mongodb 异步操作
+- 增加 mysql,redis,mongodb 异步操作
 
 - 可靠udp协议kcp支持
 

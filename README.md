@@ -12,8 +12,8 @@ dfactor 提供易用的api，上手简单，编写少量代码即可快速构建
 
 dfactor 示例丰富，持续增加各种类型的服务器开发示例，简单业务做些修改就可使用
 
-dfactor 参考了 [skynet](https://github.com/cloudwu/skynet) 的设计(谢谢作者云风)，某种程度上是一个java版skynet，
-但依托java丰富的第三方资源，提供了更多服务端常用功能
+dfactor 参考了 [skynet](https://github.com/cloudwu/skynet) 的设计(谢谢作者云风)，
+依托java丰富的第三方资源，提供了更多服务端常用功能
 
 
 ## dfactor 能做什么?
@@ -45,7 +45,7 @@ net.doHttpServer(8080, new DFHttpServerHandler() {
 	...
 });  //start http server
 ```
-几行代码完成http服务器启动
+几行代码完成http服务器启动，[本例代码] (src/test/java/fun/lib/actor/example/SimpleHttpServer.java)
 
 
 

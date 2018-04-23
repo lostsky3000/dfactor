@@ -268,7 +268,7 @@ public final class DFSocketManager {
 			.option(ChannelOption.SO_SNDBUF, cfg.getSoSendBufLen())
 			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int)cfg.getConnTimeout())
 			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
-			.handler(new TcpHandlerInit(cfg.getTcpDecodeType(), 
+			.handler(new TcpHandlerInit(false, cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), null));
 		if(DFSysUtil.isLinux()){
@@ -325,7 +325,7 @@ public final class DFSocketManager {
 			.childOption(ChannelOption.SO_RCVBUF, cfg.getSoRecvBufLen())
 			.childOption(ChannelOption.SO_SNDBUF, cfg.getSoSendBufLen())
 			.childOption(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
-			.childHandler(new TcpHandlerInit(cfg.getTcpDecodeType(), 
+			.childHandler(new TcpHandlerInit(true, cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler()));
 		if(DFSysUtil.isLinux()){
@@ -711,9 +711,11 @@ public final class DFSocketManager {
 		private final DFTcpDecoder _decoder;
 		private final DFTcpEncoder _encoder;
 		private final Object _userHandler;
-		private TcpHandlerInit(int decodeType, int maxLen, int actorId, int requestId, String wsSfx, 
+		private final boolean _isServer;
+		private TcpHandlerInit(boolean isServer, int decodeType, int maxLen, int actorId, int requestId, String wsSfx, 
 				Object dispatcher, DFTcpDecoder decoder, DFTcpEncoder encoder,
 				Object userHandler) {
+			_isServer = isServer;
 			_decodeType = decodeType;
 			_maxLen = maxLen;
 			_actorId = actorId;
@@ -735,10 +737,12 @@ public final class DFSocketManager {
 				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
 			}
 			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
-				pipe.addLast(new HttpServerCodec());
-				pipe.addLast(new HttpObjectAggregator(64*1024));
-//				pipe.addLast(new HttpServerExpectContinueHandler());
-				pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, (DFActorHttpDispatcher) _dispatcher, (DFHttpServerHandler) _userHandler));
+				if(_isServer){
+					pipe.addLast(new HttpServerCodec());
+					pipe.addLast(new HttpObjectAggregator(64*1024));
+//					pipe.addLast(new HttpServerExpectContinueHandler());
+					pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, (DFActorHttpDispatcher) _dispatcher, (DFHttpServerHandler) _userHandler));
+				}
 			}
 			else{
 				if(_decodeType == DFActorDefine.TCP_DECODE_LENGTH){ //length base field

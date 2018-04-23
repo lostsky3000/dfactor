@@ -385,12 +385,16 @@ public final class DFActorManager {
 		}
 	}
 	
-	protected int send(int srcId, int dstId, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail){
-		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null, null);
+	protected int sendCallback(int srcId, int dstId, int requestId, 
+			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, true);
 	}
 	protected int send(int srcId, int dstId, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
+			int subject, int cmd, Object payload, final boolean addTail){
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null, null, false);
+	}
+	protected int send(int srcId, int dstId, int requestId, 
+			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler, boolean isCb){
 		DFActorWrapper wrap = null;
 		//
 		_lockActorRead.lock();
@@ -400,7 +404,7 @@ public final class DFActorManager {
 			_lockActorRead.unlock();
 		}
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb) == 0){ //add to global queue
 				if(wrap.isLogicActor()){
 					_queueGlobalActor.offer(wrap);
 				}else{
@@ -421,7 +425,7 @@ public final class DFActorManager {
 			_lockActorRead.unlock();
 		}
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, false) == 0){ //add to global queue
 				if(wrap.isLogicActor()){
 					_queueGlobalActor.offer(wrap);
 				}else{
@@ -440,12 +444,12 @@ public final class DFActorManager {
 		};
 	};
 	protected DFActorMessage newActorMessage(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context, Object userHandler){
+			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb){
 		final DFActorMessage msg = _actorMsgPool.get().poll();
 		if(msg == null){
-			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler);
+			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb);
 		}else{
-			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler);
+			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb);
 		}
 		return msg;
 	}

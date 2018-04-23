@@ -55,7 +55,10 @@ public interface DFActorSystem {
 			int scheduleUnit, int consumeType, boolean isBlockActor);
 	
 	
+	public int call(int dstId, int cmd, Object payload, DFActorMsgCallback cb);
+	public int call(String dstName, int cmd, Object payload, DFActorMsgCallback cb);
 	
+	public int callback(int cmd, Object payload);
 	
 	/**
 	 * 发送actor间消息

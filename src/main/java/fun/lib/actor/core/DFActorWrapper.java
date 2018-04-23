@@ -10,6 +10,7 @@ import java.util.concurrent.locks.StampedLock;
 
 import com.funtag.util.concurrent.DFSpinLock;
 
+import fun.lib.actor.api.DFActorMsgCallback;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.http.DFHttpRequest;
@@ -68,11 +69,12 @@ public final class DFActorWrapper {
 //		return pushMsg(srcId, sessionId, subject, cmd, payload, context, addTail, null);
 //	}
 	protected int pushMsg(int srcId, int sessionId, 
-			int subject, int cmd, Object payload, Object context, boolean addTail, Object userHandler){
+			int subject, int cmd, Object payload, Object context, boolean addTail, 
+			Object userHandler, boolean isCb){
 		if(_bRemoved){
 			return 1;
 		}
-		final DFActorMessage msg = _actorMgr.newActorMessage(srcId, _actorId, sessionId, subject, cmd, payload, context, userHandler);
+		final DFActorMessage msg = _actorMgr.newActorMessage(srcId, _actorId, sessionId, subject, cmd, payload, context, userHandler, isCb);
 				//new DFActorMessage(srcId, _actorId, sessionId, subject, cmd, payload);
 		//
 		_lockQueueWrite.lock();
@@ -193,7 +195,23 @@ public final class DFActorWrapper {
 									(DFUdpChannel) event.getExtObj1());
 						}
 					}else{
-						_actor.onMessage(msg.srcId, msg.sessionId, msg.subject, msg.cmd, msg.payload);
+						_actor.lastSrcId = 0;
+						_actor.curCanCb = false;
+						boolean noCb = true;
+						if(msg.userHandler != null){ //callback
+							if(msg.isCb){ //callback
+								DFActorMsgCallback cb = (DFActorMsgCallback) msg.userHandler;
+								cb.onCallback(msg.cmd, msg.payload);
+								noCb = false;
+							}else{ //query, has callback func
+								_actor.lastSrcId = msg.srcId;
+								_actor.curCanCb = true;
+								_actor.lastUserHandler = msg.userHandler;
+							}
+						}
+						if(noCb){
+							_actor.onMessage(msg.srcId, msg.sessionId, msg.subject, msg.cmd, msg.payload);
+						}
 					}
 				}catch(Throwable e){  //catch logic exception
 					e.printStackTrace();

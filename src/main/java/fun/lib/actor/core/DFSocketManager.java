@@ -14,7 +14,7 @@ import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.api.DFUdpDecoder;
-import fun.lib.actor.api.http.DFActorHttpDispatcher;
+import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.define.DFActorErrorCode;
@@ -232,7 +232,7 @@ public final class DFSocketManager {
 				}
 				if(actorId > 0){
 					if(actorMgr.send(0, actorId, requestId, DFActorDefine.SUBJECT_NET, 
-							DFActorDefine.NET_UDP_MESSAGE, msg, true, channel, null) == 0){ //send to queue succ
+							DFActorDefine.NET_UDP_MESSAGE, msg, true, channel, null, false) == 0){ //send to queue succ
 						if(isPack){
 							pack.retain();
 						}
@@ -352,14 +352,14 @@ public final class DFSocketManager {
 						final DFActorEvent event = new DFActorEvent(DFActorErrorCode.SUCC)
 								.setExtInt1(cfg.port);
 						actorMgr.send(0, srcActorId, requestId, DFActorDefine.SUBJECT_NET, 
-								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true, null, cfg.getUserHandler());
+								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true, null, cfg.getUserHandler(), false);
 					}else{
 						//notify actor
 						final String errMsg = f.cause().getMessage();
 						final DFActorEvent event = new DFActorEvent(DFActorErrorCode.FAILURE, errMsg)
 								.setExtInt1(cfg.port);
 						actorMgr.send(0, srcActorId, requestId, DFActorDefine.SUBJECT_NET, 
-								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true, null, cfg.getUserHandler());
+								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true, null, cfg.getUserHandler(), false);
 						//shutdown io group
 						group.shutdownIoGroup();
 					}
@@ -563,7 +563,7 @@ public final class DFSocketManager {
 					if(actorMgr.send(_requestId, actorId, _sessionId, 
 							DFActorDefine.SUBJECT_NET, 
 							DFActorDefine.NET_TCP_MESSAGE, //hasDecode?DFActorDefine.NET_TCP_MESSAGE_CUSTOM:DFActorDefine.NET_TCP_MESSAGE, 
-							msg, true, _session, null) == 0){ //send to queue succ
+							msg, true, _session, null, false) == 0){ //send to queue succ
 						if(!hasDecode){  //未解码，传递的原始消息，不释放
 							releaseRaw = false;
 						}
@@ -681,7 +681,7 @@ public final class DFSocketManager {
 						if(actorMgr.send(_requestId, actorId, _sessionId, 
 								DFActorDefine.SUBJECT_NET, 
 								DFActorDefine.NET_TCP_MESSAGE, //msgType, 
-								msg, true, _session, null) != 0){ //send to queue failed
+								msg, true, _session, null, false) != 0){ //send to queue failed
 							if(msgIsBin){ //release
 								ReferenceCountUtil.release(msg);
 							}
@@ -741,7 +741,7 @@ public final class DFSocketManager {
 					pipe.addLast(new HttpServerCodec());
 					pipe.addLast(new HttpObjectAggregator(64*1024));
 //					pipe.addLast(new HttpServerExpectContinueHandler());
-					pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, (DFActorHttpDispatcher) _dispatcher, (DFHttpServerHandler) _userHandler));
+					pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, (DFHttpServerHandler) _userHandler));
 				}
 			}
 			else{

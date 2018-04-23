@@ -13,7 +13,7 @@ import org.apache.commons.codec.Charsets;
 
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
-import fun.lib.actor.api.http.DFActorHttpDispatcher;
+import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpContentType;
 import fun.lib.actor.api.http.DFHttpHeader;
 import fun.lib.actor.api.http.DFHttpMethod;
@@ -43,14 +43,14 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	private final int _actorIdDef;
 	private final int _requestId;
 	private final DFTcpDecoder _decoder;
-	private final DFActorHttpDispatcher _dispatcher;
+	private final DFHttpDispatcher _dispatcher;
 	private final DFHttpServerHandler _svrHandler;
 	//
 	private volatile DFTcpChannelWrapper _session = null;
 	private volatile int _sessionId = 0;
 	private volatile InetSocketAddress _addrRemote = null;
 	
-	protected DFHttpHandler(int actorIdDef, int requestId, DFTcpDecoder decoder, DFActorHttpDispatcher dispatcher,
+	protected DFHttpHandler(int actorIdDef, int requestId, DFTcpDecoder decoder, DFHttpDispatcher dispatcher,
 			DFHttpServerHandler svrHandler) {
 		_actorIdDef = actorIdDef;
 		_requestId = requestId;
@@ -199,7 +199,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	if(DFActorManager.get().send(_requestId, actorId, _sessionId, 
 							DFActorDefine.SUBJECT_NET, 
 							DFActorDefine.NET_TCP_MESSAGE,  //DFActorDefine.NET_TCP_MESSAGE_CUSTOM, 
-							msgWrap, true, _session, actorId==_actorIdDef?_svrHandler:null) != 0){ //send to queue failed
+							msgWrap, true, _session, actorId==_actorIdDef?_svrHandler:null, false) != 0){ //send to queue failed
 						//处理失败  返回503  HttpResponseStatus.SERVICE_UNAVAILABLE
 	            		_session.write(new DFHttpReponse(503));
 					}

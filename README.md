@@ -61,6 +61,8 @@ net.doHttpServer(8080, new DFHttpServerHandler() {
 
 [Shutdown](src/test/java/fun/lib/actor/example/Shutdown.java)  关闭dfactor示例
 
+[Call](src/test/java/fun/lib/actor/example/Call.java)  异步回调实现actor间通信示例
+
 [TomAndJerry](src/test/java/fun/lib/actor/example/TomAndJerry.java)  多actor通信示例(猫捉老鼠游戏)
 
 [BlockActor](src/test/java/fun/lib/actor/example/BlockActor.java)  block类型actor使用示例(适用数据库操作等io场景)

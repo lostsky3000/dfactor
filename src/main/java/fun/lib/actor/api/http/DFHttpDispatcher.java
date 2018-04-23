@@ -2,7 +2,7 @@ package fun.lib.actor.api.http;
 
 import java.net.InetSocketAddress;
 
-public interface DFActorHttpDispatcher {
+public interface DFHttpDispatcher {
 
 	/**
 	 * 获取要转发到的actorId(io线程中回调)

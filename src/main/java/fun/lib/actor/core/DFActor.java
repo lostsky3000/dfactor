@@ -7,9 +7,10 @@ import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.http.DFActorHttpDispatcher;
+import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.api.DFActorUdpDispatcher;
+import fun.lib.actor.api.DFActorMsgCallback;
 import fun.lib.actor.helper.ActorLogData;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
@@ -27,6 +28,10 @@ public class DFActor {
 	protected final DFActorSystem sys;
 	protected final DFActorNet net;
 	protected final boolean isBlockActor;
+	//
+	protected int lastSrcId = 0;
+	protected Object lastUserHandler = null;
+	protected boolean curCanCb = false;
 	
 	public DFActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 		this.id = id;
@@ -162,15 +167,16 @@ public class DFActor {
 				int scheduleUnit, int consumeType, boolean isBlockActor){
 			return _mgr.createActor(name, classz, param, scheduleUnit, consumeType, isBlockActor);
 		}
+		//
 		@Override
 		public int send(int dstId, int cmd, Object payload) {
-			return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
+			return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
 		}
 		public final int send(int dstId, int requestId, int cmd, Object payload){
-			return _mgr.send(id, dstId, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
+			return _mgr.send(id, dstId, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
 		}
 		public final int send(int dstId, int requestId, int subject, int cmd, Object payload){
-			return _mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null);
+			return _mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null, false);
 		}
 		@Override
 		public int send(String dstName, int cmd, Object payload) {
@@ -200,6 +206,31 @@ public class DFActor {
 //			return System.currentTimeMillis();
 			return _mgr.getTimerNowNano();
 		}
+		//
+		@Override
+		public int call(int dstId, int cmd, Object payload, DFActorMsgCallback cb) {
+			return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb, false);
+		}
+		@Override
+		public int call(String dstName, int cmd, Object payload, DFActorMsgCallback cb) {
+			return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb);
+		}
+		@Override
+		public int callback(int cmd, Object payload) {
+			if(lastSrcId == 0){ //没有发送人可以调用
+				return -1;
+			}
+			if(!curCanCb){ //当前不可回调
+				return -2;
+			}
+			int ret = _mgr.sendCallback(id, lastSrcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, lastUserHandler);
+			//
+			lastSrcId = 0;
+			curCanCb = false;
+			lastUserHandler = null;
+			return ret;
+		}
+		
 		
 	}
 	
@@ -231,7 +262,7 @@ public class DFActor {
 		}
 		private final void _log(int level, String msg){
 			_mgr.send(id, DFActorDefine.ACTOR_ID_LOG, 0, 0, 0, 
-					new ActorLogData(level, msg, name), true, null, null);
+					new ActorLogData(level, msg, name), true, null, null, false);
 		}
 	}
 	//net api
@@ -286,7 +317,7 @@ public class DFActor {
 			mgr.doTcpListen(cfg, id, port);
 		}
 		@Override
-		public void doHttpServer(int port, DFHttpServerHandler handler, DFActorHttpDispatcher dispatcher) {
+		public void doHttpServer(int port, DFHttpServerHandler handler, DFHttpDispatcher dispatcher) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
 					.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
 					.setUserHandler(handler);

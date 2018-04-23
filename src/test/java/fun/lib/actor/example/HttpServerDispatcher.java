@@ -6,7 +6,7 @@ import java.util.Map;
 
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
-import fun.lib.actor.api.http.DFActorHttpDispatcher;
+import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpRequest;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.core.DFActor;
@@ -19,7 +19,7 @@ public final class HttpServerDispatcher {
 		DFActorManager.get().start("EntryActor", EntryActor.class);
 	}
 	
-	private static class EntryActor extends DFActor implements DFActorHttpDispatcher{
+	private static class EntryActor extends DFActor implements DFHttpDispatcher{
 		
 		private Map<String,Integer> mapUri = new HashMap<>();
 		@Override

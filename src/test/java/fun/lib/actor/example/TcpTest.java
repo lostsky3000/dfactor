@@ -79,11 +79,6 @@ public class TcpTest {
 			//创建一个actor模拟客户端发送
 			sys.createActor("actorTcpCliTest", Client.class, new Integer(serverPort));
 		}
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
 	}	
 	//client
 	private static class Client extends DFActor{
@@ -150,11 +145,6 @@ public class TcpTest {
 			//启动下一个定时器
 			final int delay = DFActor.transTimeRealToTimer(1000);
 			sys.timeout(delay, requestId);
-		}
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
 		}
 	}
 }

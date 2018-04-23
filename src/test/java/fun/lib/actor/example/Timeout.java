@@ -45,15 +45,7 @@ public final class Timeout {
 			log.info("onTimeout, count="+(++timeoutCount)+", requestId="+requestId+", curThread="+Thread.currentThread().getName());
 			int delay = DFActor.transTimeRealToTimer(1000); //延时1秒(1000毫秒)
 			sys.timeout(delay, 1);
-		}
-		
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-
-		
+		}		
 		
 	}
 }

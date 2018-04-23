@@ -46,13 +46,5 @@ public final class Shutdown {
 			DFActorManager.get().shutdown();
 		}
 		
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-
-		
-		
 	}
 }

@@ -483,7 +483,7 @@ public final class DFSocketManager {
 			//
 			int actorId = 0;
 			if(_dispatcher != null){
-				actorId = _dispatcher.onConnActiveUnsafe(_sessionId, _addrRemote);
+				actorId = _dispatcher.onConnActiveUnsafe(_requestId, _sessionId, _addrRemote);
 			}else{ //没有notify指定
 				actorId = _actorIdDef;
 			}
@@ -501,7 +501,7 @@ public final class DFSocketManager {
 			_session.onClose();
 			int actorId = 0;
 			if(_dispatcher != null){
-				actorId = _dispatcher.onConnInactiveUnsafe(_sessionId, _addrRemote);
+				actorId = _dispatcher.onConnInactiveUnsafe(_requestId, _sessionId, _addrRemote);
 			}else{   //没有notify指定
 				actorId = _session.getStatusActor();
 			}
@@ -532,7 +532,7 @@ public final class DFSocketManager {
 				if(_dispatcher == null){
 					actorId = _session.getMsgActor();
 				}else{ //没有notify指定
-					actorId = _dispatcher.onMessageUnsafe(_sessionId, _addrRemote, msg);
+					actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msg);
 				}
 				if(actorId != 0){ //actor有效
 					//notify actor
@@ -585,7 +585,7 @@ public final class DFSocketManager {
 			//
 			int actorId = 0;
 			if(_dispatcher != null){
-				actorId = _dispatcher.onConnActiveUnsafe(_sessionId, _addrRemote);
+				actorId = _dispatcher.onConnActiveUnsafe(_requestId, _sessionId, _addrRemote);
 			}else{  //没有notify指定
 				actorId = _actorIdDef;
 			}
@@ -603,7 +603,7 @@ public final class DFSocketManager {
 			_session.onClose();
 			int actorId = 0;
 			if(_dispatcher != null){
-				actorId = _dispatcher.onConnInactiveUnsafe(_sessionId, _addrRemote);
+				actorId = _dispatcher.onConnInactiveUnsafe(_requestId, _sessionId, _addrRemote);
 			}else{
 				actorId = _session.getStatusActor();
 			}
@@ -650,7 +650,7 @@ public final class DFSocketManager {
 					if(_dispatcher == null){
 						actorId = _session.getMsgActor();
 					}else{
-						actorId = _dispatcher.onMessageUnsafe(_sessionId, _addrRemote, msg);
+						actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msg);
 					}
 					if(actorId != 0){ //actor有效
 						if(actorMgr.send(_requestId, actorId, _sessionId, 

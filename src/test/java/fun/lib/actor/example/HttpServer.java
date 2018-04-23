@@ -71,7 +71,7 @@ public final class HttpServer {
 			return null;
 		}
 		@Override
-		public int onMessageUnsafe(int channelId, InetSocketAddress addrRemote, Object msg) {
+		public int onMessageUnsafe(int requestId, int channelId, InetSocketAddress addrRemote, Object msg) {
 			//上面onDecode解码器未做解码处理， 此处msg为原始http请求
 			DFHttpRequest req = (DFHttpRequest) msg;
 			log.info("onMessageUnsafe, uri="+req.getUri()+", contentType="+req.getContentType()+",  curThread="+Thread.currentThread().getName());
@@ -116,21 +116,15 @@ public final class HttpServer {
 			channel.writeHttpRspWithError(200);
 			return DFActorDefine.MSG_AUTO_RELEASE;
 		}
-		
 		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
+		public int onConnActiveUnsafe(int requestId, int channelId, InetSocketAddress addrRemote) {
+			log.info("channelActive: "+addrRemote);
+			return id;
 		}
 		@Override
-		public int onConnActiveUnsafe(int channelId, InetSocketAddress addrRemote) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-		@Override
-		public int onConnInactiveUnsafe(int channelId, InetSocketAddress addrRemote) {
-			// TODO Auto-generated method stub
-			return 0;
+		public int onConnInactiveUnsafe(int requestId, int channelId, InetSocketAddress addrRemote) {
+			log.info("channelInactive: "+addrRemote);
+			return id;
 		}
 	}
 }

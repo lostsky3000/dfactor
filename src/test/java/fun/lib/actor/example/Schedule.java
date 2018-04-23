@@ -42,13 +42,5 @@ public final class Schedule {
 			log.info("onSchedule, dltMilli="+dltMilli+",  curThread="+Thread.currentThread().getName());
 		}
 		
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-
-		
-		
 	}
 }

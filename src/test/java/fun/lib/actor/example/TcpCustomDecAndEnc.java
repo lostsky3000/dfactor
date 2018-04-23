@@ -101,12 +101,6 @@ public class TcpCustomDecAndEnc {
 			}
 			return bufOut;
 		}
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-		
 	}	
 	//client
 	private static class Client extends DFActor{
@@ -173,11 +167,6 @@ public class TcpCustomDecAndEnc {
 			//启动下一个定时器
 			final int delay = DFActor.transTimeRealToTimer(1000);
 			sys.timeout(delay, requestId);
-		}
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
 		}
 	}
 }

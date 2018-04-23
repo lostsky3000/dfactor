@@ -63,7 +63,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 		//
 		int actorId = 0;
 		if(_dispatcher != null){
-			actorId = _dispatcher.onConnActiveUnsafe(_sessionId, _addrRemote);
+			actorId = _dispatcher.onConnActiveUnsafe(_requestId, _sessionId, _addrRemote);
 		}else{  //没有notify指定
 			actorId = _actorIdDef;
 		}
@@ -75,7 +75,6 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 					DFActorDefine.SUBJECT_NET, DFActorDefine.NET_TCP_CONNECT_OPEN, _session, true);
 		}
 		super.channelActive(ctx);
-		System.out.println("channelActive, "+_addrRemote);
 	}
 	
 	@Override
@@ -83,7 +82,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 		_session.onClose();
 		int actorId = 0;
 		if(_dispatcher != null){
-			actorId = _dispatcher.onConnInactiveUnsafe(_sessionId, _addrRemote);
+			actorId = _dispatcher.onConnInactiveUnsafe(_requestId, _sessionId, _addrRemote);
 		}else{
 			actorId = _session.getStatusActor();
 		}
@@ -94,7 +93,6 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 		}
 		_session = null;
 		super.channelInactive(ctx);
-		System.out.println("channelInactive, "+_addrRemote);
 	}
 	
 	@Override
@@ -140,7 +138,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	}
 	            	//
 	            	if(_dispatcher != null){  //通知分发
-	            		actorId = _dispatcher.onMessageUnsafe(_sessionId, _addrRemote, msgWrap);
+	            		actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msgWrap);
 	            	}
 	            }else if(method.equals(HttpMethod.POST)){
 	            	HttpHeaders headers = req.headers();
@@ -179,7 +177,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	}
 	            	//
 	            	if(_dispatcher != null){  //通知分发
-	            		actorId = _dispatcher.onMessageUnsafe(_sessionId, _addrRemote, msgWrap);
+	            		actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msgWrap);
 	            	}
 //	            	if(HttpPostRequestDecoder.isMultipart(req)){
 //	            	}else{

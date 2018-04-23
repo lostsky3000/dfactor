@@ -47,13 +47,6 @@ public final class ExitActor {
 			log.info("exit EntryActor");
 		}
 		
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-
-		
 		
 	}
 }

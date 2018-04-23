@@ -37,13 +37,6 @@ public final class Startup {
 			//使用自带日志打印
 			log.info("EntryActor start, curThread="+Thread.currentThread().getName());
 		}
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-
-		
 		
 	}
 }

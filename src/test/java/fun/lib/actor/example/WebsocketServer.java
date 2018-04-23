@@ -65,10 +65,5 @@ public final class WebsocketServer {
 		public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
 			log.info("onTcpServerListenResult, port="+requestId+", succ="+isSucc+", err="+errMsg);
 		}
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
 	}
 }

@@ -61,7 +61,7 @@ public abstract class DFActor {
 	 * @param payload 消息体
 	 * @return
 	 */
-	public abstract int onMessage(int srcId, int requestId, int subject, int cmd, Object payload);
+	public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload){return DFActorDefine.MSG_AUTO_RELEASE;}
 	/**
 	 * actor创建时调用一次
 	 * @param param 创建actor的调用者传入的参数

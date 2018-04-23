@@ -39,11 +39,6 @@ public final class BlockActor {
 			//send io task
 			sys.send("DbActor", 0, 1001, new Integer(1999));
 		}
-		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
-			// TODO Auto-generated method stub
-			return 0;
-		}
 	}
 	
 	//block actor

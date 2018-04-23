@@ -96,7 +96,7 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 		return 0;
 	}
 	@Override
-	public int writeHttpRspWithError(int errCode) {
+	public int writeHttpResponse(int errCode) {
 		if(_isClosed){
 			return 1;
 		}

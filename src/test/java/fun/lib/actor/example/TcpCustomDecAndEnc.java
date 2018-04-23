@@ -63,7 +63,7 @@ public class TcpCustomDecAndEnc {
 				+", channelId="+channelId);
 		}
 		@Override
-		public int onTcpRecvMsgCustom(int requestId, DFTcpChannel channel, Object msg) {
+		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg) {
 			//msg已由解码器转换为String
 			log.info("server onTcpRecvMsgCustom: msg="+msg);
 			//向客户端返回
@@ -136,7 +136,8 @@ public class TcpCustomDecAndEnc {
 			log.debug("onTcpConnOpen, disconnect with svr");
 		}
 		@Override
-		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg) {
+		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object m) {
+			ByteBuf msg = (ByteBuf) m;
 			final int msgLen = msg.readableBytes();
 			final String str = (String) msg.readCharSequence(msgLen, Charset.forName("utf-8"));
 			log.debug("recv msg from svr: "+str);

@@ -89,13 +89,8 @@ public class WebsocketServerTest {
 				+", channelId="+channelId);
 		}
 		@Override
-		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg) {
-			
-			//消息对象交由框架释放
-			return DFActorDefine.MSG_AUTO_RELEASE;  //DFActorDefine.MSG_MANUAL_RELEASE
-		}
-		@Override
-		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, String msg) {
+		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object m) {
+			String msg = (String) m;
 			log.debug("onTcpRecvMsg, string = "+msg);
 			//根据连接id获取连接对象，将消息返回
 			channel.write(msg);

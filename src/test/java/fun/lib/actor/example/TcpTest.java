@@ -60,7 +60,8 @@ public class TcpTest {
 				+", channelId="+channelId);
 		}
 		@Override
-		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg) {
+		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object m) {
+			ByteBuf msg = (ByteBuf) m;
 			//获取消息体长度
 			final int msgLen = msg.readableBytes();
 			log.info("recv cli msg, len="+msgLen);
@@ -114,7 +115,8 @@ public class TcpTest {
 			log.debug("onTcpConnOpen, disconnect with svr");
 		}
 		@Override
-		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg) {
+		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object m) {
+			ByteBuf msg = (ByteBuf) m;
 			final int msgLen = msg.readableBytes();
 			final String str = (String) msg.readCharSequence(msgLen, Charset.forName("utf-8"));
 			log.debug("recv msg from svr: "+str);

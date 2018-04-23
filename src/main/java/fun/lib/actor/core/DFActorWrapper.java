@@ -142,18 +142,21 @@ public final class DFActorWrapper {
 								ReferenceCountUtil.release(msg.payload);
 							}
 						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE){ //tcp binary msg
-							int ret = _actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel) msg.context, (ByteBuf) msg.payload);
-							if(ret == DFActorDefine.MSG_AUTO_RELEASE){ //auto release
-								ReferenceCountUtil.release(msg.payload);
+							final Object payload = msg.payload;
+							int ret = _actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel) msg.context, payload);
+							if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null && payload instanceof ByteBuf){ //auto release
+								ReferenceCountUtil.release(payload);
 							}
-						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE_TEXT){ //tcp text msg(ws text)
-							_actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel)msg.context, (String) msg.payload);
-						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE_CUSTOM){
-							int ret = _actor.onTcpRecvMsgCustom(msg.srcId, (DFTcpChannel)msg.context, msg.payload);
-							if(ret == DFActorDefine.MSG_AUTO_RELEASE){ //auto release
-								ReferenceCountUtil.release(msg.payload);
-							}
-						}else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_OPEN){
+						}
+//						else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE_TEXT){ //tcp text msg(ws text)
+//							_actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel)msg.context, (String) msg.payload);
+//						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE_CUSTOM){
+//							int ret = _actor.onTcpRecvMsgCustom(msg.srcId, (DFTcpChannel)msg.context, msg.payload);
+//							if(ret == DFActorDefine.MSG_AUTO_RELEASE){ //auto release
+//								ReferenceCountUtil.release(msg.payload);
+//							}
+//						}
+						else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_OPEN){
 							_actor.onTcpConnOpen(msg.sessionId, (DFTcpChannel) msg.payload);
 						}else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_CLOSE){
 							_actor.onTcpConnClose(msg.sessionId, (DFTcpChannel) msg.payload);

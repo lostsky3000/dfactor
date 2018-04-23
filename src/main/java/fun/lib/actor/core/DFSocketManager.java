@@ -13,7 +13,8 @@ import com.funtag.util.system.DFSysUtil;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
-import fun.lib.actor.api.DFUdpDispatcher;
+import fun.lib.actor.api.DFUdpDecoder;
+import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
 import fun.lib.actor.po.DFTcpClientCfg;
@@ -71,7 +72,7 @@ public final class DFSocketManager {
 	private final ReadLock readLockUdpSvr = lockUdpSvr.readLock();
 	private final WriteLock writeLockUdpSvr = lockUdpSvr.writeLock();
 	
-	protected void doUdpListen(final DFUdpServerCfg cfg, final int defaultActorId, DFUdpDispatcher listener,
+	protected void doUdpListen(final DFUdpServerCfg cfg, final int defaultActorId, DFActorUdpDispatcher dispatcher,
 			final int requestId){
 		//start listen
 		final DFUdpChannelWrapper channelWrapper = new DFUdpChannelWrapper();
@@ -84,7 +85,7 @@ public final class DFSocketManager {
 			.option(ChannelOption.SO_SNDBUF, cfg.getSoSendBuf())
 			.option(ChannelOption.SO_RCVBUF, cfg.getSoRecvBuf())
 			.channel(NioDatagramChannel.class)
-			.handler(new UdpHandler(listener, cfg.port, requestId, channelWrapper));
+			.handler(new UdpHandler(defaultActorId, dispatcher, cfg.getDecoder(), cfg.port, requestId, channelWrapper));
 		try{
 			ChannelFuture future = boot.bind(cfg.port); 
 //			final DFUdpChannelWrapper channelWrapper = new DFUdpChannelWrapper(future.channel());
@@ -194,12 +195,16 @@ public final class DFSocketManager {
 		}
 	}
 	class UdpHandler extends SimpleChannelInboundHandler<DatagramPacket>{
-		private final DFUdpDispatcher listener;
+		private final DFActorUdpDispatcher dispatcher;
+		private final DFUdpDecoder decoder;
+		private final int actorIdDef;
 		private final int port;
 		private final int requestId;
 		private final DFUdpChannelWrapper channel;
-		protected UdpHandler(final DFUdpDispatcher listener, final int port, final int requestId, DFUdpChannelWrapper channel) {
-			this.listener = listener;
+		protected UdpHandler(int actorIdDef, DFActorUdpDispatcher dispatcher, DFUdpDecoder decoder, int port, int requestId, DFUdpChannelWrapper channel) {
+			this.actorIdDef = actorIdDef;
+			this.dispatcher = dispatcher;
+			this.decoder = decoder;
 			this.port = port;
 			this.requestId = requestId;
 			this.channel = channel;
@@ -207,11 +212,28 @@ public final class DFSocketManager {
 		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket pack) throws Exception {
 			try{
-				final int actorId = listener.queryMsgActorId(pack);
+				Object msg = null;
+				if(decoder != null){
+					msg = decoder.onDecode(pack);
+				}
+				boolean isPack = false;
+				if(msg == null){
+					msg = pack;
+					isPack = true;
+				}
+				int actorId = 0;
+				if(dispatcher != null){
+					actorId = dispatcher.onQueryMsgActorId(msg);
+				}
+				if(actorId == 0){
+					actorId = actorIdDef;
+				}
 				if(actorId > 0){
 					if(actorMgr.send(0, actorId, requestId, DFActorDefine.SUBJECT_NET, 
-							DFActorDefine.NET_UDP_MESSAGE, pack, true, channel) == 0){ //send to queue succ
-						pack.retain();
+							DFActorDefine.NET_UDP_MESSAGE, msg, true, channel) == 0){ //send to queue succ
+						if(isPack){
+							pack.retain();
+						}
 					}
 				}
 			}catch(Throwable e){
@@ -532,12 +554,13 @@ public final class DFSocketManager {
 				if(_dispatcher == null){
 					actorId = _session.getMsgActor();
 				}else{ //没有notify指定
-					actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msg);
+					actorId = _dispatcher.onQueryMsgActorId(_requestId, _sessionId, _addrRemote, msg);
 				}
 				if(actorId != 0){ //actor有效
 					//notify actor
 					if(actorMgr.send(_requestId, actorId, _sessionId, 
-							DFActorDefine.SUBJECT_NET, hasDecode?DFActorDefine.NET_TCP_MESSAGE_CUSTOM:DFActorDefine.NET_TCP_MESSAGE, 
+							DFActorDefine.SUBJECT_NET, 
+							DFActorDefine.NET_TCP_MESSAGE, //hasDecode?DFActorDefine.NET_TCP_MESSAGE_CUSTOM:DFActorDefine.NET_TCP_MESSAGE, 
 							msg, true, _session) == 0){ //send to queue succ
 						if(!hasDecode){  //未解码，传递的原始消息，不释放
 							releaseRaw = false;
@@ -650,11 +673,13 @@ public final class DFSocketManager {
 					if(_dispatcher == null){
 						actorId = _session.getMsgActor();
 					}else{
-						actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msg);
+						actorId = _dispatcher.onQueryMsgActorId(_requestId, _sessionId, _addrRemote, msg);
 					}
 					if(actorId != 0){ //actor有效
 						if(actorMgr.send(_requestId, actorId, _sessionId, 
-								DFActorDefine.SUBJECT_NET, msgType, msg, true, _session) != 0){ //send to queue failed
+								DFActorDefine.SUBJECT_NET, 
+								DFActorDefine.NET_TCP_MESSAGE, //msgType, 
+								msg, true, _session) != 0){ //send to queue failed
 							if(msgIsBin){ //release
 								ReferenceCountUtil.release(msg);
 							}

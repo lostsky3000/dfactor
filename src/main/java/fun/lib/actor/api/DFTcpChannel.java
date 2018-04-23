@@ -20,10 +20,10 @@ public interface DFTcpChannel {
 	
 	/**
 	 * 返回http错误响应
-	 * @param errCode 错误码
+	 * @param statusCode 状态码，如404,200等
 	 * @return
 	 */
-	public int writeHttpRspWithError(int errCode);
+	public int writeHttpResponse(int statusCode);
 	
 	/**
 	 * 关闭连接

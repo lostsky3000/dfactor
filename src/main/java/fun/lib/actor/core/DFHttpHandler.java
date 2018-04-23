@@ -138,7 +138,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	}
 	            	//
 	            	if(_dispatcher != null){  //通知分发
-	            		actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msgWrap);
+	            		actorId = _dispatcher.onQueryMsgActorId(_requestId, _sessionId, _addrRemote, msgWrap);
 	            	}
 	            }else if(method.equals(HttpMethod.POST)){
 	            	HttpHeaders headers = req.headers();
@@ -177,7 +177,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	}
 	            	//
 	            	if(_dispatcher != null){  //通知分发
-	            		actorId = _dispatcher.onMessageUnsafe(_requestId, _sessionId, _addrRemote, msgWrap);
+	            		actorId = _dispatcher.onQueryMsgActorId(_requestId, _sessionId, _addrRemote, msgWrap);
 	            	}
 //	            	if(HttpPostRequestDecoder.isMultipart(req)){
 //	            	}else{
@@ -188,12 +188,14 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            //
 	            if(actorId != 0 && msgWrap != null){ //可以后续处理
 	            	if(DFActorManager.get().send(_requestId, actorId, _sessionId, 
-							DFActorDefine.SUBJECT_NET, DFActorDefine.NET_TCP_MESSAGE_CUSTOM, msgWrap, true, _session) != 0){ //send to queue failed
+							DFActorDefine.SUBJECT_NET, 
+							DFActorDefine.NET_TCP_MESSAGE,  //DFActorDefine.NET_TCP_MESSAGE_CUSTOM, 
+							msgWrap, true, _session) != 0){ //send to queue failed
 						//处理失败  返回503  HttpResponseStatus.SERVICE_UNAVAILABLE
-	            		_session.writeHttpRspWithError(503);
+	            		_session.writeHttpResponse(503);
 					}
 	            }else{ //无法处理,返回404 HttpResponseStatus.NOT_FOUND
-	            	_session.writeHttpRspWithError(404);
+	            	_session.writeHttpResponse(404);
 	            }
 	        }else{ //unsurpport request type
 	        	ctx.close();

@@ -40,6 +40,6 @@ public interface DFActorNet {
 	 */
 	public int doTcpConnect(final DFTcpClientCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher);
 	//udp
-	public void doUdpListen(final DFUdpServerCfg cfg, DFUdpDispatcher listener, final int requestId);
+	public void doUdpListen(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId);
 	public void doUdpListenClose(int port);
 }

@@ -71,14 +71,14 @@ public final class HttpServer {
 			return null;
 		}
 		@Override
-		public int onMessageUnsafe(int requestId, int channelId, InetSocketAddress addrRemote, Object msg) {
+		public int onQueryMsgActorId(int requestId, int channelId, InetSocketAddress addrRemote, Object msg) {
 			//上面onDecode解码器未做解码处理， 此处msg为原始http请求
 			DFHttpRequest req = (DFHttpRequest) msg;
 			log.info("onMessageUnsafe, uri="+req.getUri()+", contentType="+req.getContentType()+",  curThread="+Thread.currentThread().getName());
 			return id; //转发给本actor
 		}
 		@Override
-		public int onTcpRecvMsgCustom(int requestId, DFTcpChannel channel, Object msg) {
+		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg) {
 			DFHttpRequest req = (DFHttpRequest) msg;
 			boolean isPairData = true;  //默认数据为键值对
 			if(req.getMethod().equalsIgnoreCase(DFHttpMethod.GET)){ //get
@@ -111,9 +111,8 @@ public final class HttpServer {
 			}else{ //application data
 				log.info("applicationData = "+req.getApplicationData());
 			}
-			
 			//返回成功
-			channel.writeHttpRspWithError(200);
+			channel.writeHttpResponse(200);
 			return DFActorDefine.MSG_AUTO_RELEASE;
 		}
 		@Override

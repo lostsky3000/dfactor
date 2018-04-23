@@ -4,7 +4,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.DFUdpDispatcher;
+import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -16,7 +16,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.socket.DatagramPacket;
 
-public final class ActorUdpTest extends DFActor implements DFUdpDispatcher{
+public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 
 	protected ActorUdpTest(Integer id, String name, Integer consumeType, Boolean isIoActor) {
 		super(id, name, consumeType, isIoActor);
@@ -52,7 +52,7 @@ public final class ActorUdpTest extends DFActor implements DFUdpDispatcher{
 	}
 
 	@Override
-	public int queryMsgActorId(DatagramPacket pack) {
+	public int onQueryMsgActorId(Object msg) {
 		return id;
 	}
 	

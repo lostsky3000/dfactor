@@ -25,12 +25,12 @@ public interface DFActorTcpDispatcher {
 	 */
 	public int onConnInactiveUnsafe(int requestId, int channelId, InetSocketAddress addrRemote);
 	/**
-	 * 收到消息通知(io线程中回调)
+	 * 获取要转发到的actorId(io线程中回调)
 	 * @param requestId 创建连接时的唯一标识
 	 * @param channelId 会话id
 	 * @param addrRemote 远程连接地址
 	 * @param msg
 	 * @return 接收消息的actorId, 0则不分发
 	 */
-	public int onMessageUnsafe(int requestId, int channelId, InetSocketAddress addrRemote, Object msg);
+	public int onQueryMsgActorId(int requestId, int channelId, InetSocketAddress addrRemote, Object msg);
 }

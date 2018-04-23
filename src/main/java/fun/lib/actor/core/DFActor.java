@@ -7,7 +7,7 @@ import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.DFUdpDispatcher;
+import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.helper.ActorLogData;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
@@ -93,31 +93,31 @@ public abstract class DFActor {
 	 */
 	public void onTcpConnClose(int requestId, DFTcpChannel channel){}
 	
+//	/**
+//	 * 收到二进制数据时调用
+//	 * @param requestId 启动监听时传入的id
+//	 * @param channel tcp连接对象
+//	 * @param msg 二进制数据
+//	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
+//	 */
+//	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg){return DFActorDefine.MSG_AUTO_RELEASE;}
+//	
+//	/**
+//	 * 收到文本数据时调用
+//	 * @param requestId 启动监听时传入的id
+//	 * @param channel tcp连接对象
+//	 * @param msg 文本数据
+//	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
+//	 */
+//	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, final String msg){return DFActorDefine.MSG_AUTO_RELEASE;}
 	/**
-	 * 收到二进制数据时调用
+	 * 收到网络消息时调用
 	 * @param requestId 启动监听时传入的id
 	 * @param channel tcp连接对象
-	 * @param msg 二进制数据
+	 * @param msg 消息内容
 	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
 	 */
-	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg){return DFActorDefine.MSG_AUTO_RELEASE;}
-	
-	/**
-	 * 收到文本数据时调用
-	 * @param requestId 启动监听时传入的id
-	 * @param channel tcp连接对象
-	 * @param msg 文本数据
-	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
-	 */
-	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, final String msg){return DFActorDefine.MSG_AUTO_RELEASE;}
-	/**
-	 * 收到自定义解码消息时调用
-	 * @param requestId 启动监听时传入的id
-	 * @param channel tcp连接对象
-	 * @param msg 解码后的消息
-	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
-	 */
-	public int onTcpRecvMsgCustom(int requestId, DFTcpChannel channel, Object msg){return DFActorDefine.MSG_AUTO_RELEASE;}
+	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg){return DFActorDefine.MSG_AUTO_RELEASE;}
 	//tcp server
 	
 	/**
@@ -242,7 +242,7 @@ public abstract class DFActor {
 			return _mgr.doTcpConnect(cfg, id, dispatcher, requestId);
 		}
 		//udp
-		public final void doUdpListen(final DFUdpServerCfg cfg, DFUdpDispatcher listener, final int requestId){
+		public final void doUdpListen(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId){
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doUdpListen(cfg, id, listener, requestId);
 		}

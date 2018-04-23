@@ -55,7 +55,8 @@ public final class WebsocketServer {
 				+", channelId="+channelId);
 		}
 		@Override
-		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, String msg) {
+		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object m) {
+			String msg = (String) m;
 			//response
 			channel.write("echo from server: "+msg);
 			//消息对象交由框架释放

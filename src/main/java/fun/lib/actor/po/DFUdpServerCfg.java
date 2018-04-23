@@ -1,5 +1,7 @@
 package fun.lib.actor.po;
 
+import fun.lib.actor.api.DFUdpDecoder;
+
 public final class DFUdpServerCfg {
 	public final int port;
 	public final int ioThreadNum;
@@ -7,6 +9,8 @@ public final class DFUdpServerCfg {
 	
 	private int soRecvBuf = 1024*20;
 	private int soSendBuf = 1024*20;
+	
+	private volatile DFUdpDecoder decoder = null;
 	
 	public DFUdpServerCfg(int port, int ioThreadNum, boolean isBroadcast) {
 		this.port = port;
@@ -30,6 +34,15 @@ public final class DFUdpServerCfg {
 	}
 	public DFUdpServerCfg setSoRecvBuf(int soRecvBuf){
 		this.soRecvBuf = soRecvBuf;
+		return this;
+	}
+
+	public DFUdpDecoder getDecoder() {
+		return decoder;
+	}
+
+	public DFUdpServerCfg setDecoder(DFUdpDecoder decoder) {
+		this.decoder = decoder;
 		return this;
 	}
 	

@@ -39,8 +39,8 @@ public class TcpCustomDecAndEnc {
 		private final int serverPort = 10001;
 		@Override
 		public void onStart(Object param) {
-			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 2, 1);
-			cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW) //设置tcp server编码类型为raw,接收原始socket二进制流，前两个字节标识消息长度
+			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 2, 1) 
+				.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW) //设置tcp server编码类型为raw,接收原始socket二进制流，前两个字节标识消息长度
 				.setDecoder(this)  //设置自定义消息解码器  ByteBuf->String
 				.setEncoder(this); //设置自定义消息编码器  String->ByteBuf
 			log.info("onStart, ready to listen on port "+serverPort);
@@ -113,8 +113,8 @@ public class TcpCustomDecAndEnc {
 		public void onStart(Object param) {
 			serverPort = (Integer) param;
 			//开始连接服务端
-			DFTcpClientCfg cfg = new DFTcpClientCfg("127.0.0.1", serverPort);
-			cfg.setConnTimeout(5000) //设置连接超时，毫秒
+			DFTcpClientCfg cfg = new DFTcpClientCfg("127.0.0.1", serverPort)
+				.setConnTimeout(5000) //设置连接超时，毫秒
 				.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW); //设置解码器为raw，头两字节为包长度
 			net.doTcpConnect(cfg, serverPort);
 			

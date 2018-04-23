@@ -30,9 +30,7 @@ public final class WebsocketServer {
 		private final int serverPort = 10001;
 		@Override
 		public void onStart(Object param) {
-			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 1, 1);
-			cfg.setSoBackLog(1024)
-				.setTcpNoDelay(true)
+			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 1, 1)
 				.setTcpDecodeType(DFActorDefine.TCP_DECODE_WEBSOCKET)
 				.setWsUri("test");  //如 ws://127.0.0.1:10001/test
 			log.info("onStart, ready to listen on port "+serverPort);

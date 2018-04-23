@@ -162,18 +162,28 @@ public class DFActor {
 				int scheduleUnit, int consumeType, boolean isBlockActor){
 			return _mgr.createActor(name, classz, param, scheduleUnit, consumeType, isBlockActor);
 		}
-		public final void send(int dstId, int requestId, int cmd, Object payload){
-			_mgr.send(id, dstId, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
+		@Override
+		public int send(int dstId, int cmd, Object payload) {
+			return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
 		}
-		public final void send(int dstId, int requestId, int subject, int cmd, Object payload){
-			_mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null);
+		public final int send(int dstId, int requestId, int cmd, Object payload){
+			return _mgr.send(id, dstId, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
 		}
-		public final void send(String dstName, int requestId, int cmd, Object payload){
-			_mgr.send(id, dstName, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
+		public final int send(int dstId, int requestId, int subject, int cmd, Object payload){
+			return _mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null);
 		}
-		public final void send(String dstName, int requestId, int subject, int cmd, Object payload){
-			_mgr.send(id, dstName, requestId, subject, cmd, payload, true, null, null);
+		@Override
+		public int send(String dstName, int cmd, Object payload) {
+			return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
 		}
+		public final int send(String dstName, int requestId, int cmd, Object payload){
+			return _mgr.send(id, dstName, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
+		}
+		public final int send(String dstName, int requestId, int subject, int cmd, Object payload){
+			return _mgr.send(id, dstName, requestId, subject, cmd, payload, true, null, null);
+		}
+		
+		
 		public final void exit(){
 			_mgr.removeActor(id);
 			log.verb("exit");
@@ -190,6 +200,7 @@ public class DFActor {
 //			return System.currentTimeMillis();
 			return _mgr.getTimerNowNano();
 		}
+		
 	}
 	
 	//log api

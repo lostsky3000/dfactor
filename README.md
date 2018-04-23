@@ -34,23 +34,29 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 
 
 ## 快速开始
+
+启动一个简单的http-echo服务器
 ```java
-DFActorManager mgr = DFActorManager.get();
-//启动配置参数
-DFActorManagerConfig cfg = new DFActorManagerConfig()
-				.setLogicWorkerThreadNum(2);  //设置逻辑线程数量
-//启动入口actor，开始消息循环		
-mgr.start(cfg, "EntryActor", EntryActor.class);
-...
 @Override
-public void onStart(Object param) {
-  //使用自带日志打印
-  log.info("EntryActor start, curThread="+Thread.currentThread().getName());
-}
-...
+		public void onStart(Object param) {
+			net.doHttpServer(8080, new DFHttpServerHandler() {
+				@Override
+				public void onListenResult(boolean isSucc, String errMsg) {
+					log.info("listen result: isSucc="+isSucc+", err="+errMsg);
+					if(!isSucc){
+						DFActorManager.get().shutdown();
+					}
+				}
+				@Override
+				public void onHttpRequest(DFHttpRequest req) {
+					//response
+					req.response("echo from server, uri="+req.getUri())
+						.send();
+				}
+			});  //start http server
+		}
 ```
 
-几行代码，完成一个最简单dfactor的启动
 
 
 

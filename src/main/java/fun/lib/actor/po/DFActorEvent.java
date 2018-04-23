@@ -13,6 +13,8 @@ public final class DFActorEvent {
 	private Object extObj1;
 	private Object extObj2;
 	
+	private Object userHandler;
+	
 	public DFActorEvent(int what) {
 		this.what = what;
 		msg = null;
@@ -69,6 +71,12 @@ public final class DFActorEvent {
 	}
 	public Object getExtObj2() {
 		return extObj2;
+	}
+	public Object getUserHandler() {
+		return userHandler;
+	}
+	public void setUserHandler(Object userHandler) {
+		this.userHandler = userHandler;
 	}
 	
 	

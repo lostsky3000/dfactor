@@ -4,7 +4,6 @@ import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
 import fun.lib.actor.po.DFTcpServerCfg;
 
 /**
@@ -16,10 +15,8 @@ public final class WebsocketServer {
 
 	public static void main(String[] args){
 		final DFActorManager mgr = DFActorManager.get();
-		//启动配置参数
-		DFActorManagerConfig cfg = new DFActorManagerConfig();
 		//启动入口actor，开始消息循环		
-		mgr.start(cfg, "Server", Server.class);
+		mgr.start("Server", Server.class);
 	}
 	
 	private static class Server extends DFActor{

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFTcpEncoder;
+import fun.lib.actor.api.http.DFHttpReponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -85,26 +86,19 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 			}else{  
 				_channel.writeAndFlush(msg);
 			}
-		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_RAW){ //底层为二进制buff
+		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
+				|| _tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH){ //底层为二进制buff
 			if(_encoder != null){ //有解码器
 				Object msgOut = _encoder.onEncode(msg);
 				_channel.writeAndFlush(msgOut);
 			}else{  //无解码器
 				_channel.writeAndFlush(msg);
 			}
-		}
-		return 0;
-	}
-	@Override
-	public int writeHttpResponse(int errCode) {
-		if(_isClosed){
-			return 1;
-		}
-		if(_tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){ //http协议
-			FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(errCode));
-			_channel.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-		}else{
-			return 2;
+		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){
+			if(msg instanceof DFHttpReponse){
+				DFHttpReponse rsp = (DFHttpReponse) msg;
+				_channel.writeAndFlush(rsp.getRawResponse()).addListener(ChannelFutureListener.CLOSE);
+			}
 		}
 		return 0;
 	}
@@ -144,6 +138,9 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 	}
 	protected void setOpenTime(long tm){
 		_openTime = tm;
+	}
+	protected int getTcpDecodeType() {
+		return _tcpDecodeType;
 	}
 
 	

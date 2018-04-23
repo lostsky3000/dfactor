@@ -86,6 +86,27 @@ public final class DFActorManager {
 	
 	/**
 	 * 启动dfactor
+	 * @param entryName 入口actor名字(全局唯一)
+	 * @param entryClassz 入口actor class
+	 * @return 创建成功or失败
+	 */
+	public boolean start(String entryName, Class<? extends DFActor> entryClassz){
+		return start(new DFActorManagerConfig(), entryName, entryClassz, null, 0, DFActorDefine.CONSUME_AUTO);
+	}
+	/**
+	 * 启动dfactor
+	 * @param entryName 入口actor名字(全局唯一)
+	 * @param entryClassz 入口actor class
+	 * @param entryParam 入口actor传入参数
+	 * @param entryScheduleUnit schedule周期
+	 * @return 创建成功or失败
+	 */
+	public boolean start(String entryName, Class<? extends DFActor> entryClassz,
+			Object entryParam, int entryScheduleUnit){
+		return start(new DFActorManagerConfig(), entryName, entryClassz, entryParam, entryScheduleUnit, DFActorDefine.CONSUME_AUTO);
+	}
+	/**
+	 * 启动dfactor
 	 * @param cfg 启动配置
 	 * @param entryName 入口actor名字(全局唯一)
 	 * @param entryClassz 入口actor class
@@ -366,10 +387,10 @@ public final class DFActorManager {
 	
 	protected int send(int srcId, int dstId, int requestId, 
 			int subject, int cmd, Object payload, final boolean addTail){
-		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null);
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null, null);
 	}
 	protected int send(int srcId, int dstId, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail, Object context){
+			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
 		DFActorWrapper wrap = null;
 		//
 		_lockActorRead.lock();
@@ -379,7 +400,7 @@ public final class DFActorManager {
 			_lockActorRead.unlock();
 		}
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler) == 0){ //add to global queue
 				if(wrap.isLogicActor()){
 					_queueGlobalActor.offer(wrap);
 				}else{
@@ -391,7 +412,7 @@ public final class DFActorManager {
 		return 1;
 	}
 	protected int send(int srcId, String dstName, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail, Object context){
+			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
 		DFActorWrapper wrap = null;
 		_lockActorRead.lock();
 		try{
@@ -400,7 +421,7 @@ public final class DFActorManager {
 			_lockActorRead.unlock();
 		}
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler) == 0){ //add to global queue
 				if(wrap.isLogicActor()){
 					_queueGlobalActor.offer(wrap);
 				}else{
@@ -419,12 +440,12 @@ public final class DFActorManager {
 		};
 	};
 	protected DFActorMessage newActorMessage(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context){
+			int subject, int cmd, Object payload, Object context, Object userHandler){
 		final DFActorMessage msg = _actorMsgPool.get().poll();
 		if(msg == null){
-			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context);
+			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler);
 		}else{
-			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context);
+			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler);
 		}
 		return msg;
 	}

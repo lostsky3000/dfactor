@@ -4,7 +4,6 @@ import java.util.Random;
 
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
 
 /**
  * 猫捉老鼠演示多actor通信
@@ -15,10 +14,8 @@ public final class TomAndJerry {
 
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
-		//启动配置参数
-		DFActorManagerConfig cfg = new DFActorManagerConfig();
 		//启动dfactor
-		mgr.start(cfg, "Director", Director.class);
+		mgr.start("Director", Director.class);
 	}
 	//导演
 	private static class Director extends DFActor{

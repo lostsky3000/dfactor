@@ -9,9 +9,10 @@ public final class DFActorMessage {
 	protected int cmd;
 	protected Object payload;
 	protected Object context;
+	protected Object userHandler;
 	
 	public DFActorMessage(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context) {
+			int subject, int cmd, Object payload, Object context, Object userHandler) {
 		this.srcId = srcId;
 		this.dstId = dstId;
 		this.sessionId = sessionId;
@@ -19,10 +20,11 @@ public final class DFActorMessage {
 		this.cmd = cmd;
 		this.payload = payload;	
 		this.context = context;
+		this.userHandler = userHandler;
 	}
 	
 	protected void reset(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context){
+			int subject, int cmd, Object payload, Object context, Object userHandler){
 		this.srcId = srcId;
 		this.dstId = dstId;
 		this.sessionId = sessionId;
@@ -30,6 +32,7 @@ public final class DFActorMessage {
 		this.cmd = cmd;
 		this.payload = payload;
 		this.context = context;
+		this.userHandler = userHandler;
 	}
 	
 	

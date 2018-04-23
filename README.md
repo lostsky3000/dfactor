@@ -76,7 +76,10 @@ public void onStart(Object param) {
 
 [WebsocketServer](src/test/java/fun/lib/actor/example/WebsocketServer.java)  websocket服务端示例
 
-[HttpServer](src/test/java/fun/lib/actor/example/HttpServer.java)  http服务器示例(支持get+post及多种Content-Type)
+[SimpleHttpServer](src/test/java/fun/lib/actor/example/SimpleHttpServer.java)  简单的http服务示例
+
+[HttpServerDispatcher](src/test/java/fun/lib/actor/example/HttpServerDispatcher.java)  充分利用多cpu处理http业务的示例
+
 
 ## FAQ
 

@@ -23,6 +23,8 @@ public final class DFTcpServerCfg {
 	
 	private volatile DFTcpDecoder decoder = null;
 	private volatile DFTcpEncoder encoder = null;
+	
+	private volatile Object userHandler = null;
 	/**
 	 * 
 	 * @param port 监听端口
@@ -38,7 +40,7 @@ public final class DFTcpServerCfg {
 		this.bossThreadNum = bossThreadNum;
 	}
 	public DFTcpServerCfg(int port) {
-		this(port,1,0);
+		this(port, Runtime.getRuntime().availableProcessors(), 0);
 	}
 	
 	public String getWsUri(){
@@ -121,6 +123,13 @@ public final class DFTcpServerCfg {
 	}
 	public DFTcpServerCfg setEncoder(DFTcpEncoder encoder) {
 		this.encoder = encoder;
+		return this;
+	}
+	public Object getUserHandler() {
+		return userHandler;
+	}
+	public DFTcpServerCfg setUserHandler(Object userHandler) {
+		this.userHandler = userHandler;
 		return this;
 	}
 	

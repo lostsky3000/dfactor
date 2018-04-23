@@ -13,10 +13,13 @@ import org.apache.commons.codec.Charsets;
 
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
+import fun.lib.actor.api.http.DFActorHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpContentType;
 import fun.lib.actor.api.http.DFHttpHeader;
 import fun.lib.actor.api.http.DFHttpMethod;
+import fun.lib.actor.api.http.DFHttpReponse;
 import fun.lib.actor.api.http.DFHttpRequest;
+import fun.lib.actor.api.http.DFHttpServerHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -40,17 +43,20 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	private final int _actorIdDef;
 	private final int _requestId;
 	private final DFTcpDecoder _decoder;
-	private final DFActorTcpDispatcher _dispatcher;
+	private final DFActorHttpDispatcher _dispatcher;
+	private final DFHttpServerHandler _svrHandler;
 	//
 	private volatile DFTcpChannelWrapper _session = null;
 	private volatile int _sessionId = 0;
 	private volatile InetSocketAddress _addrRemote = null;
 	
-	protected DFHttpHandler(int actorIdDef, int requestId, DFTcpDecoder decoder, DFActorTcpDispatcher dispatcher) {
+	protected DFHttpHandler(int actorIdDef, int requestId, DFTcpDecoder decoder, DFActorHttpDispatcher dispatcher,
+			DFHttpServerHandler svrHandler) {
 		_actorIdDef = actorIdDef;
 		_requestId = requestId;
 		_decoder = decoder;
 		_dispatcher = dispatcher;
+		_svrHandler = svrHandler;
 	}
 	
 	@Override
@@ -61,36 +67,36 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 		_session.setOpenTime(System.currentTimeMillis());
 		_sessionId = _session.getChannelId();
 		//
-		int actorId = 0;
-		if(_dispatcher != null){
-			actorId = _dispatcher.onConnActiveUnsafe(_requestId, _sessionId, _addrRemote);
-		}else{  //没有notify指定
-			actorId = _actorIdDef;
-		}
-		if(actorId != 0){ //actor有效
-			_session.setStatusActor(actorId);
-			_session.setMessageActor(actorId);
-			//notify actor
-			DFActorManager.get().send(0, actorId, _requestId, 
-					DFActorDefine.SUBJECT_NET, DFActorDefine.NET_TCP_CONNECT_OPEN, _session, true);
-		}
+//		int actorId = 0;
+//		if(_dispatcher != null){
+//			actorId = _dispatcher.onConnActiveUnsafe(_requestId, _sessionId, _addrRemote);
+//		}else{  //没有notify指定
+//			actorId = _actorIdDef;
+//		}
+//		if(actorId != 0){ //actor有效
+//			_session.setStatusActor(actorId);
+//			_session.setMessageActor(actorId);
+//			//notify actor
+//			DFActorManager.get().send(0, actorId, _requestId, 
+//					DFActorDefine.SUBJECT_NET, DFActorDefine.NET_TCP_CONNECT_OPEN, _session, true);
+//		}
 		super.channelActive(ctx);
 	}
 	
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		_session.onClose();
-		int actorId = 0;
-		if(_dispatcher != null){
-			actorId = _dispatcher.onConnInactiveUnsafe(_requestId, _sessionId, _addrRemote);
-		}else{
-			actorId = _session.getStatusActor();
-		}
-		if(actorId != 0){
-			//notify actor
-			DFActorManager.get().send(0, actorId, _requestId, 
-					DFActorDefine.SUBJECT_NET, DFActorDefine.NET_TCP_CONNECT_CLOSE, _session, true);
-		}
+//		int actorId = 0;
+//		if(_dispatcher != null){
+//			actorId = _dispatcher.onConnInactiveUnsafe(_requestId, _sessionId, _addrRemote);
+//		}else{
+//			actorId = _session.getStatusActor();
+//		}
+//		if(actorId != 0){
+//			//notify actor
+//			DFActorManager.get().send(0, actorId, _requestId, 
+//					DFActorDefine.SUBJECT_NET, DFActorDefine.NET_TCP_CONNECT_CLOSE, _session, true);
+//		}
 		_session = null;
 		super.channelInactive(ctx);
 	}
@@ -111,7 +117,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            if(method.equals(HttpMethod.GET)){
 	            	HttpHeaders headers = req.headers();
 	            	//
-	            	dfReq = new DFHttpRequest(uri, DFHttpMethod.GET, keepAlive, null, null);
+	            	dfReq = new DFHttpRequest(_session, uri, DFHttpMethod.GET, keepAlive, null, null);
 	            	//headers
 	            	Iterator<Entry<String,String>> it = headers.iteratorAsString();
 	            	while(it.hasNext()){
@@ -138,14 +144,14 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	}
 	            	//
 	            	if(_dispatcher != null){  //通知分发
-	            		actorId = _dispatcher.onQueryMsgActorId(_requestId, _sessionId, _addrRemote, msgWrap);
+	            		actorId = _dispatcher.onQueryMsgActorId(_requestId, _addrRemote, msgWrap);
 	            	}
 	            }else if(method.equals(HttpMethod.POST)){
 	            	HttpHeaders headers = req.headers();
 	            	final String contentType = headers.get(DFHttpHeader.CONTENT_TYPE);
 	            	//data
 	            	if(contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
-	            		dfReq = new DFHttpRequest(uri, DFHttpMethod.POST, keepAlive, 
+	            		dfReq = new DFHttpRequest(_session, uri, DFHttpMethod.POST, keepAlive, 
 	            						contentType==null?DFHttpContentType.UNKNOWN:contentType, null);
 	            		HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(req);
 	                	List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
@@ -156,7 +162,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	}else{ //application 请求
 	            		ByteBuf buf = req.content();
 	            		final String str = (String) buf.readCharSequence(buf.readableBytes(), Charset.forName("utf-8"));
-	            		dfReq = new DFHttpRequest(uri, DFHttpMethod.POST, keepAlive, 
+	            		dfReq = new DFHttpRequest(_session, uri, DFHttpMethod.POST, keepAlive, 
         								contentType==null?DFHttpContentType.UNKNOWN:contentType, str);
 	            	}
 	            	//headers
@@ -177,7 +183,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	}
 	            	//
 	            	if(_dispatcher != null){  //通知分发
-	            		actorId = _dispatcher.onQueryMsgActorId(_requestId, _sessionId, _addrRemote, msgWrap);
+	            		actorId = _dispatcher.onQueryMsgActorId(_requestId, _addrRemote, msgWrap);
 	            	}
 //	            	if(HttpPostRequestDecoder.isMultipart(req)){
 //	            	}else{
@@ -185,17 +191,20 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            }else{  //unsurpport method
 	            	ctx.close();
 	            }
+	            if(actorId == 0){
+	            	actorId = _actorIdDef;
+	            }
 	            //
 	            if(actorId != 0 && msgWrap != null){ //可以后续处理
 	            	if(DFActorManager.get().send(_requestId, actorId, _sessionId, 
 							DFActorDefine.SUBJECT_NET, 
 							DFActorDefine.NET_TCP_MESSAGE,  //DFActorDefine.NET_TCP_MESSAGE_CUSTOM, 
-							msgWrap, true, _session) != 0){ //send to queue failed
+							msgWrap, true, _session, actorId==_actorIdDef?_svrHandler:null) != 0){ //send to queue failed
 						//处理失败  返回503  HttpResponseStatus.SERVICE_UNAVAILABLE
-	            		_session.writeHttpResponse(503);
+	            		_session.write(new DFHttpReponse(503));
 					}
 	            }else{ //无法处理,返回404 HttpResponseStatus.NOT_FOUND
-	            	_session.writeHttpResponse(404);
+	            	_session.write(new DFHttpReponse(404));
 	            }
 	        }else{ //unsurpport request type
 	        	ctx.close();

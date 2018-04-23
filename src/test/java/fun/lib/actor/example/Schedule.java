@@ -1,9 +1,7 @@
 package fun.lib.actor.example;
 
 import fun.lib.actor.core.DFActor;
-import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
 /**
  * 定时回调示例
  * @author lostsky
@@ -13,11 +11,9 @@ public final class Schedule {
 
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
-		//启动配置参数
-		DFActorManagerConfig cfg = new DFActorManagerConfig();
 		//启动入口actor，开始消息循环		
 		int interval = DFActor.transTimeRealToTimer(1000); //1秒schedule一次
-		mgr.start(cfg, "EntryActor", EntryActor.class, null, interval);
+		mgr.start("EntryActor", EntryActor.class, null, interval);
 	}
 
 	/**

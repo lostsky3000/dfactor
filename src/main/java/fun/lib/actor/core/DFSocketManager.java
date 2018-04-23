@@ -14,6 +14,8 @@ import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.api.DFUdpDecoder;
+import fun.lib.actor.api.http.DFActorHttpDispatcher;
+import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
@@ -230,7 +232,7 @@ public final class DFSocketManager {
 				}
 				if(actorId > 0){
 					if(actorMgr.send(0, actorId, requestId, DFActorDefine.SUBJECT_NET, 
-							DFActorDefine.NET_UDP_MESSAGE, msg, true, channel) == 0){ //send to queue succ
+							DFActorDefine.NET_UDP_MESSAGE, msg, true, channel, null) == 0){ //send to queue succ
 						if(isPack){
 							pack.retain();
 						}
@@ -268,7 +270,7 @@ public final class DFSocketManager {
 			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.handler(new TcpHandlerInit(cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher, 
-					cfg.getDecoder(), cfg.getEncoder()));
+					cfg.getDecoder(), cfg.getEncoder(), null));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollSocketChannel.class);
 		}else{
@@ -306,10 +308,10 @@ public final class DFSocketManager {
 	protected void doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, final int requestId){
 		_doTcpListen(cfg, srcActorId, null, requestId);
 	}
-	protected void doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, DFActorTcpDispatcher dispatcher, final int requestId){
+	protected void doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, Object dispatcher, final int requestId){
 		_doTcpListen(cfg, srcActorId, dispatcher, requestId);
 	}
-	private void _doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, DFActorTcpDispatcher dispatcher, final int requestId){
+	private void _doTcpListen(final DFTcpServerCfg cfg, final int srcActorId, Object dispatcher, final int requestId){
 		//start listen
 		final DFTcpIoGroup group = new DFTcpIoGroup(cfg, srcActorId, requestId);
 		ServerBootstrap boot = new ServerBootstrap();
@@ -325,7 +327,7 @@ public final class DFSocketManager {
 			.childOption(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.childHandler(new TcpHandlerInit(cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
-					cfg.getDecoder(), cfg.getEncoder()));
+					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler()));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollServerSocketChannel.class);
 		}else{
@@ -350,14 +352,14 @@ public final class DFSocketManager {
 						final DFActorEvent event = new DFActorEvent(DFActorErrorCode.SUCC)
 								.setExtInt1(cfg.port);
 						actorMgr.send(0, srcActorId, requestId, DFActorDefine.SUBJECT_NET, 
-								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true);
+								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true, null, cfg.getUserHandler());
 					}else{
 						//notify actor
 						final String errMsg = f.cause().getMessage();
 						final DFActorEvent event = new DFActorEvent(DFActorErrorCode.FAILURE, errMsg)
 								.setExtInt1(cfg.port);
 						actorMgr.send(0, srcActorId, requestId, DFActorDefine.SUBJECT_NET, 
-								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true);
+								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true, null, cfg.getUserHandler());
 						//shutdown io group
 						group.shutdownIoGroup();
 					}
@@ -561,7 +563,7 @@ public final class DFSocketManager {
 					if(actorMgr.send(_requestId, actorId, _sessionId, 
 							DFActorDefine.SUBJECT_NET, 
 							DFActorDefine.NET_TCP_MESSAGE, //hasDecode?DFActorDefine.NET_TCP_MESSAGE_CUSTOM:DFActorDefine.NET_TCP_MESSAGE, 
-							msg, true, _session) == 0){ //send to queue succ
+							msg, true, _session, null) == 0){ //send to queue succ
 						if(!hasDecode){  //未解码，传递的原始消息，不释放
 							releaseRaw = false;
 						}
@@ -679,7 +681,7 @@ public final class DFSocketManager {
 						if(actorMgr.send(_requestId, actorId, _sessionId, 
 								DFActorDefine.SUBJECT_NET, 
 								DFActorDefine.NET_TCP_MESSAGE, //msgType, 
-								msg, true, _session) != 0){ //send to queue failed
+								msg, true, _session, null) != 0){ //send to queue failed
 							if(msgIsBin){ //release
 								ReferenceCountUtil.release(msg);
 							}
@@ -705,11 +707,13 @@ public final class DFSocketManager {
 		private final int _actorId;
 		private final int _requestId;
 		private final String _wsSfx;
-		private final DFActorTcpDispatcher _dispatcher;
+		private final Object _dispatcher;
 		private final DFTcpDecoder _decoder;
 		private final DFTcpEncoder _encoder;
+		private final Object _userHandler;
 		private TcpHandlerInit(int decodeType, int maxLen, int actorId, int requestId, String wsSfx, 
-				DFActorTcpDispatcher dispatcher, DFTcpDecoder decoder, DFTcpEncoder encoder) {
+				Object dispatcher, DFTcpDecoder decoder, DFTcpEncoder encoder,
+				Object userHandler) {
 			_decodeType = decodeType;
 			_maxLen = maxLen;
 			_actorId = actorId;
@@ -718,6 +722,7 @@ public final class DFSocketManager {
 			_dispatcher = dispatcher;
 			_decoder = decoder;
 			_encoder = encoder;
+			_userHandler = userHandler;
 		}
 		@Override
 		protected void initChannel(SocketChannel ch) throws Exception {
@@ -727,19 +732,19 @@ public final class DFSocketManager {
 				pipe.addLast(new HttpObjectAggregator(64*1024));
 				pipe.addLast(new DFWSRequestHandler("/"+_wsSfx));
 				pipe.addLast(new WebSocketServerProtocolHandler("/"+_wsSfx, null, true));
-				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, _dispatcher, _decoder, _encoder));
+				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
 			}
 			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
 				pipe.addLast(new HttpServerCodec());
 				pipe.addLast(new HttpObjectAggregator(64*1024));
 //				pipe.addLast(new HttpServerExpectContinueHandler());
-				pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, _dispatcher));
+				pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, (DFActorHttpDispatcher) _dispatcher, (DFHttpServerHandler) _userHandler));
 			}
 			else{
 				if(_decodeType == DFActorDefine.TCP_DECODE_LENGTH){ //length base field
 					pipe.addLast(new LengthFieldBasedFrameDecoder(_maxLen, 0, 2, 0, 2));
 				}
-				pipe.addLast(new TcpHandler(_actorId, _requestId, _decodeType, _dispatcher, _decoder, _encoder));
+				pipe.addLast(new TcpHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
 			}
 			
 		}

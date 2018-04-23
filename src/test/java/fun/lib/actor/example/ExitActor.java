@@ -1,9 +1,7 @@
 package fun.lib.actor.example;
 
 import fun.lib.actor.core.DFActor;
-import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
 /**
  * 退出actor示例
  * @author lostsky
@@ -13,10 +11,8 @@ public final class ExitActor {
 
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
-		//启动配置参数
-		DFActorManagerConfig cfg = new DFActorManagerConfig();
 		//启动入口actor，开始消息循环		
-		mgr.start(cfg, "EntryActor", EntryActor.class);
+		mgr.start("EntryActor", EntryActor.class);
 	}
 
 	/**

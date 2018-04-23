@@ -12,6 +12,8 @@ import com.funtag.util.concurrent.DFSpinLock;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
+import fun.lib.actor.api.http.DFHttpRequest;
+import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
 import io.netty.buffer.ByteBuf;
@@ -61,12 +63,16 @@ public final class DFActorWrapper {
 		//
 		_actorMgr = DFActorManager.get();
 	}
+//	protected int pushMsg(int srcId, int sessionId, 
+//			int subject, int cmd, Object payload, Object context, boolean addTail){
+//		return pushMsg(srcId, sessionId, subject, cmd, payload, context, addTail, null);
+//	}
 	protected int pushMsg(int srcId, int sessionId, 
-			int subject, int cmd, Object payload, Object context, final boolean addTail){
+			int subject, int cmd, Object payload, Object context, boolean addTail, Object userHandler){
 		if(_bRemoved){
 			return 1;
 		}
-		final DFActorMessage msg = _actorMgr.newActorMessage(srcId, _actorId, sessionId, subject, cmd, payload, context);
+		final DFActorMessage msg = _actorMgr.newActorMessage(srcId, _actorId, sessionId, subject, cmd, payload, context, userHandler);
 				//new DFActorMessage(srcId, _actorId, sessionId, subject, cmd, payload);
 		//
 		_lockQueueWrite.lock();
@@ -143,9 +149,16 @@ public final class DFActorWrapper {
 							}
 						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE){ //tcp binary msg
 							final Object payload = msg.payload;
-							int ret = _actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel) msg.context, payload);
-							if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null && payload instanceof ByteBuf){ //auto release
-								ReferenceCountUtil.release(payload);
+							DFTcpChannelWrapper ch = (DFTcpChannelWrapper) msg.context;
+							if(ch.getTcpDecodeType() == DFActorDefine.TCP_DECODE_HTTP && 
+									msg.userHandler != null){  //http 有回调
+								DFHttpServerHandler handler = (DFHttpServerHandler) msg.userHandler;
+								handler.onHttpRequest((DFHttpRequest) payload);
+							}else{
+								int ret = _actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel) msg.context, payload);
+								if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null && payload instanceof ByteBuf){ //auto release
+									ReferenceCountUtil.release(payload);
+								}
 							}
 						}
 //						else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE_TEXT){ //tcp text msg(ws text)
@@ -163,7 +176,12 @@ public final class DFActorWrapper {
 						}else if(msg.cmd == DFActorDefine.NET_TCP_LISTEN_RESULT){
 							final DFActorEvent event = (DFActorEvent) msg.payload;
 							final boolean isSucc = event.getWhat()==DFActorErrorCode.SUCC?true:false;
-							_actor.onTcpServerListenResult(msg.sessionId, isSucc, event.getMsg());
+							if(msg.userHandler != null && msg.userHandler instanceof DFHttpServerHandler){
+								DFHttpServerHandler handler = (DFHttpServerHandler) msg.userHandler;
+								handler.onListenResult(isSucc, event.getMsg());
+							}else{
+								_actor.onTcpServerListenResult(msg.sessionId, isSucc, event.getMsg());
+							}
 						}else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_RESULT){
 							final DFActorEvent event = (DFActorEvent) msg.payload;
 							final boolean isSucc = event.getWhat()==DFActorErrorCode.SUCC?true:false;

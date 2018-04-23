@@ -5,6 +5,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.alibaba.fastjson.JSONObject;
+
+import fun.lib.actor.api.DFTcpChannel;
+
 public final class DFHttpRequest {
 
 	private final String method;
@@ -15,7 +19,11 @@ public final class DFHttpRequest {
 	private Map<String,String> mapQueryData = null;
 	private final Object appData;
 	
-	public DFHttpRequest(String uri, String method, boolean keepAlive, String contentType, Object appData) {
+	private volatile DFHttpReponse response = null;
+	private final DFTcpChannel channel;
+	
+	public DFHttpRequest(DFTcpChannel channel, String uri, String method, boolean keepAlive, String contentType, Object appData) {
+		this.channel = channel;
 		this.uri = uri;
 		this.method = method;
 		this.contentType = contentType;
@@ -104,6 +112,37 @@ public final class DFHttpRequest {
 		return keepAlive;
 	}
 	
-	
+	//response
+	public DFHttpReponse response(int statusCode){
+		if(response == null){
+			response = new DFHttpReponse(channel, statusCode);
+		}
+		return response;
+	}
+	public DFHttpReponse response(String rspData){
+		if(response == null){
+			response = new DFHttpReponse(channel, rspData);
+		}
+		return response;
+	}
+	public DFHttpReponse response(int statusCode, String rspData){
+		if(response == null){
+			response = new DFHttpReponse(channel, statusCode, rspData);
+		}
+		return response;
+	}
+	//
+	public DFHttpReponse response(JSONObject rspData){
+		if(response == null){
+			response = new DFHttpReponse(channel, rspData);
+		}
+		return response;
+	}
+	public DFHttpReponse response(int statusCode, JSONObject rspData){
+		if(response == null){
+			response = new DFHttpReponse(channel, statusCode, rspData);
+		}
+		return response;
+	}
 	
 }

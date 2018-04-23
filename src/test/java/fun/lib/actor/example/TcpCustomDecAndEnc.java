@@ -2,8 +2,6 @@ package fun.lib.actor.example;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;

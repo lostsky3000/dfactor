@@ -7,6 +7,8 @@ import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
+import fun.lib.actor.api.http.DFActorHttpDispatcher;
+import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.helper.ActorLogData;
 import fun.lib.actor.po.DFTcpClientCfg;
@@ -15,7 +17,7 @@ import fun.lib.actor.po.DFUdpServerCfg;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.socket.DatagramPacket;
 
-public abstract class DFActor {
+public class DFActor {
 	public static final long TIMER_UNIT_MILLI = 10;
 	protected final int id;
 	protected final String name;
@@ -66,7 +68,7 @@ public abstract class DFActor {
 	 * actor创建时调用一次
 	 * @param param 创建actor的调用者传入的参数
 	 */
-	public abstract void onStart(Object param);
+	public void onStart(Object param){}
 	/**
 	 * 周期调用的回调函数
 	 * @param dltMilli 距离上次回调的间隔，单位毫秒
@@ -161,16 +163,16 @@ public abstract class DFActor {
 			return _mgr.createActor(name, classz, param, scheduleUnit, consumeType, isBlockActor);
 		}
 		public final void send(int dstId, int requestId, int cmd, Object payload){
-			_mgr.send(id, dstId, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null);
+			_mgr.send(id, dstId, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
 		}
 		public final void send(int dstId, int requestId, int subject, int cmd, Object payload){
-			_mgr.send(id, dstId, requestId, subject, cmd, payload, true, null);
+			_mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null);
 		}
 		public final void send(String dstName, int requestId, int cmd, Object payload){
-			_mgr.send(id, dstName, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null);
+			_mgr.send(id, dstName, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
 		}
 		public final void send(String dstName, int requestId, int subject, int cmd, Object payload){
-			_mgr.send(id, dstName, requestId, subject, cmd, payload, true, null);
+			_mgr.send(id, dstName, requestId, subject, cmd, payload, true, null, null);
 		}
 		public final void exit(){
 			_mgr.removeActor(id);
@@ -218,16 +220,16 @@ public abstract class DFActor {
 		}
 		private final void _log(int level, String msg){
 			_mgr.send(id, DFActorDefine.ACTOR_ID_LOG, 0, 0, 0, 
-					new ActorLogData(level, msg, name), true, null);
+					new ActorLogData(level, msg, name), true, null, null);
 		}
 	}
 	//net api
 	private class DFActorNetWrapper implements DFActorNet{
-		public final void doTcpListen(final DFTcpServerCfg cfg, final int requestId){
+		public final void doTcpListen(DFTcpServerCfg cfg, int requestId){
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListen(cfg, id, requestId);
 		}
-		public void doTcpListen(final DFTcpServerCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher) {
+		public void doTcpListen(DFTcpServerCfg cfg, int requestId, Object dispatcher) {
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListen(cfg, id, dispatcher, requestId);
 		}
@@ -250,7 +252,36 @@ public abstract class DFActor {
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doUdpListenClose(port);
 		}
-		
+		@Override
+		public void doTcpListen(int port) {
+			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
+					.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH);
+			final DFSocketManager mgr = DFSocketManager.get();
+			mgr.doTcpListen(cfg, id, port);
+		}
+		@Override
+		public void doTcpListen(int port, int protocol) {
+			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
+					.setTcpDecodeType(protocol);
+			final DFSocketManager mgr = DFSocketManager.get();
+			mgr.doTcpListen(cfg, id, port);
+		}
+		@Override
+		public void doHttpServer(int port, DFHttpServerHandler handler) {
+			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
+					.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
+					.setUserHandler(handler);
+			final DFSocketManager mgr = DFSocketManager.get();
+			mgr.doTcpListen(cfg, id, port);
+		}
+		@Override
+		public void doHttpServer(int port, DFHttpServerHandler handler, DFActorHttpDispatcher dispatcher) {
+			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
+					.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
+					.setUserHandler(handler);
+			final DFSocketManager mgr = DFSocketManager.get();
+			mgr.doTcpListen(cfg, id, dispatcher, port);
+		}
 	}
 	
 	/**

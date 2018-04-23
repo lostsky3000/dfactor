@@ -63,7 +63,7 @@ public class WebsocketServerTest {
 			
 			log.debug("onStart, ready to listen on port "+serverPort);
 			
-			net.doTcpListen(cfg, serverPort);
+			net.doTcpServer(cfg, serverPort);
 		}
 		
 		private final HashMap<Integer, DFTcpChannel> _mapChannel = new HashMap<>();

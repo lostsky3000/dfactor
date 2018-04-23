@@ -40,7 +40,7 @@ public class TcpTest {
 			
 			log.info("onStart, ready to listen on port "+serverPort);
 			//启动端口监听
-			net.doTcpListen(cfg, serverPort);
+			net.doTcpServer(cfg, serverPort);
 		}
 		@Override
 		public void onTcpConnOpen(int requestId, DFTcpChannel channel) {

@@ -42,7 +42,7 @@ public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 	
 	private void _initKcpListen(){
 		final DFUdpServerCfg cfg = new DFUdpServerCfg(listenPort, 1, false);
-		net.doUdpListen(cfg, this, 1);
+		net.doUdpServer(cfg, this, 1);
 	}
 	
 	@Override

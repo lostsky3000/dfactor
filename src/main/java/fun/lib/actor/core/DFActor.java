@@ -225,15 +225,15 @@ public class DFActor {
 	}
 	//net api
 	private class DFActorNetWrapper implements DFActorNet{
-		public final void doTcpListen(DFTcpServerCfg cfg, int requestId){
+		public final void doTcpServer(DFTcpServerCfg cfg, int requestId){
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListen(cfg, id, requestId);
 		}
-		public void doTcpListen(DFTcpServerCfg cfg, int requestId, Object dispatcher) {
+		public void doTcpServer(DFTcpServerCfg cfg, int requestId, Object dispatcher) {
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListen(cfg, id, dispatcher, requestId);
 		}
-		public final void doTcpListenClose(int port){
+		public final void doTcpServerClose(int port){
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListenClose(port);
 		}
@@ -244,23 +244,23 @@ public class DFActor {
 			return _mgr.doTcpConnect(cfg, id, dispatcher, requestId);
 		}
 		//udp
-		public final void doUdpListen(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId){
+		public final void doUdpServer(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId){
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doUdpListen(cfg, id, listener, requestId);
 		}
-		public final void doUdpListenClose(int port){
+		public final void doUdpServerClose(int port){
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doUdpListenClose(port);
 		}
 		@Override
-		public void doTcpListen(int port) {
+		public void doTcpServer(int port) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
 					.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH);
 			final DFSocketManager mgr = DFSocketManager.get();
 			mgr.doTcpListen(cfg, id, port);
 		}
 		@Override
-		public void doTcpListen(int port, int protocol) {
+		public void doTcpServer(int port, int protocol) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
 					.setTcpDecodeType(protocol);
 			final DFSocketManager mgr = DFSocketManager.get();

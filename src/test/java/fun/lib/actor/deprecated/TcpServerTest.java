@@ -58,7 +58,7 @@ public class TcpServerTest {
 			
 			log.debug("onStart, ready to listen on port "+_serverPort);
 			
-			net.doTcpListen(cfg, _serverPort);
+			net.doTcpServer(cfg, _serverPort);
 		}
 		
 		private final HashMap<Integer, DFTcpChannel> _mapChannel = new HashMap<>();

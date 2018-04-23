@@ -31,7 +31,7 @@ public final class ActorGate extends DFActor{
 		// TODO Auto-generated method stub
 		DFTcpServerCfg cfg = new DFTcpServerCfg(listenPort, 1, 1)
 				.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH);
-		net.doTcpListen(cfg, 1);
+		net.doTcpServer(cfg, 1);
 		//
 		sys.timeout(100, 1981);
 	}

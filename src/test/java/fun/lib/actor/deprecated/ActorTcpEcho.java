@@ -28,7 +28,7 @@ public final class ActorTcpEcho extends DFActor{
 		log.debug("onTimeout");
 		final DFTcpServerCfg cfg = new DFTcpServerCfg(13500, 2, 1)
 				.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW);
-		net.doTcpListen(cfg, 1);
+		net.doTcpServer(cfg, 1);
 	}
 
 	private final HashMap<Integer, DFTcpChannel> mapChannel = new HashMap<>();

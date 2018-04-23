@@ -1,7 +1,5 @@
 package fun.lib.actor.api;
 
-import io.netty.channel.socket.DatagramPacket;
-
 public interface DFActorUdpDispatcher {
 	
 	/**

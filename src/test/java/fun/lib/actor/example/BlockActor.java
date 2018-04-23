@@ -16,8 +16,7 @@ public final class BlockActor {
 		final DFActorManager mgr = DFActorManager.get();
 		//启动配置参数
 		DFActorManagerConfig cfg = new DFActorManagerConfig()
-				.setBlockWorkerThreadNum(1)   //设置block线程数量
-				.setLogicWorkerThreadNum(2);  //设置逻辑线程数量
+				.setBlockWorkerThreadNum(1);  //设置block线程数量
 		//启动入口actor，开始消息循环		
 		mgr.start(cfg, "LogicActor", LogicActor.class, null, DFActor.transTimeRealToTimer(1000));
 	}

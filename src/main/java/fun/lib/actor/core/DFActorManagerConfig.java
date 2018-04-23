@@ -4,7 +4,7 @@ import fun.lib.actor.helper.DFActorLogLevel;
 
 public final class DFActorManagerConfig {
 
-	private volatile int logicWorkerThreadNum = 4;
+	private volatile int logicWorkerThreadNum = Math.max(2, Runtime.getRuntime().availableProcessors()); 
 	private volatile int logLevel = DFActorLogLevel.DEBUG;
 	private volatile int timerThreadNum = 1;
 	private volatile int clientIoThreadNum = 0;

@@ -14,8 +14,7 @@ public final class Shutdown {
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
 		//启动配置参数
-		DFActorManagerConfig cfg = new DFActorManagerConfig()
-				.setLogicWorkerThreadNum(2);  //设置逻辑线程数量
+		DFActorManagerConfig cfg = new DFActorManagerConfig();
 		//启动入口actor，开始消息循环		
 		mgr.start(cfg, "EntryActor", EntryActor.class);
 	}

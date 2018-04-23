@@ -24,8 +24,7 @@ public class TcpTest {
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
 		DFActorManagerConfig cfg = new DFActorManagerConfig()
-				.setClientIoThreadNum(1)     //设置作为客户端向外连接时，通信层io使用的线程数
-				.setLogicWorkerThreadNum(2);  //设置处理逻辑的线程数量
+				.setClientIoThreadNum(1);     //设置作为客户端向外连接时，通信层io使用的线程数
 		//启动入口actor，开始事件循环		
 		mgr.start(cfg, "Server", Server.class);
 	}

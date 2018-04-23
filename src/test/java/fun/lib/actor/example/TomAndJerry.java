@@ -16,8 +16,7 @@ public final class TomAndJerry {
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
 		//启动配置参数
-		DFActorManagerConfig cfg = new DFActorManagerConfig()
-				.setLogicWorkerThreadNum(2);  //设置逻辑线程数量
+		DFActorManagerConfig cfg = new DFActorManagerConfig();
 		//启动dfactor
 		mgr.start(cfg, "Director", Director.class);
 	}

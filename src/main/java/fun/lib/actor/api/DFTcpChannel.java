@@ -19,7 +19,7 @@ public interface DFTcpChannel {
 	public int write(Object msg);
 	
 	/**
-	 * 返回http错误响应
+	 * 返回http状态码
 	 * @param statusCode 状态码，如404,200等
 	 * @return
 	 */

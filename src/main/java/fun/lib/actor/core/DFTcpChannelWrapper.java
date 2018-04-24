@@ -86,8 +86,9 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 			}else{  
 				_channel.writeAndFlush(msg);
 			}
-		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
-				|| _tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH){ //底层为二进制buff
+		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH
+					||_tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
+				){ //底层为二进制buff
 			if(_encoder != null){ //有解码器
 				Object msgOut = _encoder.onEncode(msg);
 				_channel.writeAndFlush(msgOut);

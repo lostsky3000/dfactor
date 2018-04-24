@@ -1,21 +1,11 @@
 package fun.lib.actor.core;
 
-import com.funtag.util.log.DFLogFactory;
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorSystem;
-import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.http.DFHttpDispatcher;
-import fun.lib.actor.api.http.DFHttpServerHandler;
-import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.api.DFActorMsgCallback;
-import fun.lib.actor.helper.ActorLogData;
-import fun.lib.actor.po.DFTcpClientCfg;
-import fun.lib.actor.po.DFTcpServerCfg;
-import fun.lib.actor.po.DFUdpServerCfg;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.socket.DatagramPacket;
 
 public class DFActor {
@@ -43,9 +33,9 @@ public class DFActor {
 		this.consumeType = consumeType;
 		_mgr = DFActorManager.get();
 		//
-		log = new DFActorLogWrapper();
+		log = new DFActorLogWrapper(id, name);
 		sys = new DFActorSystemWrapper();
-		net = new DFActorNetWrapper();
+		net = new DFActorNetWrapper(id);
 	}
 	
 	public int getId(){
@@ -62,13 +52,11 @@ public class DFActor {
 	/**
 	 * 接收其它actor发过来的消息
 	 * @param srcId 发送者actor的id
-	 * @param requestId 消息标识id
-	 * @param subject 消息分类
 	 * @param cmd 消息码
 	 * @param payload 消息体
 	 * @return
 	 */
-	public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload){return DFActorDefine.MSG_AUTO_RELEASE;}
+	public int onMessage(int srcId, int cmd, Object payload){return DFActorDefine.MSG_AUTO_RELEASE;}
 	/**
 	 * actor创建时调用一次
 	 * @param param 创建actor的调用者传入的参数
@@ -99,24 +87,6 @@ public class DFActor {
 	 * @param channel tcp连接对象
 	 */
 	public void onTcpConnClose(int requestId, DFTcpChannel channel){}
-	
-//	/**
-//	 * 收到二进制数据时调用
-//	 * @param requestId 启动监听时传入的id
-//	 * @param channel tcp连接对象
-//	 * @param msg 二进制数据
-//	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
-//	 */
-//	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, ByteBuf msg){return DFActorDefine.MSG_AUTO_RELEASE;}
-//	
-//	/**
-//	 * 收到文本数据时调用
-//	 * @param requestId 启动监听时传入的id
-//	 * @param channel tcp连接对象
-//	 * @param msg 文本数据
-//	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
-//	 */
-//	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, final String msg){return DFActorDefine.MSG_AUTO_RELEASE;}
 	/**
 	 * 收到网络消息时调用
 	 * @param requestId 启动监听时传入的id
@@ -125,8 +95,8 @@ public class DFActor {
 	 * @return 返回消息释放策略，见DFActorDefine.MSG_AUTO_RELEASE
 	 */
 	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg){return DFActorDefine.MSG_AUTO_RELEASE;}
-	//tcp server
 	
+	//tcp server
 	/**
 	 * 启动tcp监听服务的结果回调
 	 * @param requestId 启动监听时传入的id
@@ -172,21 +142,13 @@ public class DFActor {
 		public int send(int dstId, int cmd, Object payload) {
 			return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
 		}
-		public final int send(int dstId, int requestId, int cmd, Object payload){
-			return _mgr.send(id, dstId, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
-		}
-		public final int send(int dstId, int requestId, int subject, int cmd, Object payload){
-			return _mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null, false);
-		}
+//		@Override
+//		public int send(int dstId, int requestId, int subject, int cmd, Object payload) {
+//			return _mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null, false);
+//		}
 		@Override
 		public int send(String dstName, int cmd, Object payload) {
 			return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
-		}
-		public final int send(String dstName, int requestId, int cmd, Object payload){
-			return _mgr.send(id, dstName, requestId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
-		}
-		public final int send(String dstName, int requestId, int subject, int cmd, Object payload){
-			return _mgr.send(id, dstName, requestId, subject, cmd, payload, true, null, null);
 		}
 		
 		
@@ -232,99 +194,9 @@ public class DFActor {
 		}
 		
 		
+		
 	}
 	
-	//log api
-	private class DFActorLogWrapper implements DFActorLog{
-		@Override
-		public void verb(String msg) {
-			_log(DFLogFactory.LEVEL_VERB, msg);
-		}
-		@Override
-		public void debug(String msg) {
-			_log(DFLogFactory.LEVEL_DEBUG, msg);
-		}
-		@Override
-		public void info(String msg) {
-			_log(DFLogFactory.LEVEL_INFO, msg);
-		}
-		@Override
-		public void warn(String msg) {
-			_log(DFLogFactory.LEVEL_WARN, msg);
-		}
-		@Override
-		public void error(String msg) {
-			_log(DFLogFactory.LEVEL_ERROR, msg);
-		}
-		@Override
-		public void fatal(String msg) {
-			_log(DFLogFactory.LEVEL_FATAL, msg);
-		}
-		private final void _log(int level, String msg){
-			_mgr.send(id, DFActorDefine.ACTOR_ID_LOG, 0, 0, 0, 
-					new ActorLogData(level, msg, name), true, null, null, false);
-		}
-	}
-	//net api
-	private class DFActorNetWrapper implements DFActorNet{
-		public final void doTcpServer(DFTcpServerCfg cfg, int requestId){
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListen(cfg, id, requestId);
-		}
-		public void doTcpServer(DFTcpServerCfg cfg, int requestId, Object dispatcher) {
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListen(cfg, id, dispatcher, requestId);
-		}
-		public final void doTcpServerClose(int port){
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListenClose(port);
-		}
-		public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId){
-			return _mgr.doTcpConnect(cfg, id, requestId);
-		}
-		public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher){
-			return _mgr.doTcpConnect(cfg, id, dispatcher, requestId);
-		}
-		//udp
-		public final void doUdpServer(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId){
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doUdpListen(cfg, id, listener, requestId);
-		}
-		public final void doUdpServerClose(int port){
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doUdpListenClose(port);
-		}
-		@Override
-		public void doTcpServer(int port) {
-			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
-					.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH);
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListen(cfg, id, port);
-		}
-		@Override
-		public void doTcpServer(int port, int protocol) {
-			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
-					.setTcpDecodeType(protocol);
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListen(cfg, id, port);
-		}
-		@Override
-		public void doHttpServer(int port, DFHttpServerHandler handler) {
-			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
-					.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
-					.setUserHandler(handler);
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListen(cfg, id, port);
-		}
-		@Override
-		public void doHttpServer(int port, DFHttpServerHandler handler, DFHttpDispatcher dispatcher) {
-			DFTcpServerCfg cfg = new DFTcpServerCfg(port)
-					.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
-					.setUserHandler(handler);
-			final DFSocketManager mgr = DFSocketManager.get();
-			mgr.doTcpListen(cfg, id, dispatcher, port);
-		}
-	}
 	
 	/**
 	 * 将真实时长转换为actor计时器格式时长

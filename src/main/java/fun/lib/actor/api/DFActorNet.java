@@ -9,16 +9,14 @@ public interface DFActorNet {
 	/**
 	 * 建立tcp监听
 	 * @param cfg 监听参数
-	 * @param requestId 该监听的标识
 	 */
-	public void doTcpServer(DFTcpServerCfg cfg, int requestId);
+	public void doTcpServer(DFTcpServerCfg cfg);
 	/**
 	 * 建立tcp监听
 	 * @param cfg 监听参数
-	 * @param requestId 该监听的标识
 	 * @param dispatcher 网络消息及事件分发器
 	 */
-	public void doTcpServer(DFTcpServerCfg cfg, int requestId, Object dispatcher);
+	public void doTcpServer(DFTcpServerCfg cfg, Object dispatcher);
 	/**
 	 * 建立tcp监听
 	 * @param port 监听端口号

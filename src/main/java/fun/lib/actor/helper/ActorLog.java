@@ -17,7 +17,7 @@ public final class ActorLog extends DFActor{
 	}
 
 	@Override
-	public int onMessage(int srcId, int sessionId, int subject, int cmd, Object payload) {
+	public int onMessage(int srcId, int cmd, Object payload) {
 		final ActorLogData data = (ActorLogData) payload;
 		sb.setLength(0);
 		final String str = sb.append(data.actorName).append("(").append(srcId).append(")")

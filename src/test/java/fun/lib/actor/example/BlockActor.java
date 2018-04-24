@@ -36,7 +36,7 @@ public final class BlockActor {
 		public void onSchedule(long dltMilli) {
 			log.info("LogicActor send io task,  curThread="+Thread.currentThread().getName());
 			//send io task
-			sys.send("DbActor", 0, 1001, new Integer(1999));
+			sys.send("DbActor", 1001, new Integer(1999));
 		}
 	}
 	
@@ -51,7 +51,7 @@ public final class BlockActor {
 			log.info("BlockActor onStart");
 		}
 		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
+		public int onMessage(int srcId, int cmd, Object payload) {
 			if(cmd == 1001){ //io操作 比如数据库操作
 				int param = (Integer)payload;
 				// do io

@@ -50,7 +50,7 @@ public final class Call {
 	//计算机，运算并返回结果
 	private static class Computer extends DFActor{
 		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
+		public int onMessage(int srcId, int cmd, Object payload) {
 			if(cmd == 1001){
 				String[] arrReq = ((String)payload).split(",");
 				if(arrReq[0].equals("add")){

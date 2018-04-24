@@ -73,8 +73,9 @@ public final class DFTcpClientCfg {
 		return tcpDecodeType;
 	}
 	public DFTcpClientCfg setTcpDecodeType(int tcpDecodeType){
-		if(tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH ||
-				tcpDecodeType == DFActorDefine.TCP_DECODE_RAW){ //valid
+		if(tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH 
+				|| tcpDecodeType == DFActorDefine.TCP_DECODE_RAW
+				){ //valid
 			
 		}else{ //invalid
 			tcpDecodeType = DFActorDefine.TCP_DECODE_RAW;

@@ -25,7 +25,7 @@ public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 
 	private DFUdpChannel channel = null;
 	@Override
-	public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
+	public int onMessage(int srcId, int cmd, Object payload) {
 		
 		return DFActorDefine.MSG_AUTO_RELEASE;
 	}

@@ -149,7 +149,7 @@ public final class DFActorWrapper {
 							if(ret == DFActorDefine.MSG_AUTO_RELEASE){ //auto release
 								ReferenceCountUtil.release(msg.payload);
 							}
-						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE){ //tcp binary msg
+						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE){ //tcp msg
 							final Object payload = msg.payload;
 							DFTcpChannelWrapper ch = (DFTcpChannelWrapper) msg.context;
 							if(ch.getTcpDecodeType() == DFActorDefine.TCP_DECODE_HTTP && 
@@ -157,24 +157,31 @@ public final class DFActorWrapper {
 								DFHttpServerHandler handler = (DFHttpServerHandler) msg.userHandler;
 								handler.onHttpRequest((DFHttpRequest) payload);
 							}else{
-								int ret = _actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel) msg.context, payload);
-								if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null && payload instanceof ByteBuf){ //auto release
-									ReferenceCountUtil.release(payload);
+								DFTcpChannelWrapper chWrap = (DFTcpChannelWrapper) msg.context;
+								int curDstActor = chWrap.getMsgActor();
+								if(curDstActor == _actor.id || curDstActor == 0){
+									int ret = _actor.onTcpRecvMsg(msg.srcId, chWrap, payload);
+									if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null && 
+											(payload instanceof ByteBuf)){ //auto release
+										ReferenceCountUtil.release(payload);
+									}
+								}else{  //dstActor has changed
+									_actorMgr.send(msg.srcId, curDstActor, msg.sessionId, DFActorDefine.SUBJECT_NET, 
+											DFActorDefine.NET_TCP_MESSAGE, payload, true);
 								}
 							}
 						}
-//						else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE_TEXT){ //tcp text msg(ws text)
-//							_actor.onTcpRecvMsg(msg.srcId, (DFTcpChannel)msg.context, (String) msg.payload);
-//						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE_CUSTOM){
-//							int ret = _actor.onTcpRecvMsgCustom(msg.srcId, (DFTcpChannel)msg.context, msg.payload);
-//							if(ret == DFActorDefine.MSG_AUTO_RELEASE){ //auto release
-//								ReferenceCountUtil.release(msg.payload);
-//							}
-//						}
 						else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_OPEN){
 							_actor.onTcpConnOpen(msg.sessionId, (DFTcpChannel) msg.payload);
 						}else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_CLOSE){
-							_actor.onTcpConnClose(msg.sessionId, (DFTcpChannel) msg.payload);
+							DFTcpChannelWrapper chWrap = (DFTcpChannelWrapper) msg.payload;
+							int curDstActor = chWrap.getStatusActor(); //当前actorId
+							if(curDstActor == _actor.id || curDstActor == 0){
+								_actor.onTcpConnClose(msg.sessionId, chWrap);
+							}else{  //dstActorId has changed
+								_actorMgr.send(msg.srcId, curDstActor, msg.sessionId, DFActorDefine.SUBJECT_NET, 
+										DFActorDefine.NET_TCP_CONNECT_CLOSE, chWrap, true);
+							}
 						}else if(msg.cmd == DFActorDefine.NET_TCP_LISTEN_RESULT){
 							final DFActorEvent event = (DFActorEvent) msg.payload;
 							final boolean isSucc = event.getWhat()==DFActorErrorCode.SUCC?true:false;
@@ -210,7 +217,7 @@ public final class DFActorWrapper {
 							}
 						}
 						if(noCb){
-							_actor.onMessage(msg.srcId, msg.sessionId, msg.subject, msg.cmd, msg.payload);
+							_actor.onMessage(msg.srcId, msg.cmd, msg.payload); //msg.sessionId, msg.subject, 
 						}
 					}
 				}catch(Throwable e){  //catch logic exception

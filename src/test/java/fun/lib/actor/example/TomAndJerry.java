@@ -46,7 +46,7 @@ public final class TomAndJerry {
 		private int posJerry = 0;
 		private boolean gameOver = false;
 		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
+		public int onMessage(int srcId, int cmd, Object payload) {
 			if(gameOver){
 				return 0;
 			}
@@ -60,12 +60,12 @@ public final class TomAndJerry {
 			if(posJerry > 0 && posTom > 0){ //pos valid
 				if(posTom >= posJerry){ //tom got jerry
 					gameOver = true;
-					sys.send("Tom", 0, 1003, new Boolean(true));
-					sys.send("Jerry", 0, 1003, new Boolean(true));
+					sys.send("Tom", 1003, new Boolean(true));
+					sys.send("Jerry", 1003, new Boolean(true));
 				}else if(posJerry >= 150){ //jerry escaped
 					gameOver = true;
-					sys.send("Tom", 0, 1003, new Boolean(false));
-					sys.send("Jerry", 0, 1003, new Boolean(false));
+					sys.send("Tom", 1003, new Boolean(false));
+					sys.send("Jerry", 1003, new Boolean(false));
 				}
 			}
 			return 0;
@@ -87,10 +87,10 @@ public final class TomAndJerry {
 		public void onSchedule(long dltMilli) {
 			curPos = curPos + (int)(spd*dltMilli*1.0f/1000);
 			//notify director
-			sys.send("Director", 0, 1001, new Integer(curPos));
+			sys.send("Director", 1001, new Integer(curPos));
 		}
 		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
+		public int onMessage(int srcId, int cmd, Object payload) {
 			if(cmd == 1003){ //game over
 				boolean got = (Boolean)payload;
 				if(got){
@@ -120,10 +120,10 @@ public final class TomAndJerry {
 		public void onSchedule(long dltMilli) {
 			curPos = curPos + (int)(spd*dltMilli*1.0f/1000);
 			//notify director
-			sys.send("Director", 0, 1002, new Integer(curPos));
+			sys.send("Director", 1002, new Integer(curPos));
 		}
 		@Override
-		public int onMessage(int srcId, int requestId, int subject, int cmd, Object payload) {
+		public int onMessage(int srcId, int cmd, Object payload) {
 			if(cmd == 1003){ //game over
 				boolean got = (Boolean)payload;
 				if(got){

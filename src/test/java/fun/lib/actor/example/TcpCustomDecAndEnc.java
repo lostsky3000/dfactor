@@ -38,12 +38,12 @@ public class TcpCustomDecAndEnc {
 		@Override
 		public void onStart(Object param) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 2, 1) 
-				.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW) //设置tcp server编码类型为raw,接收原始socket二进制流，前两个字节标识消息长度
+				.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH) //设置tcp server编码类型为二进制流，前两个字节标识消息长度
 				.setDecoder(this)  //设置自定义消息解码器  ByteBuf->String
 				.setEncoder(this); //设置自定义消息编码器  String->ByteBuf
 			log.info("onStart, ready to listen on port "+serverPort);
 			//启动端口监听
-			net.doTcpServer(cfg, serverPort);
+			net.doTcpServer(cfg);
 		}
 		@Override
 		public void onTcpConnOpen(int requestId, DFTcpChannel channel) {
@@ -90,7 +90,8 @@ public class TcpCustomDecAndEnc {
 			ByteBuf bufOut = null;
 			try {
 				byte[] bufRaw = ((String)msgRaw).getBytes("utf-8");
-				bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(bufRaw.length); //分配内存
+				bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(bufRaw.length+2); //分配内存
+				bufOut.writeShort(bufRaw.length); //消息长度
 				bufOut.writeBytes(bufRaw); //写入数据
 			} catch (UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block
@@ -113,7 +114,7 @@ public class TcpCustomDecAndEnc {
 			//开始连接服务端
 			DFTcpClientCfg cfg = new DFTcpClientCfg("127.0.0.1", serverPort)
 				.setConnTimeout(5000) //设置连接超时，毫秒
-				.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW); //设置解码器为raw，头两字节为包长度
+				.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH); //设置解码器为length，头两字节为包长度
 			net.doTcpConnect(cfg, serverPort);
 			
 			//启动定时器定时发送  一秒发送一次
@@ -153,7 +154,8 @@ public class TcpCustomDecAndEnc {
 				final String str = "hello server, "+System.currentTimeMillis();
 				try {
 					byte[] arrByte = str.getBytes("utf-8");
-					final ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(arrByte.length);
+					final ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(arrByte.length+2);
+					buf.writeShort(arrByte.length); //消息长度
 					buf.writeBytes(arrByte);
 					//向服务端发送
 					svrChannel.write(buf);

@@ -36,11 +36,11 @@ public class TcpTest {
 		@Override
 		public void onStart(Object param) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 2, 1)
-					.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW); //设置tcp server编码类型为raw,接收原始socket二进制流，前两个字节标识消息长度
+					.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH); //设置tcp server编码类型为二进制流，前两个字节标识消息长度
 			
 			log.info("onStart, ready to listen on port "+serverPort);
 			//启动端口监听
-			net.doTcpServer(cfg, serverPort);
+			net.doTcpServer(cfg);
 		}
 		@Override
 		public void onTcpConnOpen(int requestId, DFTcpChannel channel) {
@@ -63,8 +63,9 @@ public class TcpTest {
 			final int msgLen = msg.readableBytes();
 			log.info("recv cli msg, len="+msgLen);
 			//构造返回的消息
-			final ByteBuf bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen);
+			final ByteBuf bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen+2);
 			//拷贝收到的消息数据
+			bufOut.writeShort(msgLen); //消息长度
 			bufOut.writeBytes(msg);
 			//向客户端返回
 			channel.write(bufOut);
@@ -92,7 +93,7 @@ public class TcpTest {
 			//开始连接服务端
 			DFTcpClientCfg cfg = new DFTcpClientCfg("127.0.0.1", serverPort) 
 				.setConnTimeout(5000) //设置连接超时，毫秒
-				.setTcpDecodeType(DFActorDefine.TCP_DECODE_RAW); //设置解码器为raw，头两字节为包长度
+				.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH); //设置解码器为length，头两字节为包长度
 			net.doTcpConnect(cfg, serverPort);
 			
 			//启动定时器定时发送  一秒发送一次
@@ -132,7 +133,8 @@ public class TcpTest {
 				final String str = "hello server, "+System.currentTimeMillis();
 				try {
 					byte[] arrByte = str.getBytes("utf-8");
-					final ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(arrByte.length);
+					final ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(arrByte.length+2);
+					buf.writeShort(arrByte.length);  //消息长度
 					buf.writeBytes(arrByte);
 					//向服务端发送
 					svrChannel.write(buf);

@@ -40,7 +40,6 @@ public interface DFActorSystem {
 	 */
 	public int createActor(String name, Class<? extends DFActor> classz, Object param, 
 			int scheduleUnit, int consumeType);
-	
 	/**
 	 * 创建actor
 	 * @param name actor名称，要求全局唯一
@@ -70,50 +69,13 @@ public interface DFActorSystem {
 	public int send(int dstId, int cmd, Object payload);
 	/**
 	 * 发送actor间消息
-	 * @param dstId 目标actor id
-	 * @param requestId 消息标识
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return 0为发送成功  否则错误码
-	 */
-	public int send(int dstId, int requestId, int cmd, Object payload);
-	/**
-	 * 发送actor间消息
-	 * @param dstId 目标actor id
-	 * @param requestId 消息标识
-	 * @param subject 消息分类
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return 0为发送成功  否则错误码
-	 */
-	public int send(int dstId, int requestId, int subject, int cmd, Object payload);
-	/**
-	 * 发送actor间消息
 	 * @param dstName 目标actor 名称
 	 * @param cmd 消息码
 	 * @param payload 消息体
 	 * @return 0为发送成功  否则错误码
 	 */
 	public int send(String dstName, int cmd, Object payload);
-	/**
-	 * 发送actor间消息
-	 * @param dstName 目标actor 名称
-	 * @param requestId 消息标识
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return 0为发送成功  否则错误码
-	 */
-	public int send(String dstName, int requestId, int cmd, Object payload);
-	/**
-	 * 发送actor间消息
-	 * @param dstName 目标actor 名称
-	 * @param requestId 消息标识
-	 * @param subject 消息分类
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return 0为发送成功  否则错误码
-	 */
-	public int send(String dstName, int requestId, int subject, int cmd, Object payload);
+	
 	
 	/**
 	 * 结束当前actor

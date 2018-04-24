@@ -1,6 +1,5 @@
 package fun.lib.actor.po;
 
-import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.core.DFActorDefine;
@@ -25,6 +24,8 @@ public final class DFTcpServerCfg {
 	private volatile DFTcpEncoder encoder = null;
 	
 	private volatile Object userHandler = null;
+	
+	private volatile boolean ssl = false;
 	/**
 	 * 
 	 * @param port 监听端口
@@ -40,7 +41,7 @@ public final class DFTcpServerCfg {
 		this.bossThreadNum = bossThreadNum;
 	}
 	public DFTcpServerCfg(int port) {
-		this(port, Runtime.getRuntime().availableProcessors(), 0);
+		this(port, Runtime.getRuntime().availableProcessors(), 1);
 	}
 	
 	public String getWsUri(){
@@ -130,6 +131,13 @@ public final class DFTcpServerCfg {
 	}
 	public DFTcpServerCfg setUserHandler(Object userHandler) {
 		this.userHandler = userHandler;
+		return this;
+	}
+	public boolean isSsl() {
+		return ssl;
+	}
+	public DFTcpServerCfg setSsl(boolean ssl) {
+		this.ssl = ssl;
 		return this;
 	}
 	

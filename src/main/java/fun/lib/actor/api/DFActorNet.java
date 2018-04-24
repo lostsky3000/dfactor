@@ -25,21 +25,34 @@ public interface DFActorNet {
 	/**
 	 * 建立tcp监听
 	 * @param port 监听端口号
+	 * @param dispatcher 网络消息及事件分发器
+	 */
+	public void doTcpServer(int port, Object dispatcher);
+	/**
+	 * 建立tcp监听
+	 * @param port 监听端口号
 	 * @param protocol 协议类型，如DFActorDefine.TCP_DECODE_HTTP
 	 */
 	public void doTcpServer(int port, int protocol);
+	
 	/**
 	 * 关闭指定端口的监听
 	 * @param port 要关闭监听的端口号
 	 */
 	public void doTcpServerClose(int port);
+	
 	/**
 	 * 启动http监听
 	 * @param port 端口号
 	 * @param handler 处理器
 	 */
 	public void doHttpServer(int port, DFHttpServerHandler handler);
-	
+	/**
+	 * 启动http监听
+	 * @param cfg 监听参数
+	 * @param handler 处理器
+	 */
+	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler);
 	/**
 	 * 启动http监听
 	 * @param port 端口号
@@ -47,7 +60,13 @@ public interface DFActorNet {
 	 * @param dispatcher 消息分发器
 	 */
 	public void doHttpServer(int port, DFHttpServerHandler handler, DFHttpDispatcher dispatcher);
-	
+	/**
+	 * 启动http监听
+	 * @param cfg 监听参数
+	 * @param handler 处理器
+	 * @param dispatcher 消息分发器
+	 */
+	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler, DFHttpDispatcher dispatcher);
 	
 	/**
 	 * 建立tcp连接

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.DFActorUdpDispatcher;
+import fun.lib.actor.api.DFMsgBack;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -25,7 +26,7 @@ public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 
 	private DFUdpChannel channel = null;
 	@Override
-	public int onMessage(int srcId, int cmd, Object payload) {
+	public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
 		
 		return DFActorDefine.MSG_AUTO_RELEASE;
 	}

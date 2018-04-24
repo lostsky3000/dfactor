@@ -1,11 +1,7 @@
 package fun.lib.actor.example;
-import fun.lib.actor.api.DFTcpChannel;
-import fun.lib.actor.api.http.DFHttpContentType;
-import fun.lib.actor.api.http.DFHttpReponse;
 import fun.lib.actor.api.http.DFHttpRequest;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.core.DFActor;
-import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 /**
  * 简单httpserver示例

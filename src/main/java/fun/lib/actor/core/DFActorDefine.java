@@ -2,6 +2,8 @@ package fun.lib.actor.core;
 
 public final class DFActorDefine {
 
+	public static final int VERSION = 100000;
+	
 	public static final int CONSUME_AUTO = 0;
 	public static final int CONSUME_SINGLE = 1;
 //	public static final int CONSUME_QUARTER = 2;

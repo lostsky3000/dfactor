@@ -19,6 +19,7 @@ public final class DFActorNetWrapper  implements DFActorNet{
 		_mgr = DFActorManager.get();
 	}
 	
+	//tcp server
 	@Override
 	public void doTcpServer(DFTcpServerCfg cfg){
 		final DFSocketManager mgr = DFSocketManager.get();
@@ -36,34 +37,20 @@ public final class DFActorNetWrapper  implements DFActorNet{
 		mgr.doTcpListen(cfg, id, port);
 	}
 	@Override
+	public void doTcpServer(int port, Object dispatcher) {
+		DFTcpServerCfg cfg = new DFTcpServerCfg(port)
+				.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH);
+		final DFSocketManager mgr = DFSocketManager.get();
+		mgr.doTcpListen(cfg, id, dispatcher, cfg.port);
+	}
+	@Override
 	public void doTcpServer(int port, int protocol) {
 		DFTcpServerCfg cfg = new DFTcpServerCfg(port)
 				.setTcpDecodeType(protocol);
 		final DFSocketManager mgr = DFSocketManager.get();
-		mgr.doTcpListen(cfg, id, port);
+		mgr.doTcpListen(cfg, id, cfg.port);
 	}
-	
-	//
-	public final void doTcpServerClose(int port){
-		final DFSocketManager mgr = DFSocketManager.get();
-		mgr.doTcpListenClose(port);
-	}
-	public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId){
-		return _mgr.doTcpConnect(cfg, id, requestId);
-	}
-	public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher){
-		return _mgr.doTcpConnect(cfg, id, dispatcher, requestId);
-	}
-	//udp
-	public final void doUdpServer(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId){
-		final DFSocketManager mgr = DFSocketManager.get();
-		mgr.doUdpListen(cfg, id, listener, requestId);
-	}
-	public final void doUdpServerClose(int port){
-		final DFSocketManager mgr = DFSocketManager.get();
-		mgr.doUdpListenClose(port);
-	}
-	
+	//http
 	@Override
 	public void doHttpServer(int port, DFHttpServerHandler handler) {
 		DFTcpServerCfg cfg = new DFTcpServerCfg(port)
@@ -79,5 +66,43 @@ public final class DFActorNetWrapper  implements DFActorNet{
 				.setUserHandler(handler);
 		final DFSocketManager mgr = DFSocketManager.get();
 		mgr.doTcpListen(cfg, id, dispatcher, port);
+	}	
+	@Override
+	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler) {
+		cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
+				.setUserHandler(handler);
+		final DFSocketManager mgr = DFSocketManager.get();
+		mgr.doTcpListen(cfg, id, cfg.port);
 	}
+	@Override
+	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler, DFHttpDispatcher dispatcher) {
+		cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
+				.setUserHandler(handler);
+		final DFSocketManager mgr = DFSocketManager.get();
+		mgr.doTcpListen(cfg, id, dispatcher, cfg.port);
+	}
+	
+	//close tcp server
+	public final void doTcpServerClose(int port){
+		final DFSocketManager mgr = DFSocketManager.get();
+		mgr.doTcpListenClose(port);
+	}
+	//tcp client
+	public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId){
+		return _mgr.doTcpConnect(cfg, id, requestId);
+	}
+	public final int doTcpConnect(final DFTcpClientCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher){
+		return _mgr.doTcpConnect(cfg, id, dispatcher, requestId);
+	}
+	//udp server
+	public final void doUdpServer(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId){
+		final DFSocketManager mgr = DFSocketManager.get();
+		mgr.doUdpListen(cfg, id, listener, requestId);
+	}
+	public final void doUdpServerClose(int port){
+		final DFSocketManager mgr = DFSocketManager.get();
+		mgr.doUdpListenClose(port);
+	}
+
+	
 }

@@ -11,6 +11,7 @@ import java.util.concurrent.locks.StampedLock;
 import com.funtag.util.concurrent.DFSpinLock;
 
 import fun.lib.actor.api.DFActorMsgCallback;
+import fun.lib.actor.api.DFMsgBack;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.http.DFHttpRequest;
@@ -202,22 +203,20 @@ public final class DFActorWrapper {
 									(DFUdpChannel) event.getExtObj1());
 						}
 					}else{
-						_actor.lastSrcId = 0;
-						_actor.curCanCb = false;
+						_actor.lastSrcId = msg.srcId;
 						boolean noCb = true;
+						DFMsgBack queryCb = null;
 						if(msg.userHandler != null){ //callback
 							if(msg.isCb){ //callback
 								DFActorMsgCallback cb = (DFActorMsgCallback) msg.userHandler;
 								cb.onCallback(msg.cmd, msg.payload);
 								noCb = false;
 							}else{ //query, has callback func
-								_actor.lastSrcId = msg.srcId;
-								_actor.curCanCb = true;
-								_actor.lastUserHandler = msg.userHandler;
+								queryCb = new DFMsgBackWrap(msg.srcId, msg.userHandler);
 							}
 						}
 						if(noCb){
-							_actor.onMessage(msg.srcId, msg.cmd, msg.payload); //msg.sessionId, msg.subject, 
+							_actor.onMessage(msg.srcId, msg.cmd, msg.payload, queryCb); //msg.sessionId, msg.subject, 
 						}
 					}
 				}catch(Throwable e){  //catch logic exception
@@ -287,5 +286,25 @@ public final class DFActorWrapper {
 		}finally{
 			_lockQueueWrite.unlock();
 		}
+	}
+	
+	class DFMsgBackWrap implements DFMsgBack{
+		private int srcId = 0;
+		private Object userHandler = null;
+		private boolean hasCalled = false;
+		
+		private DFMsgBackWrap(int srcId, Object userHandler) {
+			this.srcId = srcId;
+			this.userHandler = userHandler;
+		}
+		@Override
+		public int callback(int cmd, Object payload) {
+			if(hasCalled){ //已经回调过
+				return -1;
+			}
+			hasCalled = true;
+			return _actorMgr.sendCallback(_actorId, srcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, userHandler);
+		}
+		
 	}
 }

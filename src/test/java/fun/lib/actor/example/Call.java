@@ -1,6 +1,7 @@
 package fun.lib.actor.example;
 
 import fun.lib.actor.api.DFActorMsgCallback;
+import fun.lib.actor.api.DFMsgBack;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -33,7 +34,7 @@ public final class Call {
 				@Override
 				public int onCallback(int cmd, Object payload) {
 					if(cmd == 1002){
-						log.info("recv result: 100 + 5 = "+payload);
+						log.info("recv result: 100 + 50 = "+payload);
 					}
 					return 0;
 				}
@@ -50,12 +51,12 @@ public final class Call {
 	//计算机，运算并返回结果
 	private static class Computer extends DFActor{
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload) {
-			if(cmd == 1001){
+		public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+			if(cb != null){
 				String[] arrReq = ((String)payload).split(",");
 				if(arrReq[0].equals("add")){
 					int result = Integer.parseInt(arrReq[1]) + Integer.parseInt(arrReq[2]);
-					sys.callback(1002, new Integer(result));
+					cb.callback(1002, new Integer(result));
 				}
 			}
 			return DFActorDefine.MSG_AUTO_RELEASE;

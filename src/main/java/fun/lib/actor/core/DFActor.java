@@ -3,6 +3,7 @@ package fun.lib.actor.core;
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorSystem;
+import fun.lib.actor.api.DFMsgBack;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.DFActorMsgCallback;
@@ -20,8 +21,8 @@ public class DFActor {
 	protected final boolean isBlockActor;
 	//
 	protected int lastSrcId = 0;
-	protected Object lastUserHandler = null;
-	protected boolean curCanCb = false;
+//	protected Object lastUserHandler = null;
+//	protected boolean curCanCb = false;
 	
 	public DFActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 		this.id = id;
@@ -34,7 +35,7 @@ public class DFActor {
 		_mgr = DFActorManager.get();
 		//
 		log = new DFActorLogWrapper(id, name);
-		sys = new DFActorSystemWrapper();
+		sys = new DFActorSystemWrapper(id, log, this);
 		net = new DFActorNetWrapper(id);
 	}
 	
@@ -54,9 +55,20 @@ public class DFActor {
 	 * @param srcId 发送者actor的id
 	 * @param cmd 消息码
 	 * @param payload 消息体
+	 * @param cb 发送方是否有回调，非null则直接调用回调
 	 * @return
 	 */
-	public int onMessage(int srcId, int cmd, Object payload){return DFActorDefine.MSG_AUTO_RELEASE;}
+	public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb){return DFActorDefine.MSG_AUTO_RELEASE;};
+	
+//	/**
+//	 * 接收其它actor发过来的消息
+//	 * @param srcId 发送者actor的id
+//	 * @param cmd 消息码
+//	 * @param payload 消息体
+//	 * @return
+//	 */
+//	@Deprecated
+//	public int onMessage(int srcId, int cmd, Object payload){return DFActorDefine.MSG_AUTO_RELEASE;}
 	/**
 	 * actor创建时调用一次
 	 * @param param 创建actor的调用者传入的参数
@@ -116,86 +128,6 @@ public class DFActor {
 	//udp server
 	public void onUdpServerListenResult(int requestId, boolean isSucc, String errMsg, DFUdpChannel channel){}
 	public int onUdpServerRecvMsg(int requestId, DFUdpChannel channel, DatagramPacket pack){return DFActorDefine.MSG_AUTO_RELEASE;}
-	
-	//system api
-	private class DFActorSystemWrapper implements DFActorSystem{
-		public final int createActor(String name, Class<? extends DFActor> classz){
-			return _mgr.createActor(name, classz, null, 0, DFActorDefine.CONSUME_AUTO, false);
-		}
-		public final int createActor(String name, Class<? extends DFActor> classz, Object param){
-			return _mgr.createActor(name, classz, param, 0, DFActorDefine.CONSUME_AUTO, false);
-		}
-		public final int createActor(String name, Class<? extends DFActor> classz, Object param, 
-				int scheduleUnit){
-			return _mgr.createActor(name, classz, param, scheduleUnit, DFActorDefine.CONSUME_AUTO, false);
-		}
-		public final int createActor(String name, Class<? extends DFActor> classz, Object param, 
-				int scheduleUnit, int consumeType){
-			return _mgr.createActor(name, classz, param, scheduleUnit, consumeType, false);
-		}
-		public final int createActor(String name, Class<? extends DFActor> classz, Object param, 
-				int scheduleUnit, int consumeType, boolean isBlockActor){
-			return _mgr.createActor(name, classz, param, scheduleUnit, consumeType, isBlockActor);
-		}
-		//
-		@Override
-		public int send(int dstId, int cmd, Object payload) {
-			return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
-		}
-//		@Override
-//		public int send(int dstId, int requestId, int subject, int cmd, Object payload) {
-//			return _mgr.send(id, dstId, requestId, subject, cmd, payload, true, null, null, false);
-//		}
-		@Override
-		public int send(String dstName, int cmd, Object payload) {
-			return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
-		}
-		
-		
-		public final void exit(){
-			_mgr.removeActor(id);
-			log.verb("exit");
-		}
-		public final void timeout(int delay, int requestId){
-			_mgr.addTimeout(id, delay, requestId);
-		}
-		@Override
-		public long getTimeStart() {
-			return _mgr.getTimerStartNano();
-		}
-		@Override
-		public long getTimeNow() {
-//			return System.currentTimeMillis();
-			return _mgr.getTimerNowNano();
-		}
-		//
-		@Override
-		public int call(int dstId, int cmd, Object payload, DFActorMsgCallback cb) {
-			return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb, false);
-		}
-		@Override
-		public int call(String dstName, int cmd, Object payload, DFActorMsgCallback cb) {
-			return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb);
-		}
-		@Override
-		public int callback(int cmd, Object payload) {
-			if(lastSrcId == 0){ //没有发送人可以调用
-				return -1;
-			}
-			if(!curCanCb){ //当前不可回调
-				return -2;
-			}
-			int ret = _mgr.sendCallback(id, lastSrcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, lastUserHandler);
-			//
-			lastSrcId = 0;
-			curCanCb = false;
-			lastUserHandler = null;
-			return ret;
-		}
-		
-		
-		
-	}
 	
 	
 	/**

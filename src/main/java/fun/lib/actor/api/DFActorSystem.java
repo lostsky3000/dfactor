@@ -53,14 +53,36 @@ public interface DFActorSystem {
 	public int createActor(String name, Class<? extends DFActor> classz, Object param, 
 			int scheduleUnit, int consumeType, boolean isBlockActor);
 	
-	
+	/**
+	 * 向指定id的actor发消息，带有回调
+	 * @param dstId 目标actorId
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @param cb 回调
+	 * @return 0成功  非0失败
+	 */
 	public int call(int dstId, int cmd, Object payload, DFActorMsgCallback cb);
-	public int call(String dstName, int cmd, Object payload, DFActorMsgCallback cb);
-	
-	public int callback(int cmd, Object payload);
 	
 	/**
-	 * 发送actor间消息
+	 * 向指定name的actor发消息，带有回调
+	 * @param dstName 目标actorName
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @param cb 回调
+	 * @return 0成功  非0失败
+	 */
+	public int call(String dstName, int cmd, Object payload, DFActorMsgCallback cb);
+	
+	
+	/**
+	 * 回复当前消息来源actor
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public int sendback(int cmd, Object payload);
+	/**
+	 * 向指定id的actor发消息
 	 * @param dstId 目标actor id
 	 * @param cmd 消息码
 	 * @param payload 消息体
@@ -68,7 +90,7 @@ public interface DFActorSystem {
 	 */
 	public int send(int dstId, int cmd, Object payload);
 	/**
-	 * 发送actor间消息
+	 * 向指定name的actor发消息
 	 * @param dstName 目标actor 名称
 	 * @param cmd 消息码
 	 * @param payload 消息体

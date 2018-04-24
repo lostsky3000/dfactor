@@ -1,5 +1,6 @@
 package fun.lib.actor.example;
 
+import fun.lib.actor.api.DFMsgBack;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -51,7 +52,7 @@ public final class BlockActor {
 			log.info("BlockActor onStart");
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload) {
+		public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
 			if(cmd == 1001){ //io操作 比如数据库操作
 				int param = (Integer)payload;
 				// do io

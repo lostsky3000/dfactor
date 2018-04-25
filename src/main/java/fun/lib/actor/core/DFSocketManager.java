@@ -1,5 +1,6 @@
 package fun.lib.actor.core;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -22,6 +23,7 @@ import fun.lib.actor.po.DFActorEvent;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
+import fun.lib.actor.po.SslConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -53,6 +55,9 @@ import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -270,7 +275,7 @@ public final class DFSocketManager {
 			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.handler(new TcpHandlerInit(false, cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher, 
-					cfg.getDecoder(), cfg.getEncoder(), null));
+					cfg.getDecoder(), cfg.getEncoder(), null, null));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollSocketChannel.class);
 		}else{
@@ -327,7 +332,7 @@ public final class DFSocketManager {
 			.childOption(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.childHandler(new TcpHandlerInit(true, cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
-					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler()));
+					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslConfig()));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollServerSocketChannel.class);
 		}else{
@@ -712,9 +717,10 @@ public final class DFSocketManager {
 		private final DFTcpEncoder _encoder;
 		private final Object _userHandler;
 		private final boolean _isServer;
+		private final SslConfig _sslCfg;
 		private TcpHandlerInit(boolean isServer, int decodeType, int maxLen, int actorId, int requestId, String wsSfx, 
 				Object dispatcher, DFTcpDecoder decoder, DFTcpEncoder encoder,
-				Object userHandler) {
+				Object userHandler, SslConfig sslCfg) {
 			_isServer = isServer;
 			_decodeType = decodeType;
 			_maxLen = maxLen;
@@ -725,6 +731,7 @@ public final class DFSocketManager {
 			_decoder = decoder;
 			_encoder = encoder;
 			_userHandler = userHandler;
+			_sslCfg = sslCfg;
 		}
 		@Override
 		protected void initChannel(SocketChannel ch) throws Exception {
@@ -738,6 +745,12 @@ public final class DFSocketManager {
 			}
 			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
 				if(_isServer){
+					if(_sslCfg != null){ //ssl
+						final SslContext sslCtx = SslContextBuilder.forServer(new File(_sslCfg.getCertPath()), 
+								new File(_sslCfg.getPemPath())).build();
+						SslHandler sslHandler = sslCtx.newHandler(ch.alloc());
+						pipe.addLast(sslHandler);
+					}
 					pipe.addLast(new HttpServerCodec());
 					pipe.addLast(new HttpObjectAggregator(64*1024));
 //					pipe.addLast(new HttpServerExpectContinueHandler());

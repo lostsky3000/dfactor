@@ -25,7 +25,7 @@ public final class DFTcpServerCfg {
 	
 	private volatile Object userHandler = null;
 	
-	private volatile boolean ssl = false;
+	private volatile SslConfig sslConfig = null;
 	/**
 	 * 
 	 * @param port 监听端口
@@ -133,14 +133,18 @@ public final class DFTcpServerCfg {
 		this.userHandler = userHandler;
 		return this;
 	}
-	public boolean isSsl() {
-		return ssl;
+	public SslConfig getSslConfig(){
+		return sslConfig;
 	}
-	public DFTcpServerCfg setSsl(boolean ssl) {
-		this.ssl = ssl;
+	public DFTcpServerCfg setSslConfig(SslConfig cfg) {
+		this.sslConfig = cfg;
 		return this;
 	}
 	
+	//
+	public static DFTcpServerCfg newCfg(int port){
+		return new DFTcpServerCfg(port);
+	}
 }
 
 

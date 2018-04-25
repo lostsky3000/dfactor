@@ -146,12 +146,7 @@ public final class DFActorManager {
 	 * @param 入口actor配置
 	 * @return 创建成功or失败
 	 */
-	public boolean start(DFActorManagerConfig cfg
-			, ActorProp prop
-//			, String entryName
-//			, Class<? extends DFActor> entryClassz, Object entryParam, 
-//			int entryScheduleUnit, int entryConsumeType
-			){
+	public boolean start(DFActorManagerConfig cfg, ActorProp prop){
 		boolean bRet = false;
 		do {
 			DFLogFactory.setLogLevel(cfg.getLogLevel());

@@ -71,8 +71,9 @@ public final class DFHttpCliRspWrap implements DFHttpCliResponse{
 	}
 	@Override
 	public void release() {
-		// TODO Auto-generated method stub
-		
+		if(dataBuf != null){
+			dataBuf.release(dataBuf.refCnt());
+		}
 	}
 
 }

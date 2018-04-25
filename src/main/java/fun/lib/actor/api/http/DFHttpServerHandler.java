@@ -4,5 +4,5 @@ public interface DFHttpServerHandler {
 
 	public void onListenResult(boolean isSucc, String errMsg);
 	
-	public int onHttpRequest(DFHttpSvrRequest req);
+	public int onHttpRequest(Object msg);
 }

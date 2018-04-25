@@ -36,18 +36,19 @@ public final class HttpServerDispatcher {
 			//
 			net.doHttpServer(8080, new DFHttpServerHandler() {
 				@Override
+				public int onHttpRequest(Object msg) {
+					DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
+					//response
+					req.response("echo from server, entryModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
+						.send();
+					return DFActorDefine.MSG_AUTO_RELEASE;
+				}
+				@Override
 				public void onListenResult(boolean isSucc, String errMsg) {
 					log.info("listen result: isSucc="+isSucc+", err="+errMsg);
 					if(!isSucc){
 						DFActorManager.get().shutdown();
 					}
-				}
-				@Override
-				public int onHttpRequest(DFHttpSvrRequest req) {
-					//response
-					req.response("echo from server, entryModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
-						.send();
-					return DFActorDefine.MSG_AUTO_RELEASE;
 				}
 			}, this);  //start http server
 		}

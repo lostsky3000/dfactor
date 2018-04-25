@@ -104,13 +104,13 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 				}
 				//
 				Object msgWrap = null;
-//				//decode
-//				if(decoder != null){
-//					Object tmp = decoder.onDecode(dfRsp);
-//					if(tmp != null){
-//            			msgWrap = tmp;
-//            		}
-//				}
+				//decode
+				if(decoder != null){
+					Object tmp = decoder.onDecode(dfRsp);
+					if(tmp != null){
+            			msgWrap = tmp;
+            		}
+				}
 				if(msgWrap == null){  //没有解码
             		msgWrap = dfRsp;
             	}

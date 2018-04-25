@@ -26,7 +26,8 @@ public final class HttpClient {
 								.setReqData(req),
 					new DFHttpClientHandler() {
 						@Override
-						public int onHttpResponse(DFHttpCliResponse rsp, boolean isSucc, String errMsg) {
+						public int onHttpResponse(Object msg, boolean isSucc, String errMsg) {
+							DFHttpCliResponse rsp = (DFHttpCliResponse) msg;
 							if(isSucc){
 								log.info("recv rsp, status="+rsp.getStatusCode() 
 									+", contentType="+rsp.getContentType()+", isBinary="+rsp.isBinary()); 

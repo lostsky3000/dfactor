@@ -33,7 +33,8 @@ public final class HttpsServer {
 												.pemPath(pemPath)), 
 							new DFHttpServerHandler() {
 								@Override
-								public int onHttpRequest(DFHttpSvrRequest req) {
+								public int onHttpRequest(Object msg) {
+									DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
 									//response
 									req.response("echo from ssl server, uri="+req.getUri())
 										.send();

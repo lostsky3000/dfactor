@@ -9,5 +9,5 @@ public interface DFHttpClientHandler {
 	 * @param errMsg 请求失败时的错误信息
 	 * @return 响应消息是否由框架自动释放
 	 */
-	public int onHttpResponse(DFHttpCliResponse rsp, boolean isSucc, String errMsg);
+	public int onHttpResponse(Object rsp, boolean isSucc, String errMsg);
 }

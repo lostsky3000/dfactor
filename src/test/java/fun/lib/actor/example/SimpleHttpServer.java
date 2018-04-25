@@ -23,7 +23,8 @@ public final class SimpleHttpServer {
 		public void onStart(Object param) {
 			net.doHttpServer(8080, new DFHttpServerHandler() {
 				@Override
-				public int onHttpRequest(DFHttpSvrRequest req) {
+				public int onHttpRequest(Object msg) {
+					DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
 					//response
 					req.response("echo from server, uri="+req.getUri())
 						.send();

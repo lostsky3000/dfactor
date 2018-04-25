@@ -12,7 +12,7 @@ public final class Startup {
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
 		//启动入口actor，开始消息循环		
-		mgr.start("EntryActor", EntryActor.class);
+		mgr.start(EntryActor.class);
 	}
 
 	/**

@@ -4,13 +4,14 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 import fun.lib.actor.api.DFUdpChannel;
+import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.api.DFActorUdpDispatcher;
-import fun.lib.actor.api.DFMsgBack;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 import fun.lib.actor.core.DFActorManagerConfig;
 import fun.lib.actor.define.DFActorErrorCode;
+import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFActorEvent;
 import fun.lib.actor.po.DFUdpServerCfg;
 import io.netty.buffer.ByteBuf;
@@ -26,7 +27,7 @@ public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 
 	private DFUdpChannel channel = null;
 	@Override
-	public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+	public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 		
 		return DFActorDefine.MSG_AUTO_RELEASE;
 	}
@@ -64,7 +65,11 @@ public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 		DFActorManagerConfig cfg = new DFActorManagerConfig()
 				.setLogicWorkerThreadNum(4)
 				.setBlockWorkerThreadNum(0);
-		mgr.start(cfg, "actor_udp_test", ActorUdpTest.class, ""+1000, 0, DFActorDefine.CONSUME_AUTO);
+		
+		mgr.start(cfg, ActorProp.newProp()
+				.name("actor_udp_test")
+				.classz(ActorUdpTest.class)
+				.param(1000+""));
 		
 	}
 }

@@ -46,7 +46,7 @@ public final class DFActorDefine {
 	
 	//
 	protected static final String ACTOR_NAME_LOG = "SYSTEM_LOG_lostsky";
-	
+	protected static final String ACTOR_NAME_DEF_PFX = "DFActorDef_";
 	protected static final int ACTOR_ID_LOG = 1;
 	//
 	public static final int ACTOR_ID_APP_BEGIN = 1000;

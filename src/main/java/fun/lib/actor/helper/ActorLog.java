@@ -3,7 +3,7 @@ package fun.lib.actor.helper;
 import com.funtag.util.log.DFLogFactory;
 import com.funtag.util.log.DFLogger;
 
-import fun.lib.actor.api.DFMsgBack;
+import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 
@@ -18,7 +18,7 @@ public final class ActorLog extends DFActor{
 	}
 
 	@Override
-	public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+	public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 		final ActorLogData data = (ActorLogData) payload;
 		sb.setLength(0);
 		final String str = sb.append(data.actorName).append("(").append(srcId).append(")")

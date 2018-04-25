@@ -2,9 +2,10 @@ package fun.lib.actor.example;
 
 import java.util.Random;
 
-import fun.lib.actor.api.DFMsgBack;
+import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
+import fun.lib.actor.po.ActorProp;
 
 /**
  * 猫捉老鼠演示多actor通信
@@ -31,23 +32,28 @@ public final class TomAndJerry {
 			//release jerry
 			int spd = 5 + rand.nextInt(3); //rand jerry speed
 			//create jerry
-			sys.createActor("Jerry", Jerry.class, new Integer(spd), DFActor.transTimeRealToTimer(1000));
+			
+			sys.createActor(ActorProp.newProp()
+					.name("Jerry").classz(Jerry.class)
+					.param(new Integer(spd)).scheduleMilli(1000));
 			//start timeout
-			int delay = DFActor.transTimeRealToTimer(5000);//delay 5 sec
-			sys.timeout(delay, 1);
+			timer.timeout(5000, 1);
 		}
 		@Override
 		public void onTimeout(int requestId) {
 			//release tom
 			int spd = 7 + rand.nextInt(3); //tom speed
 			//create tom
-			sys.createActor("Tom", Tom.class, new Integer(spd), DFActor.transTimeRealToTimer(1000));
+			
+			sys.createActor(ActorProp.newProp()
+					.name("Tom").classz(Tom.class)
+					.param(new Integer(spd)).scheduleMilli(1000));
 		}
 		private int posTom = 0;
 		private int posJerry = 0;
 		private boolean gameOver = false;
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 			if(gameOver){
 				return 0;
 			}
@@ -91,7 +97,7 @@ public final class TomAndJerry {
 			sys.send("Director", 1001, new Integer(curPos));
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 			if(cmd == 1003){ //game over
 				boolean got = (Boolean)payload;
 				if(got){
@@ -124,7 +130,7 @@ public final class TomAndJerry {
 			sys.send("Director", 1002, new Integer(curPos));
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 			if(cmd == 1003){ //game over
 				boolean got = (Boolean)payload;
 				if(got){
@@ -133,8 +139,7 @@ public final class TomAndJerry {
 					log.info("Jerry escaped!    curThread="+Thread.currentThread().getName());
 				}
 				//delay exit
-				int delay = DFActor.transTimeRealToTimer(2000);
-				sys.timeout(delay, 0);
+				timer.timeout(2000, 0);
 			}
 			return 0;
 		}

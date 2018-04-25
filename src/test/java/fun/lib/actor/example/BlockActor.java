@@ -1,10 +1,11 @@
 package fun.lib.actor.example;
 
-import fun.lib.actor.api.DFMsgBack;
+import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 import fun.lib.actor.core.DFActorManagerConfig;
+import fun.lib.actor.po.ActorProp;
 
 /**
  * block类型actor示例
@@ -18,8 +19,11 @@ public final class BlockActor {
 		//启动配置参数
 		DFActorManagerConfig cfg = new DFActorManagerConfig()
 				.setBlockWorkerThreadNum(1);  //设置block线程数量
-		//启动入口actor，开始消息循环		
-		mgr.start(cfg, "LogicActor", LogicActor.class, null, DFActor.transTimeRealToTimer(1000));
+		//启动入口actor，开始消息循环	
+		mgr.start(cfg, ActorProp.newProp()
+						.name("LogicActor")
+						.classz(LogicActor.class)
+						.scheduleMilli(1000)); //开启schedule,周期1000ms
 	}
 	//逻辑actor
 	private static class LogicActor extends DFActor{
@@ -31,7 +35,10 @@ public final class BlockActor {
 		public void onStart(Object param) {
 			log.info("LogicActor onStart");
 			//create block actor
-			sys.createActor("DbActor", DbActor.class, null, 0, DFActorDefine.CONSUME_AUTO, true);
+			sys.createActor(ActorProp.newProp()
+					.name("DbActor")
+					.classz(DbActor.class)
+					.blockActor(true));
 		}
 		@Override
 		public void onSchedule(long dltMilli) {
@@ -52,7 +59,7 @@ public final class BlockActor {
 			log.info("BlockActor onStart");
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 			if(cmd == 1001){ //io操作 比如数据库操作
 				int param = (Integer)payload;
 				// do io

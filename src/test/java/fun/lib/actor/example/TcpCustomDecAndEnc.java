@@ -26,7 +26,7 @@ public class TcpCustomDecAndEnc {
 		DFActorManagerConfig cfg = new DFActorManagerConfig()
 				.setClientIoThreadNum(1);    //设置作为客户端向外连接时，通信层io使用的线程数
 		//启动入口actor，开始事件循环		
-		mgr.start(cfg, "Server", Server.class);
+		mgr.start(cfg, Server.class);
 	}
 	//server
 	private static class Server extends DFActor implements DFTcpDecoder, DFTcpEncoder{
@@ -118,8 +118,7 @@ public class TcpCustomDecAndEnc {
 			net.doTcpConnect(cfg, serverPort);
 			
 			//启动定时器定时发送  一秒发送一次
-			final int delay = DFActor.transTimeRealToTimer(1000);
-			sys.timeout(delay, 10000);
+			timer.timeout(1000, 10000);
 		}
 		
 		private DFTcpChannel svrChannel = null;
@@ -165,8 +164,7 @@ public class TcpCustomDecAndEnc {
 				}
 			}
 			//启动下一个定时器
-			final int delay = DFActor.transTimeRealToTimer(1000);
-			sys.timeout(delay, requestId);
+			timer.timeout(1000, requestId);
 		}
 	}
 }

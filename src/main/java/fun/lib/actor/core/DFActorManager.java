@@ -26,8 +26,10 @@ import com.funtag.util.timer.DFScheduleTick;
 import com.funtag.util.timer.DFTimeout;
 
 import fun.lib.actor.api.DFActorTcpDispatcher;
+import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.helper.ActorLog;
 import fun.lib.actor.helper.DFActorLogLevel;
+import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFTcpClientCfg;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -86,24 +88,32 @@ public final class DFActorManager {
 	
 	/**
 	 * 启动dfactor
-	 * @param entryName 入口actor名字(全局唯一)
+	 * @param prop actor配置
+	 * @return 创建成功or失败
+	 */
+	public boolean start(ActorProp prop){
+		return start(new DFActorManagerConfig(), prop);
+	}
+	/**
+	 * 启动dfactor
 	 * @param entryClassz 入口actor class
 	 * @return 创建成功or失败
 	 */
-	public boolean start(String entryName, Class<? extends DFActor> entryClassz){
-		return start(new DFActorManagerConfig(), entryName, entryClassz, null, 0, DFActorDefine.CONSUME_AUTO);
+	public boolean start(Class<? extends DFActor> entryClassz){
+		ActorProp prop = ActorProp.newProp()
+				.classz(entryClassz);
+		return start(new DFActorManagerConfig(), prop);
 	}
 	/**
 	 * 启动dfactor
 	 * @param entryName 入口actor名字(全局唯一)
 	 * @param entryClassz 入口actor class
-	 * @param entryParam 入口actor传入参数
-	 * @param entryScheduleUnit schedule周期
 	 * @return 创建成功or失败
 	 */
-	public boolean start(String entryName, Class<? extends DFActor> entryClassz,
-			Object entryParam, int entryScheduleUnit){
-		return start(new DFActorManagerConfig(), entryName, entryClassz, entryParam, entryScheduleUnit, DFActorDefine.CONSUME_AUTO);
+	public boolean start(String entryName, Class<? extends DFActor> entryClassz){
+		ActorProp prop = ActorProp.newProp().name(entryName)
+				.classz(entryClassz);
+		return start(new DFActorManagerConfig(), prop);
 	}
 	/**
 	 * 启动dfactor
@@ -113,46 +123,35 @@ public final class DFActorManager {
 	 * @return 创建成功or失败
 	 */
 	public boolean start(DFActorManagerConfig cfg, String entryName, Class<? extends DFActor> entryClassz){
-		return start(cfg, entryName, entryClassz, null, 0, DFActorDefine.CONSUME_AUTO);
+		ActorProp prop = ActorProp.newProp()
+				.name(entryName).classz(entryClassz);
+		return start(cfg, prop);
 	}
 	/**
 	 * 启动dfactor
 	 * @param cfg 启动配置
-	 * @param entryName 入口actor名字(全局唯一)
 	 * @param entryClassz 入口actor class
-	 * @param entryParam 入口actor传入参数
 	 * @return 创建成功or失败
 	 */
-	public boolean start(DFActorManagerConfig cfg, String entryName, Class<? extends DFActor> entryClassz,
-			Object entryParam){
-		return start(cfg, entryName, entryClassz, entryParam, 0, DFActorDefine.CONSUME_AUTO);
+	public boolean start(DFActorManagerConfig cfg, Class<? extends DFActor> entryClassz){
+		ActorProp prop = ActorProp.newProp()
+				.classz(entryClassz);
+		return start(cfg, prop);
 	}
+	
+	
 	/**
 	 * 启动dfactor
 	 * @param cfg 启动配置
-	 * @param entryName 入口actor名字(全局唯一)
-	 * @param entryClassz 入口actor class
-	 * @param entryParam 入口actor传入参数
-	 * @param entryScheduleUnit schedule周期
+	 * @param 入口actor配置
 	 * @return 创建成功or失败
 	 */
-	public boolean start(DFActorManagerConfig cfg, String entryName, Class<? extends DFActor> entryClassz,
-			Object entryParam, int entryScheduleUnit){
-		return start(cfg, entryName, entryClassz, entryParam, entryScheduleUnit, DFActorDefine.CONSUME_AUTO);
-	}
-	/**
-	 * 启动dfactor
-	 * @param cfg 启动配置
-	 * @param entryName 入口actor名字(全局唯一)
-	 * @param entryClassz 入口actor class
-	 * @param entryParam 入口actor传入参数
-	 * @param entryScheduleUnit schedule周期
-	 * @param entryConsumeType 消息消费策略
-	 * @return 创建成功or失败
-	 */
-	public boolean start(DFActorManagerConfig cfg, String entryName, 
-			Class<? extends DFActor> entryClassz, Object entryParam, 
-			int entryScheduleUnit, int entryConsumeType){
+	public boolean start(DFActorManagerConfig cfg
+			, ActorProp prop
+//			, String entryName
+//			, Class<? extends DFActor> entryClassz, Object entryParam, 
+//			int entryScheduleUnit, int entryConsumeType
+			){
 		boolean bRet = false;
 		do {
 			DFLogFactory.setLogLevel(cfg.getLogLevel());
@@ -162,10 +161,11 @@ public final class DFActorManager {
 			}
 			_dumpInitInfo();
 			//
-			_entryName = entryName;
-			_entryClassz = entryClassz;
-			_entryParam = entryParam;
-			_entryScheduleUnit = entryScheduleUnit;
+			_entryName = prop.getName();
+			_entryClassz = prop.getClassz();
+			_entryParam = prop.getParam();
+			_entryScheduleUnit = DFActor.transTimeRealToTimer(prop.getScheduleMilli());
+			int entryConsumeType = prop.getConsumeType();
 			if(entryConsumeType>=DFActorDefine.CONSUME_AUTO &&
 					entryConsumeType<=DFActorDefine.CONSUME_ALL){
 				_entryConsumeType = entryConsumeType;
@@ -303,7 +303,12 @@ public final class DFActorManager {
 	protected int createActor(String name, Class<? extends DFActor> classz, Object param, 
 			int scheduleUnit, int consumeType, boolean isBlockActor){
 		DFActor actor = null;
-		int id = _getSysActorIdByName(name);
+		int id = 0;
+		if(name != null){
+			id = _getSysActorIdByName(name);
+		}else{  //没有名字 
+			
+		}
 		if(id < 1){  //not sys actor
 			synchronized (_idLock) { //gen id
 				id = _idCount;
@@ -311,6 +316,9 @@ public final class DFActorManager {
 					_idCount = DFActorDefine.ACTOR_ID_APP_BEGIN;
 				}
 			}
+		}
+		if(name == null){ //没有名字
+			name = DFActorDefine.ACTOR_NAME_DEF_PFX+id;
 		}
 		try {
 			Class[] paramsType = {Integer.class, String.class, Integer.class, Boolean.class};
@@ -458,9 +466,9 @@ public final class DFActorManager {
 		_actorMsgPool.get().offer(msg);
 	}
 	
-	protected void addTimeout(int srcId, int delay, final int requestId){
+	protected void addTimeout(int srcId, int delay, int requestId, CbTimeout cb){
 		final int idxTimer = Math.abs(_timerIdxCount.incrementAndGet())%_timerThNum;
-		_lsTimer.get(idxTimer).addTimeout(delay*DFActor.TIMER_UNIT_MILLI, new DFActorTimeoutWrapper(srcId, requestId));
+		_lsTimer.get(idxTimer).addTimeout(delay*DFActor.TIMER_UNIT_MILLI, new DFActorTimeoutWrapper(srcId, requestId, cb));
 	}
 	protected long getTimerStartNano(){
 		return _lsLoopTimer.get(0).getTimerStart();
@@ -594,9 +602,11 @@ public final class DFActorManager {
 	class DFActorTimeoutWrapper implements DFTimeout{
 		protected int requestId;
 		private int srcId;
-		protected DFActorTimeoutWrapper(int srcId, int requestId) {
+		private CbTimeout cb;
+		protected DFActorTimeoutWrapper(int srcId, int requestId, CbTimeout cb) {
 			this.srcId = srcId;
 			this.requestId = requestId;
+			this.cb = cb;
 		}
 		protected void reset(int srcId, int requestId){
 			this.srcId = srcId;
@@ -604,7 +614,7 @@ public final class DFActorManager {
 		}
 		@Override
 		public void onTimeout() {
-			send(0, srcId, 0, DFActorDefine.SUBJECT_TIMER, requestId, null, false);
+			send(0, srcId, 0, DFActorDefine.SUBJECT_TIMER, requestId, null, false, null, cb, false);
 		}
 	}
 	

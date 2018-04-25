@@ -1,8 +1,9 @@
 package fun.lib.actor.core;
 
 import fun.lib.actor.api.DFActorLog;
-import fun.lib.actor.api.DFActorMsgCallback;
 import fun.lib.actor.api.DFActorSystem;
+import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.po.ActorProp;
 
 public final class DFActorSystemWrapper implements DFActorSystem{
 	private final DFActorManager _mgr;
@@ -16,25 +17,30 @@ public final class DFActorSystemWrapper implements DFActorSystem{
 		this.log = log;
 		this.actor = actor;
 	}
-	
+	@Override
 	public final int createActor(String name, Class<? extends DFActor> classz){
 		return _mgr.createActor(name, classz, null, 0, DFActorDefine.CONSUME_AUTO, false);
 	}
+	@Override
 	public final int createActor(String name, Class<? extends DFActor> classz, Object param){
 		return _mgr.createActor(name, classz, param, 0, DFActorDefine.CONSUME_AUTO, false);
 	}
-	public final int createActor(String name, Class<? extends DFActor> classz, Object param, 
-			int scheduleUnit){
-		return _mgr.createActor(name, classz, param, scheduleUnit, DFActorDefine.CONSUME_AUTO, false);
+	@Override
+	public int createActor(Class<? extends DFActor> classz) {
+		return _mgr.createActor(null, classz, null, 0, DFActorDefine.CONSUME_AUTO, false);
 	}
-	public final int createActor(String name, Class<? extends DFActor> classz, Object param, 
-			int scheduleUnit, int consumeType){
-		return _mgr.createActor(name, classz, param, scheduleUnit, consumeType, false);
+	@Override
+	public int createActor(Class<? extends DFActor> classz, Object param) {
+		return _mgr.createActor(null, classz, param, 0, DFActorDefine.CONSUME_AUTO, false);
 	}
-	public final int createActor(String name, Class<? extends DFActor> classz, Object param, 
-			int scheduleUnit, int consumeType, boolean isBlockActor){
-		return _mgr.createActor(name, classz, param, scheduleUnit, consumeType, isBlockActor);
+	@Override
+	public int createActor(ActorProp prop) {
+		return _mgr.createActor(prop.getName(), prop.getClassz(), prop.getParam(), 
+					DFActor.transTimeRealToTimer(prop.getScheduleMilli()), 
+					prop.getConsumeType(), prop.isBlock());
 	}
+	
+	
 	//
 	@Override
 	public int send(int dstId, int cmd, Object payload) {
@@ -55,7 +61,7 @@ public final class DFActorSystemWrapper implements DFActorSystem{
 		log.verb("exit");
 	}
 	public final void timeout(int delay, int requestId){
-		_mgr.addTimeout(id, delay, requestId);
+		_mgr.addTimeout(id, delay, requestId, null);
 	}
 	@Override
 	public long getTimeStart() {
@@ -68,11 +74,13 @@ public final class DFActorSystemWrapper implements DFActorSystem{
 	}
 	//
 	@Override
-	public int call(int dstId, int cmd, Object payload, DFActorMsgCallback cb) {
+	public int call(int dstId, int cmd, Object payload, CbMsgRsp cb) {
 		return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb, false);
 	}
 	@Override
-	public int call(String dstName, int cmd, Object payload, DFActorMsgCallback cb) {
+	public int call(String dstName, int cmd, Object payload, CbMsgRsp cb) {
 		return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb);
 	}
+	
+	
 }

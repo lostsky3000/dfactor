@@ -10,10 +10,11 @@ import java.util.concurrent.locks.StampedLock;
 
 import com.funtag.util.concurrent.DFSpinLock;
 
-import fun.lib.actor.api.DFActorMsgCallback;
-import fun.lib.actor.api.DFMsgBack;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
+import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbTimeout;
+import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.api.http.DFHttpRequest;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.define.DFActorErrorCode;
@@ -143,7 +144,11 @@ public final class DFActorWrapper {
 					if(subject == DFActorDefine.SUBJECT_SCHEDULE){
 						_actor.onSchedule(msg.cmd);
 					}else if(subject == DFActorDefine.SUBJECT_TIMER){
-						_actor.onTimeout(msg.cmd);
+						if(msg.userHandler != null){ //has callback
+							((CbTimeout)msg.userHandler).onTimeout();
+						}else{
+							_actor.onTimeout(msg.cmd);
+						}
 					}else if(msg.subject == DFActorDefine.SUBJECT_NET){
 						if(msg.cmd == DFActorDefine.NET_UDP_MESSAGE){ //udp msg
 							final int ret = _actor.onUdpServerRecvMsg(msg.sessionId, (DFUdpChannel) msg.context, (DatagramPacket) msg.payload);
@@ -205,10 +210,10 @@ public final class DFActorWrapper {
 					}else{
 						_actor.lastSrcId = msg.srcId;
 						boolean noCb = true;
-						DFMsgBack queryCb = null;
+						CbMsgReq queryCb = null;
 						if(msg.userHandler != null){ //callback
 							if(msg.isCb){ //callback
-								DFActorMsgCallback cb = (DFActorMsgCallback) msg.userHandler;
+								CbMsgRsp cb = (CbMsgRsp) msg.userHandler;
 								cb.onCallback(msg.cmd, msg.payload);
 								noCb = false;
 							}else{ //query, has callback func
@@ -288,7 +293,7 @@ public final class DFActorWrapper {
 		}
 	}
 	
-	class DFMsgBackWrap implements DFMsgBack{
+	class DFMsgBackWrap implements CbMsgReq{
 		private int srcId = 0;
 		private Object userHandler = null;
 		private boolean hasCalled = false;

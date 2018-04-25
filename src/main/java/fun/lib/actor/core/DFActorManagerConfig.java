@@ -9,7 +9,7 @@ public final class DFActorManagerConfig {
 	private volatile int timerThreadNum = 1;
 	private volatile int clientIoThreadNum = 0;
 	
-	private volatile int blockWorkerThreadNum = 0;
+	private volatile int blockWorkerThreadNum = 1;
 	
 	private volatile boolean useSysLog = true;
 	private volatile int sysLogConsumeType = DFActorDefine.CONSUME_AUTO;

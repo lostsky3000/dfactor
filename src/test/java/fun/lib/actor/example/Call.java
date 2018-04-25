@@ -1,7 +1,7 @@
 package fun.lib.actor.example;
 
-import fun.lib.actor.api.DFActorMsgCallback;
-import fun.lib.actor.api.DFMsgBack;
+import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -14,7 +14,7 @@ import fun.lib.actor.core.DFActorManager;
 public final class Call {
 
 	public static void main(String[] args) {
-		DFActorManager.get().start("Man", Man.class);
+		DFActorManager.get().start(Man.class);
 	}
 	
 	//人，发起计算请求
@@ -24,18 +24,17 @@ public final class Call {
 			//create computer
 			sys.createActor("Computer", Computer.class);
 			//
-			sys.timeout(DFActor.transTimeRealToTimer(1000), 1);
+			timer.timeout(1000, 1);
 		}
+		
 		@Override
 		public void onTimeout(int requestId) {
 			//start calc query
 			log.info("ask to calc 100 + 50 = ? ...");
-			sys.call("Computer", 1001, new String("add,100,50"), new DFActorMsgCallback() {
+			sys.call("Computer", 1001, new String("add,100,50"), new CbMsgRsp() {
 				@Override
 				public int onCallback(int cmd, Object payload) {
-					if(cmd == 1002){
-						log.info("recv result: 100 + 50 = "+payload);
-					}
+					log.info("recv result: 100 + 50 = "+payload);
 					return 0;
 				}
 			});
@@ -51,7 +50,7 @@ public final class Call {
 	//计算机，运算并返回结果
 	private static class Computer extends DFActor{
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 			if(cb != null){
 				String[] arrReq = ((String)payload).split(",");
 				if(arrReq[0].equals("add")){

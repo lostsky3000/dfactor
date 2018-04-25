@@ -1,5 +1,6 @@
 package fun.lib.actor.example;
 
+import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
 /**
@@ -12,7 +13,7 @@ public final class Timeout {
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
 		//启动入口actor，开始消息循环		
-		mgr.start("EntryActor", EntryActor.class);
+		mgr.start(EntryActor.class);
 	}
 
 	/**
@@ -30,16 +31,20 @@ public final class Timeout {
 			//使用自带日志打印
 			log.info("EntryActor start, curThread="+Thread.currentThread().getName());
 			//启动定时器
-			int delay = DFActor.transTimeRealToTimer(1000); //延时1秒(1000毫秒)
-			sys.timeout(delay, 1);
+			timer.timeout(1000, 1);
 		}
 		
 		private int timeoutCount = 0;  //计数器
 		@Override
 		public void onTimeout(int requestId) {
-			log.info("onTimeout, count="+(++timeoutCount)+", requestId="+requestId+", curThread="+Thread.currentThread().getName());
-			int delay = DFActor.transTimeRealToTimer(1000); //延时1秒(1000毫秒)
-			sys.timeout(delay, 1);
+			log.info("onTimeout(Instance call), count="+(++timeoutCount)+", requestId="+requestId+", curThread="+Thread.currentThread().getName());
+			timer.timeout(1000, new CbTimeout() {
+				@Override
+				public void onTimeout() {
+					log.info("onTimeout(CbFunc call), count="+(++timeoutCount)+", curThread="+Thread.currentThread().getName());
+					timer.timeout(1000, 1);   
+				}
+			});
 		}		
 		
 	}

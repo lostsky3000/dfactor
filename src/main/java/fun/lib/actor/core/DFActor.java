@@ -3,10 +3,11 @@ package fun.lib.actor.core;
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorSystem;
-import fun.lib.actor.api.DFMsgBack;
+import fun.lib.actor.api.DFActorTimer;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.DFActorMsgCallback;
+import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbMsgReq;
 import io.netty.channel.socket.DatagramPacket;
 
 public class DFActor {
@@ -18,6 +19,7 @@ public class DFActor {
 	protected final DFActorLog log;
 	protected final DFActorSystem sys;
 	protected final DFActorNet net;
+	protected final DFActorTimer timer;
 	protected final boolean isBlockActor;
 	//
 	protected int lastSrcId = 0;
@@ -34,6 +36,7 @@ public class DFActor {
 		this.consumeType = consumeType;
 		_mgr = DFActorManager.get();
 		//
+		timer = new DFActorTimerWrapper(id);
 		log = new DFActorLogWrapper(id, name);
 		sys = new DFActorSystemWrapper(id, log, this);
 		net = new DFActorNetWrapper(id);
@@ -58,7 +61,7 @@ public class DFActor {
 	 * @param cb 发送方是否有回调，非null则直接调用回调
 	 * @return
 	 */
-	public int onMessage(int srcId, int cmd, Object payload, DFMsgBack cb){return DFActorDefine.MSG_AUTO_RELEASE;};
+	public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb){return DFActorDefine.MSG_AUTO_RELEASE;};
 	
 //	/**
 //	 * 接收其它actor发过来的消息

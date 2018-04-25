@@ -16,7 +16,7 @@ public final class WebsocketServer {
 	public static void main(String[] args){
 		final DFActorManager mgr = DFActorManager.get();
 		//启动入口actor，开始消息循环		
-		mgr.start("Server", Server.class);
+		mgr.start(Server.class);
 	}
 	
 	private static class Server extends DFActor{

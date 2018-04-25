@@ -2,6 +2,7 @@ package fun.lib.actor.example;
 
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
+import fun.lib.actor.po.ActorProp;
 /**
  * 定时回调示例
  * @author lostsky
@@ -11,9 +12,11 @@ public final class Schedule {
 
 	public static void main(String[] args) {
 		final DFActorManager mgr = DFActorManager.get();
-		//启动入口actor，开始消息循环		
-		int interval = DFActor.transTimeRealToTimer(1000); //1秒schedule一次
-		mgr.start("EntryActor", EntryActor.class, null, interval);
+		//启动入口actor，开始消息循环
+		mgr.start(ActorProp.newProp()
+					.name("EntryActor")
+					.classz(EntryActor.class)
+					.scheduleMilli(1000));
 	}
 
 	/**

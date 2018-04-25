@@ -1,6 +1,6 @@
-package fun.lib.actor.api;
+package fun.lib.actor.api.cb;
 
-public interface DFMsgBack {
+public interface CbMsgReq {
 
 	/**
 	 * 向消息来源actor发送回复

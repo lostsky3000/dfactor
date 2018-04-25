@@ -16,7 +16,7 @@ import fun.lib.actor.core.DFActorManager;
 public final class HttpServerDispatcher {
 
 	public static void main(String[] args) {
-		DFActorManager.get().start("EntryActor", EntryActor.class);
+		DFActorManager.get().start(EntryActor.class);
 	}
 	
 	private static class EntryActor extends DFActor implements DFHttpDispatcher{

@@ -94,7 +94,7 @@ net.doHttpServer(8080, new DFHttpServerHandler() {
 
 ## 支持
 
-交流QQ群：726932841
+QQ群：726932841
 
 
 

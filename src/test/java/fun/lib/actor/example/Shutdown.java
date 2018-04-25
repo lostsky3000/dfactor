@@ -30,8 +30,7 @@ public final class Shutdown {
 			//使用自带日志打印
 			log.info("EntryActor start, curThread="+Thread.currentThread().getName());
 			//启动定时器
-			int delay = DFActor.transTimeRealToTimer(1000); //1秒(1000毫秒)后触发定时器
-			sys.timeout(delay, 1);
+			timer.timeout(1000, 1);
 		}
 		
 		@Override

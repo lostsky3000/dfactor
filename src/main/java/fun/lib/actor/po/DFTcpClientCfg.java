@@ -20,6 +20,11 @@ public final class DFTcpClientCfg {
 	
 	private volatile DFTcpDecoder decoder = null;
 	private volatile DFTcpEncoder encoder = null;
+	//
+	private volatile Object userHandler = null;
+	private volatile SslConfig sslCfg = null;
+	
+	private volatile Object reqData = null;
 	/**
 	 * 
 	 * @param host 目标主机地址
@@ -69,12 +74,22 @@ public final class DFTcpClientCfg {
 		return this;
 	}
 	
+	public Object getReqData() {
+		return reqData;
+	}
+
+	public DFTcpClientCfg setReqData(Object reqData) {
+		this.reqData = reqData;
+		return this;
+	}
+
 	public int getTcpDecodeType(){
 		return tcpDecodeType;
 	}
 	public DFTcpClientCfg setTcpDecodeType(int tcpDecodeType){
 		if(tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH 
 				|| tcpDecodeType == DFActorDefine.TCP_DECODE_RAW
+				|| tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP
 				){ //valid
 			
 		}else{ //invalid
@@ -108,6 +123,28 @@ public final class DFTcpClientCfg {
 		return this;
 	}
 	
+	public Object getUserHandler() {
+		return userHandler;
+	}
+
+	public DFTcpClientCfg setUserHandler(Object userHandler) {
+		this.userHandler = userHandler;
+		return this;
+	}
+
+	public SslConfig getSslCfg() {
+		return sslCfg;
+	}
+
+	public DFTcpClientCfg setSslCfg(SslConfig sslCfg) {
+		this.sslCfg = sslCfg;
+		return this;
+	}
+
+	//
+	public static DFTcpClientCfg newCfg(String host, int port){
+		return new DFTcpClientCfg(host, port);
+	}
 }
 
 

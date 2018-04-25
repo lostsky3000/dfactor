@@ -1,7 +1,8 @@
 package fun.lib.actor.example;
-import fun.lib.actor.api.http.DFHttpRequest;
+import fun.lib.actor.api.http.DFHttpSvrRequest;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.core.DFActor;
+import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.SslConfig;
@@ -32,10 +33,11 @@ public final class HttpsServer {
 												.pemPath(pemPath)), 
 							new DFHttpServerHandler() {
 								@Override
-								public void onHttpRequest(DFHttpRequest req) {
+								public int onHttpRequest(DFHttpSvrRequest req) {
 									//response
 									req.response("echo from ssl server, uri="+req.getUri())
 										.send();
+									return DFActorDefine.MSG_AUTO_RELEASE;
 								}
 								@Override
 								public void onListenResult(boolean isSucc, String errMsg) {

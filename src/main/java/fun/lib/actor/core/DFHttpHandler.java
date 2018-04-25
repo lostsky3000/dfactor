@@ -17,8 +17,8 @@ import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpContentType;
 import fun.lib.actor.api.http.DFHttpHeader;
 import fun.lib.actor.api.http.DFHttpMethod;
-import fun.lib.actor.api.http.DFHttpReponse;
-import fun.lib.actor.api.http.DFHttpRequest;
+import fun.lib.actor.api.http.DFHttpSvrReponse;
+import fun.lib.actor.api.http.DFHttpSvrRequest;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -105,7 +105,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		try{
 			if (msg instanceof FullHttpRequest) {
-				DFHttpRequest dfReq = null;
+				DFHttpSvrRequest dfReq = null;
 				int actorId = 0;
 				Object msgWrap = null;
 				//
@@ -117,7 +117,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            if(method.equals(HttpMethod.GET)){
 	            	HttpHeaders headers = req.headers();
 	            	//
-	            	dfReq = new DFHttpRequest(_session, uri, DFHttpMethod.GET, keepAlive, null, null);
+	            	dfReq = new DFHttpSvrRequest(_session, uri, DFHttpMethod.GET, keepAlive, null, null);
 	            	//headers
 	            	Iterator<Entry<String,String>> it = headers.iteratorAsString();
 	            	while(it.hasNext()){
@@ -151,7 +151,7 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	            	final String contentType = headers.get(DFHttpHeader.CONTENT_TYPE);
 	            	//data
 	            	if(contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
-	            		dfReq = new DFHttpRequest(_session, uri, DFHttpMethod.POST, keepAlive, 
+	            		dfReq = new DFHttpSvrRequest(_session, uri, DFHttpMethod.POST, keepAlive, 
 	            						contentType==null?DFHttpContentType.UNKNOWN:contentType, null);
 	            		HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(req);
 	                	List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
@@ -160,10 +160,18 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 	                        dfReq.addQueryData(data.getName(), data.getValue());
 	                    }
 	            	}else{ //application 请求
+	            		Object appData = null;
 	            		ByteBuf buf = req.content();
-	            		final String str = (String) buf.readCharSequence(buf.readableBytes(), Charset.forName("utf-8"));
-	            		dfReq = new DFHttpRequest(_session, uri, DFHttpMethod.POST, keepAlive, 
-        								contentType==null?DFHttpContentType.UNKNOWN:contentType, str);
+	            		if(contentIsString(contentType)){ //String
+	            			appData = buf.readCharSequence(buf.readableBytes(), Charset.forName("utf-8"));
+	            		}else{  //raw bin
+	            			appData = buf;
+	            			if(buf != null){
+		            			buf.retain();
+		            		}
+	            		}
+	            		dfReq = new DFHttpSvrRequest(_session, uri, DFHttpMethod.POST, keepAlive, 
+        								contentType==null?DFHttpContentType.UNKNOWN:contentType, appData);
 	            	}
 	            	//headers
 	            	Iterator<Entry<String,String>> it = headers.iteratorAsString();
@@ -201,10 +209,10 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 							DFActorDefine.NET_TCP_MESSAGE,  //DFActorDefine.NET_TCP_MESSAGE_CUSTOM, 
 							msgWrap, true, _session, actorId==_actorIdDef?_svrHandler:null, false) != 0){ //send to queue failed
 						//处理失败  返回503  HttpResponseStatus.SERVICE_UNAVAILABLE
-	            		_session.write(new DFHttpReponse(503));
+	            		_session.write(new DFHttpSvrReponse(503));
 					}
 	            }else{ //无法处理,返回404 HttpResponseStatus.NOT_FOUND
-	            	_session.write(new DFHttpReponse(404));
+	            	_session.write(new DFHttpSvrReponse(404));
 	            }
 	        }else{ //unsurpport request type
 	        	ctx.close();
@@ -219,6 +227,15 @@ public final class DFHttpHandler extends ChannelInboundHandlerAdapter{
 		ctx.close();
 	}
 
+	
+	private boolean contentIsString(String contentType){
+		if(contentType != null && 
+				(contentType.equals(DFHttpContentType.JSON)
+						|| contentType.equals(DFHttpContentType.XML))){
+			return true;
+		}
+		return false;
+	}
 	//
 //	private static final byte[] CONTENT = { 'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd' };
 //	private static final AsciiString CONTENT_TYPE = AsciiString.cached("Content-Type");

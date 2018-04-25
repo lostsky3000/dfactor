@@ -15,7 +15,9 @@ import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.cb.CbMsgRsp;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.api.cb.CbMsgReq;
-import fun.lib.actor.api.http.DFHttpRequest;
+import fun.lib.actor.api.http.DFHttpCliResponse;
+import fun.lib.actor.api.http.DFHttpClientHandler;
+import fun.lib.actor.api.http.DFHttpSvrRequest;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
@@ -160,8 +162,19 @@ public final class DFActorWrapper {
 							DFTcpChannelWrapper ch = (DFTcpChannelWrapper) msg.context;
 							if(ch.getTcpDecodeType() == DFActorDefine.TCP_DECODE_HTTP && 
 									msg.userHandler != null){  //http 有回调
-								DFHttpServerHandler handler = (DFHttpServerHandler) msg.userHandler;
-								handler.onHttpRequest((DFHttpRequest) payload);
+								if(msg.userHandler instanceof DFHttpServerHandler){  //服务端收到请求
+									DFHttpServerHandler handler = (DFHttpServerHandler) msg.userHandler;
+									DFHttpSvrRequest req = (DFHttpSvrRequest) payload;
+									if(handler.onHttpRequest(req) == DFActorDefine.MSG_AUTO_RELEASE){
+										req.release();
+									}
+								}else{  //收到服务端响应
+									DFHttpClientHandler handler = (DFHttpClientHandler) msg.userHandler;
+									DFHttpCliResponse rsp = (DFHttpCliResponse) payload;
+									if(handler.onHttpResponse(rsp, true, null) == DFActorDefine.MSG_AUTO_RELEASE){
+										rsp.release();
+									}
+								}
 							}else{
 								DFTcpChannelWrapper chWrap = (DFTcpChannelWrapper) msg.context;
 								int curDstActor = chWrap.getMsgActor();
@@ -200,7 +213,12 @@ public final class DFActorWrapper {
 						}else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_RESULT){
 							final DFActorEvent event = (DFActorEvent) msg.payload;
 							final boolean isSucc = event.getWhat()==DFActorErrorCode.SUCC?true:false;
-							_actor.onTcpClientConnResult(msg.sessionId, isSucc, event.getMsg());
+							if(!isSucc && msg.userHandler != null && msg.userHandler instanceof DFHttpClientHandler){
+								DFHttpClientHandler handler = (DFHttpClientHandler) msg.userHandler;
+								handler.onHttpResponse(null, false, event.getMsg());
+							}else{
+								_actor.onTcpClientConnResult(msg.sessionId, isSucc, event.getMsg());
+							}
 						}else if(msg.cmd == DFActorDefine.NET_UDP_LISTEN_RESULT){
 							final DFActorEvent event = (DFActorEvent) msg.payload;
 							final boolean isSucc = event.getWhat()==DFActorErrorCode.SUCC?true:false;

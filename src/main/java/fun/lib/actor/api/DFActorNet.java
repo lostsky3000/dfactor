@@ -1,4 +1,5 @@
 package fun.lib.actor.api;
+import fun.lib.actor.api.http.DFHttpClientHandler;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.po.DFTcpClientCfg;
@@ -67,6 +68,9 @@ public interface DFActorNet {
 	 * @param dispatcher 消息分发器
 	 */
 	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler, DFHttpDispatcher dispatcher);
+	
+	
+	public void doHttpClient(DFTcpClientCfg cfg, DFHttpClientHandler handler);
 	
 	/**
 	 * 建立tcp连接

@@ -7,7 +7,7 @@ import java.util.Map;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.http.DFHttpDispatcher;
-import fun.lib.actor.api.http.DFHttpRequest;
+import fun.lib.actor.api.http.DFHttpSvrRequest;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
@@ -43,16 +43,17 @@ public final class HttpServerDispatcher {
 					}
 				}
 				@Override
-				public void onHttpRequest(DFHttpRequest req) {
+				public int onHttpRequest(DFHttpSvrRequest req) {
 					//response
 					req.response("echo from server, entryModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 						.send();
+					return DFActorDefine.MSG_AUTO_RELEASE;
 				}
 			}, this);  //start http server
 		}
 		@Override
 		public int onQueryMsgActorId(int port, InetSocketAddress addrRemote, Object msg) {
-			DFHttpRequest req = (DFHttpRequest) msg;
+			DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
 			Integer actorId = mapUri.get(req.getUri());
 			if(actorId != null && actorId != 0){ //有处理actor的映射
 				return actorId;
@@ -68,7 +69,7 @@ public final class HttpServerDispatcher {
 	private static class IndexActor extends DFActor{
 		@Override
 		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg) {
-			DFHttpRequest req = (DFHttpRequest) msg;
+			DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
 			//response
 			req.response("echo from server, indexModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 				.send();
@@ -82,7 +83,7 @@ public final class HttpServerDispatcher {
 	private static class UserActor extends DFActor{
 		@Override
 		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg) {
-			DFHttpRequest req = (DFHttpRequest) msg;
+			DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
 			//response
 			req.response("echo from server, userModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 				.send();

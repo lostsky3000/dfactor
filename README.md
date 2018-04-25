@@ -83,6 +83,8 @@ net.doHttpServer(8080, new DFHttpServerHandler() {
 
 [HttpsServer](src/test/java/fun/lib/actor/example/HttpsServer.java) HTTPS服务器示例
 
+[HttpsClient](src/test/java/fun/lib/actor/example/HttpsClient.java) HTTP请求外部服务器示例
+
 ## FAQ
 
 

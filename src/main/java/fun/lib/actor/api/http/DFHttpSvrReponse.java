@@ -13,42 +13,42 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 
-public final class DFHttpReponse {
+public final class DFHttpSvrReponse {
 
 	private FullHttpResponse response = null;
 	private final DFTcpChannel channel;
 	
-	public DFHttpReponse(DFTcpChannel channel, int statusCode) {
+	public DFHttpSvrReponse(DFTcpChannel channel, int statusCode) {
 		this.channel = channel;
 		response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode));
 	}
-	public DFHttpReponse(int statusCode) {
+	public DFHttpSvrReponse(int statusCode) {
 		this(null, statusCode);
 	}
 	
-	public DFHttpReponse(DFTcpChannel channel, String strData){
+	public DFHttpSvrReponse(DFTcpChannel channel, String strData){
 		this(channel, 200, strData);
 		setContentType(DFHttpContentType.TEXT_PLAIN);  //default is text
 	}
-	public DFHttpReponse(String strData){
+	public DFHttpSvrReponse(String strData){
 		this(null, 200, strData);
 		setContentType(DFHttpContentType.TEXT_PLAIN);  //default is text
 	}
-	public DFHttpReponse(DFTcpChannel channel, JSONObject json){
+	public DFHttpSvrReponse(DFTcpChannel channel, JSONObject json){
 		this(channel, 200, json);
 	}
-	public DFHttpReponse(JSONObject json){
+	public DFHttpSvrReponse(JSONObject json){
 		this(null, 200, json);
 	}
-	public DFHttpReponse(DFTcpChannel channel, int statusCode, JSONObject json){
+	public DFHttpSvrReponse(DFTcpChannel channel, int statusCode, JSONObject json){
 		this(channel, statusCode, json.toJSONString());
 		setContentType(DFHttpContentType.JSON);
 	}
-	public DFHttpReponse(int statusCode, JSONObject json){
+	public DFHttpSvrReponse(int statusCode, JSONObject json){
 		this(null, statusCode, json.toJSONString());
 		setContentType(DFHttpContentType.JSON);
 	}
-	public DFHttpReponse(DFTcpChannel channel, int statusCode, String strData){
+	public DFHttpSvrReponse(DFTcpChannel channel, int statusCode, String strData){
 		this.channel = channel;
 		try {
 			byte[] arrBuf = strData.getBytes("utf-8");
@@ -60,16 +60,16 @@ public final class DFHttpReponse {
 	}
 	
 	//
-	public DFHttpReponse putHeader(String key, String val){
+	public DFHttpSvrReponse putHeader(String key, String val){
 		response.headers().set(key, val);
 		return this;
 	}
 	
-	public DFHttpReponse setContentType(String contentType){
+	public DFHttpSvrReponse setContentType(String contentType){
 		putHeader(DFHttpHeader.CONTENT_TYPE, contentType);
 		return this;
 	}
-	public DFHttpReponse setUserAgent(String userAgent){
+	public DFHttpSvrReponse setUserAgent(String userAgent){
 		putHeader(DFHttpHeader.USER_AGENT, userAgent);
 		return this;
 	}

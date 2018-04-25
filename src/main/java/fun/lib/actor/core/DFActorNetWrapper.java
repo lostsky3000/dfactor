@@ -3,6 +3,7 @@ package fun.lib.actor.core;
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFActorUdpDispatcher;
+import fun.lib.actor.api.http.DFHttpClientHandler;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.po.DFTcpClientCfg;
@@ -102,6 +103,13 @@ public final class DFActorNetWrapper  implements DFActorNet{
 	public final void doUdpServerClose(int port){
 		final DFSocketManager mgr = DFSocketManager.get();
 		mgr.doUdpListenClose(port);
+	}
+	//http client
+	@Override
+	public void doHttpClient(DFTcpClientCfg cfg, DFHttpClientHandler handler) {
+		cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
+			.setUserHandler(handler);
+		_mgr.doTcpConnect(cfg, id, 0);
 	}
 
 	

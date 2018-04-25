@@ -4,7 +4,8 @@ import com.alibaba.fastjson.JSONObject;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFTcpEncoder;
-import fun.lib.actor.api.http.DFHttpReponse;
+import fun.lib.actor.api.http.DFHttpCliRequest;
+import fun.lib.actor.api.http.DFHttpSvrReponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -96,9 +97,12 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 				_channel.writeAndFlush(msg);
 			}
 		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){
-			if(msg instanceof DFHttpReponse){
-				DFHttpReponse rsp = (DFHttpReponse) msg;
+			if(msg instanceof DFHttpSvrReponse){
+				DFHttpSvrReponse rsp = (DFHttpSvrReponse) msg;
 				_channel.writeAndFlush(rsp.getRawResponse()).addListener(ChannelFutureListener.CLOSE);
+			}else if(msg instanceof DFHttpCliReqWrap){
+				DFHttpCliReqWrap req = (DFHttpCliReqWrap) msg;
+				_channel.writeAndFlush(req.getReqRaw());
 			}
 		}
 		return 0;

@@ -8,8 +8,10 @@ import java.util.Map.Entry;
 import com.alibaba.fastjson.JSONObject;
 
 import fun.lib.actor.api.DFTcpChannel;
+import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCountUtil;
 
-public final class DFHttpRequest {
+public final class DFHttpSvrRequest {
 
 	private final String method;
 	private final String contentType;
@@ -17,12 +19,12 @@ public final class DFHttpRequest {
 	private final boolean keepAlive;
 	private Map<String,String> mapHeader = null;
 	private Map<String,String> mapQueryData = null;
-	private final Object appData;
+	private Object appData = null;
 	
-	private volatile DFHttpReponse response = null;
+	private volatile DFHttpSvrReponse response = null;
 	private final DFTcpChannel channel;
 	
-	public DFHttpRequest(DFTcpChannel channel, String uri, String method, boolean keepAlive, String contentType, Object appData) {
+	public DFHttpSvrRequest(DFTcpChannel channel, String uri, String method, boolean keepAlive, String contentType, Object appData) {
 		this.channel = channel;
 		this.uri = uri;
 		this.method = method;
@@ -113,36 +115,43 @@ public final class DFHttpRequest {
 	}
 	
 	//response
-	public DFHttpReponse response(int statusCode){
+	public DFHttpSvrReponse response(int statusCode){
 		if(response == null){
-			response = new DFHttpReponse(channel, statusCode);
+			response = new DFHttpSvrReponse(channel, statusCode);
 		}
 		return response;
 	}
-	public DFHttpReponse response(String rspData){
+	public DFHttpSvrReponse response(String rspData){
 		if(response == null){
-			response = new DFHttpReponse(channel, rspData);
+			response = new DFHttpSvrReponse(channel, rspData);
 		}
 		return response;
 	}
-	public DFHttpReponse response(int statusCode, String rspData){
+	public DFHttpSvrReponse response(int statusCode, String rspData){
 		if(response == null){
-			response = new DFHttpReponse(channel, statusCode, rspData);
+			response = new DFHttpSvrReponse(channel, statusCode, rspData);
 		}
 		return response;
 	}
 	//
-	public DFHttpReponse response(JSONObject rspData){
+	public DFHttpSvrReponse response(JSONObject rspData){
 		if(response == null){
-			response = new DFHttpReponse(channel, rspData);
+			response = new DFHttpSvrReponse(channel, rspData);
 		}
 		return response;
 	}
-	public DFHttpReponse response(int statusCode, JSONObject rspData){
+	public DFHttpSvrReponse response(int statusCode, JSONObject rspData){
 		if(response == null){
-			response = new DFHttpReponse(channel, statusCode, rspData);
+			response = new DFHttpSvrReponse(channel, statusCode, rspData);
 		}
 		return response;
 	}
 	
+	
+	public void release(){
+		if(appData != null && appData instanceof ByteBuf){
+			ReferenceCountUtil.release(appData);
+			appData = null;
+		}
+	}
 }

@@ -15,6 +15,7 @@ import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.api.DFUdpDecoder;
+import fun.lib.actor.api.http.DFHttpClientHandler;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.api.DFActorUdpDispatcher;
@@ -47,6 +48,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
@@ -275,7 +277,8 @@ public final class DFSocketManager {
 			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.handler(new TcpHandlerInit(false, cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher, 
-					cfg.getDecoder(), cfg.getEncoder(), null, null));
+					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslCfg()
+					, cfg.getReqData()));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollSocketChannel.class);
 		}else{
@@ -290,14 +293,14 @@ public final class DFSocketManager {
 						final DFActorEvent event = new DFActorEvent(DFActorErrorCode.SUCC)
 								.setExtString1(cfg.host).setExtInt1(cfg.port);
 						actorMgr.send(0, srcActorId, requestId, DFActorDefine.SUBJECT_NET, 
-								DFActorDefine.NET_TCP_CONNECT_RESULT, event, true);
+								DFActorDefine.NET_TCP_CONNECT_RESULT, event, true, null, cfg.getUserHandler(), false);
 					}else{		//failed
 						//notify actor
 						final String errMsg = f.cause().getMessage();
 						final DFActorEvent event = new DFActorEvent(DFActorErrorCode.FAILURE, errMsg)
 								.setExtString1(cfg.host).setExtInt1(cfg.port);
 						actorMgr.send(0, srcActorId, requestId, DFActorDefine.SUBJECT_NET, 
-								DFActorDefine.NET_TCP_CONNECT_RESULT, event, true);
+								DFActorDefine.NET_TCP_CONNECT_RESULT, event, true, null, cfg.getUserHandler(), false);
 					}
 				}
 			});
@@ -332,7 +335,7 @@ public final class DFSocketManager {
 			.childOption(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.childHandler(new TcpHandlerInit(true, cfg.getTcpDecodeType(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
-					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslConfig()));
+					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslConfig(), null));
 		if(DFSysUtil.isLinux()){
 			boot.channel(EpollServerSocketChannel.class);
 		}else{
@@ -718,9 +721,10 @@ public final class DFSocketManager {
 		private final Object _userHandler;
 		private final boolean _isServer;
 		private final SslConfig _sslCfg;
+		private final Object _reqData;
 		private TcpHandlerInit(boolean isServer, int decodeType, int maxLen, int actorId, int requestId, String wsSfx, 
 				Object dispatcher, DFTcpDecoder decoder, DFTcpEncoder encoder,
-				Object userHandler, SslConfig sslCfg) {
+				Object userHandler, SslConfig sslCfg, Object reqData) {
 			_isServer = isServer;
 			_decodeType = decodeType;
 			_maxLen = maxLen;
@@ -732,10 +736,18 @@ public final class DFSocketManager {
 			_encoder = encoder;
 			_userHandler = userHandler;
 			_sslCfg = sslCfg;
+			_reqData = reqData;
 		}
 		@Override
 		protected void initChannel(SocketChannel ch) throws Exception {
 			final ChannelPipeline pipe = ch.pipeline();
+			if(_sslCfg != null){ //ssl
+				final SslContext sslCtx = SslContextBuilder.forServer(new File(_sslCfg.getCertPath()), 
+						new File(_sslCfg.getPemPath())).build();
+				SslHandler sslHandler = sslCtx.newHandler(ch.alloc());
+				pipe.addLast(sslHandler);
+			}
+			//
 			if(_decodeType == DFActorDefine.TCP_DECODE_WEBSOCKET){
 				pipe.addLast(new HttpServerCodec());
 				pipe.addLast(new HttpObjectAggregator(64*1024));
@@ -745,16 +757,15 @@ public final class DFSocketManager {
 			}
 			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
 				if(_isServer){
-					if(_sslCfg != null){ //ssl
-						final SslContext sslCtx = SslContextBuilder.forServer(new File(_sslCfg.getCertPath()), 
-								new File(_sslCfg.getPemPath())).build();
-						SslHandler sslHandler = sslCtx.newHandler(ch.alloc());
-						pipe.addLast(sslHandler);
-					}
 					pipe.addLast(new HttpServerCodec());
 					pipe.addLast(new HttpObjectAggregator(64*1024));
 //					pipe.addLast(new HttpServerExpectContinueHandler());
 					pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, (DFHttpServerHandler) _userHandler));
+				}else{ //client
+					pipe.addLast(new HttpClientCodec());
+					pipe.addLast(new HttpObjectAggregator(64*1024));
+					pipe.addLast(new DFHttpCliHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, 
+										(DFHttpClientHandler) _userHandler, (DFHttpCliReqWrap) _reqData));
 				}
 			}
 			else{

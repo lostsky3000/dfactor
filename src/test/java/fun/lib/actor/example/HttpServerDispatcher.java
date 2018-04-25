@@ -13,6 +13,11 @@ import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 
+/**
+ * 根据http请求路径分配不同actor处理逻辑的示例
+ * @author lostsky
+ *
+ */
 public final class HttpServerDispatcher {
 
 	public static void main(String[] args) {

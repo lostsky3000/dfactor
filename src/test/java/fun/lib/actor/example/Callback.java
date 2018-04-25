@@ -8,10 +8,10 @@ import fun.lib.actor.core.DFActorManager;
 
 /**
  * 演示call的用法，异步回调完成actor间通信
- * @author admin
+ * @author lostsky
  *
  */
-public final class Call {
+public final class Callback {
 
 	public static void main(String[] args) {
 		DFActorManager.get().start(Man.class);

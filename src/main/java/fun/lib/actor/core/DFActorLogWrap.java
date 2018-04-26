@@ -5,11 +5,11 @@ import com.funtag.util.log.DFLogFactory;
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.helper.ActorLogData;
 
-public final class DFActorLogWrapper implements DFActorLog{
+public final class DFActorLogWrap implements DFActorLog{
 	private final DFActorManager mgr;
 	private final int id;
 	private final String name;
-	public DFActorLogWrapper(int id, String name) {
+	public DFActorLogWrap(int id, String name) {
 		this.id = id;
 		this.name = name;
 		this.mgr = DFActorManager.get();

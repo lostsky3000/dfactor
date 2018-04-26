@@ -14,11 +14,11 @@ import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.cb.CbMsgRsp;
 import fun.lib.actor.api.cb.CbTimeout;
+import fun.lib.actor.api.cb.CbHttpClient;
+import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.api.http.DFHttpCliResponse;
-import fun.lib.actor.api.http.DFHttpClientHandler;
-import fun.lib.actor.api.http.DFHttpSvrRequest;
-import fun.lib.actor.api.http.DFHttpServerHandler;
+import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
 import io.netty.buffer.ByteBuf;
@@ -26,7 +26,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.ReferenceCountUtil;
 
-public final class DFActorWrapper {
+public final class DFActorWrap {
 
 	
 	private final LinkedList<DFActorMessage>[] _arrQueue = new LinkedList[2];
@@ -51,7 +51,7 @@ public final class DFActorWrapper {
 	private final String _consumeLock;
 	
 	
-	protected DFActorWrapper(final DFActor actor) {
+	protected DFActorWrap(final DFActor actor) {
 		this._actor = actor;
 		_actorId = actor.getId();
 		_actorConsumeType = actor.getConsumeType();
@@ -159,29 +159,34 @@ public final class DFActorWrapper {
 							}
 						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE){ //tcp msg
 							final Object payload = msg.payload;
-							DFTcpChannelWrapper ch = (DFTcpChannelWrapper) msg.context;
+							DFTcpChannelWrap ch = (DFTcpChannelWrap) msg.context;
 							if(ch.getTcpDecodeType() == DFActorDefine.TCP_DECODE_HTTP && 
-									msg.userHandler != null){  //http 有回调
-								if(msg.userHandler instanceof DFHttpServerHandler){  //服务端收到请求
-									DFHttpServerHandler handler = (DFHttpServerHandler) msg.userHandler;
-									DFHttpSvrRequest req = (DFHttpSvrRequest) payload;
-									if(handler.onHttpRequest(req) == DFActorDefine.MSG_AUTO_RELEASE){
-										req.release();
+									msg.userHandler != null){  //http, has callback
+								if(msg.sessionId == 1){  //recv rsp as server
+									CbHttpServer handler = (CbHttpServer) msg.userHandler;
+									if(handler.onHttpRequest(payload) == DFActorDefine.MSG_AUTO_RELEASE){
+										if(payload instanceof DFHttpSvrReq){
+											((DFHttpSvrReq)payload).release();
+										}else{
+											ReferenceCountUtil.release(payload);
+										}
 									}
-								}else{  //收到服务端响应
-									DFHttpClientHandler handler = (DFHttpClientHandler) msg.userHandler;
-									DFHttpCliResponse rsp = (DFHttpCliResponse) payload;
-									if(handler.onHttpResponse(rsp, true, null) == DFActorDefine.MSG_AUTO_RELEASE){
-										rsp.release();
+								}else{  //recv rsp as client
+									CbHttpClient handler = (CbHttpClient) msg.userHandler;
+									if(handler.onHttpResponse(payload, true, null) == DFActorDefine.MSG_AUTO_RELEASE){
+										if(payload instanceof DFHttpCliResponse){
+											((DFHttpCliResponse)payload).release();
+										}else{
+											ReferenceCountUtil.release(payload);
+										}
 									}
 								}
 							}else{
-								DFTcpChannelWrapper chWrap = (DFTcpChannelWrapper) msg.context;
+								DFTcpChannelWrap chWrap = (DFTcpChannelWrap) msg.context;
 								int curDstActor = chWrap.getMsgActor();
 								if(curDstActor == _actor.id || curDstActor == 0){
 									int ret = _actor.onTcpRecvMsg(msg.srcId, chWrap, payload);
-									if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null && 
-											(payload instanceof ByteBuf)){ //auto release
+									if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null){ //auto release
 										ReferenceCountUtil.release(payload);
 									}
 								}else{  //dstActor has changed
@@ -193,7 +198,7 @@ public final class DFActorWrapper {
 						else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_OPEN){
 							_actor.onTcpConnOpen(msg.sessionId, (DFTcpChannel) msg.payload);
 						}else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_CLOSE){
-							DFTcpChannelWrapper chWrap = (DFTcpChannelWrapper) msg.payload;
+							DFTcpChannelWrap chWrap = (DFTcpChannelWrap) msg.payload;
 							int curDstActor = chWrap.getStatusActor(); //当前actorId
 							if(curDstActor == _actor.id || curDstActor == 0){
 								_actor.onTcpConnClose(msg.sessionId, chWrap);
@@ -204,8 +209,8 @@ public final class DFActorWrapper {
 						}else if(msg.cmd == DFActorDefine.NET_TCP_LISTEN_RESULT){
 							final DFActorEvent event = (DFActorEvent) msg.payload;
 							final boolean isSucc = event.getWhat()==DFActorErrorCode.SUCC?true:false;
-							if(msg.userHandler != null && msg.userHandler instanceof DFHttpServerHandler){
-								DFHttpServerHandler handler = (DFHttpServerHandler) msg.userHandler;
+							if(msg.userHandler != null && msg.userHandler instanceof CbHttpServer){
+								CbHttpServer handler = (CbHttpServer) msg.userHandler;
 								handler.onListenResult(isSucc, event.getMsg());
 							}else{
 								_actor.onTcpServerListenResult(msg.sessionId, isSucc, event.getMsg());
@@ -213,8 +218,8 @@ public final class DFActorWrapper {
 						}else if(msg.cmd == DFActorDefine.NET_TCP_CONNECT_RESULT){
 							final DFActorEvent event = (DFActorEvent) msg.payload;
 							final boolean isSucc = event.getWhat()==DFActorErrorCode.SUCC?true:false;
-							if(!isSucc && msg.userHandler != null && msg.userHandler instanceof DFHttpClientHandler){
-								DFHttpClientHandler handler = (DFHttpClientHandler) msg.userHandler;
+							if(!isSucc && msg.userHandler != null && msg.userHandler instanceof CbHttpClient){
+								CbHttpClient handler = (CbHttpClient) msg.userHandler;
 								handler.onHttpResponse(null, false, event.getMsg());
 							}else{
 								_actor.onTcpClientConnResult(msg.sessionId, isSucc, event.getMsg());

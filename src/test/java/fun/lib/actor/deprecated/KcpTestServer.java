@@ -7,7 +7,7 @@ import com.funtag.util.log.DFLogFactory;
 import com.funtag.util.log.DFLogger;
 
 import fun.lib.actor.core.DFActorDefine;
-import fun.lib.actor.core.DFUdpChannelWrapper;
+import fun.lib.actor.core.DFUdpChannelWrap;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.kcp.Kcp;
 import fun.lib.actor.kcp.KcpChannel;

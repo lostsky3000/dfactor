@@ -1,7 +1,7 @@
 package fun.lib.actor.api;
-import fun.lib.actor.api.http.DFHttpClientHandler;
+import fun.lib.actor.api.cb.CbHttpClient;
+import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.http.DFHttpDispatcher;
-import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
@@ -47,30 +47,30 @@ public interface DFActorNet {
 	 * @param port 端口号
 	 * @param handler 处理器
 	 */
-	public void doHttpServer(int port, DFHttpServerHandler handler);
+	public void doHttpServer(int port, CbHttpServer handler);
 	/**
 	 * 启动http监听
 	 * @param cfg 监听参数
 	 * @param handler 处理器
 	 */
-	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler);
+	public void doHttpServer(DFTcpServerCfg cfg, CbHttpServer handler);
 	/**
 	 * 启动http监听
 	 * @param port 端口号
 	 * @param handler 处理器
 	 * @param dispatcher 消息分发器
 	 */
-	public void doHttpServer(int port, DFHttpServerHandler handler, DFHttpDispatcher dispatcher);
+	public void doHttpServer(int port, CbHttpServer handler, DFHttpDispatcher dispatcher);
 	/**
 	 * 启动http监听
 	 * @param cfg 监听参数
 	 * @param handler 处理器
 	 * @param dispatcher 消息分发器
 	 */
-	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler, DFHttpDispatcher dispatcher);
+	public void doHttpServer(DFTcpServerCfg cfg, CbHttpServer handler, DFHttpDispatcher dispatcher);
 	
 	
-	public void doHttpClient(DFTcpClientCfg cfg, DFHttpClientHandler handler);
+	public void doHttpClient(DFTcpClientCfg cfg, CbHttpClient handler);
 	
 	/**
 	 * 建立tcp连接

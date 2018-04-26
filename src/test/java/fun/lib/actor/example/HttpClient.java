@@ -1,8 +1,8 @@
 package fun.lib.actor.example;
 
+import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.http.DFHttpCliRequest;
 import fun.lib.actor.api.http.DFHttpCliResponse;
-import fun.lib.actor.api.http.DFHttpClientHandler;
 import fun.lib.actor.api.http.DFHttpMethod;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
@@ -24,7 +24,7 @@ public final class HttpClient {
 			
 			net.doHttpClient(DFTcpClientCfg.newCfg("www.baidu.com", 80)
 								.setReqData(req),
-					new DFHttpClientHandler() {
+					new CbHttpClient() {
 						@Override
 						public int onHttpResponse(Object msg, boolean isSucc, String errMsg) {
 							DFHttpCliResponse rsp = (DFHttpCliResponse) msg;

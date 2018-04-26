@@ -5,13 +5,13 @@ import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.cb.CbMsgRsp;
 import fun.lib.actor.po.ActorProp;
 
-public final class DFActorSystemWrapper implements DFActorSystem{
+public final class DFActorSystemWrap implements DFActorSystem{
 	private final DFActorManager _mgr;
 	private final int id;
 	private final DFActorLog log;
 	private final DFActor actor;
 	
-	public DFActorSystemWrapper(int id, DFActorLog log, DFActor actor) {
+	public DFActorSystemWrap(int id, DFActorLog log, DFActor actor) {
 		_mgr = DFActorManager.get();
 		this.id = id;
 		this.log = log;

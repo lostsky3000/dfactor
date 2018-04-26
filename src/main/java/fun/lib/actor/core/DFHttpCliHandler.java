@@ -3,11 +3,9 @@ package fun.lib.actor.core;
 import java.net.InetSocketAddress;
 
 import fun.lib.actor.api.DFTcpDecoder;
+import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.http.DFHttpCliResponse;
-import fun.lib.actor.api.http.DFHttpClientHandler;
 import fun.lib.actor.api.http.DFHttpDispatcher;
-import fun.lib.actor.api.http.DFHttpSvrReponse;
-import fun.lib.actor.api.http.DFHttpSvrRequest;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
 import io.netty.buffer.ByteBuf;
@@ -30,14 +28,14 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 	private final int requestId;
 	private final DFTcpDecoder decoder;
 	private final DFHttpDispatcher dispatcher;
-	private final DFHttpClientHandler userHandler;
+	private final CbHttpClient userHandler;
 	private final DFHttpCliReqWrap request;
 	private volatile boolean hasRsp = false;
-	private volatile DFTcpChannelWrapper session = null;
+	private volatile DFTcpChannelWrap session = null;
 	private volatile InetSocketAddress addrRemote = null;
 	//
 	public DFHttpCliHandler(int actorIdDef, int requestId, DFTcpDecoder decoder, 
-			DFHttpDispatcher dispatcher, DFHttpClientHandler userHandler, DFHttpCliReqWrap request) {
+			DFHttpDispatcher dispatcher, CbHttpClient userHandler, DFHttpCliReqWrap request) {
 		this.actorIdDef = actorIdDef;
 		this.requestId = requestId;
 		this.decoder = decoder;
@@ -49,7 +47,7 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		addrRemote = (InetSocketAddress) ctx.channel().remoteAddress();
-		session = new DFTcpChannelWrapper(addrRemote.getHostString(), addrRemote.getPort(), 
+		session = new DFTcpChannelWrap(addrRemote.getHostString(), addrRemote.getPort(), 
 						ctx.channel(), DFActorDefine.TCP_DECODE_HTTP, null);
 		//
 		session.write(request);
@@ -86,7 +84,8 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 				DFHttpCliResponse dfRsp = null;
 				ByteBuf buf = rsp.content();
 				//parse msg
-				if(contentIsString(contentType)){  //String
+				boolean isString = contentIsString(contentType);
+				if(isString){  //String
 					String str = null;
 					if(buf != null){
 						str = (String) buf.readCharSequence(buf.readableBytes(), CharsetUtil.UTF_8);
@@ -95,9 +94,6 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 							contentType, (int) contentLen, 
 							null, str);
 				}else{  //binary
-					if(buf != null){
-						buf.retain();
-					}
 					dfRsp = new DFHttpCliRspWrap(rsp.status().code(), headers,
 							contentType, (int) contentLen, 
 							buf, null);
@@ -113,6 +109,9 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 				}
 				if(msgWrap == null){  //没有解码
             		msgWrap = dfRsp;
+            		if(!isString && buf != null){
+            			buf.retain();
+            		}
             	}
 				//检测分发
 				if(dispatcher != null){
@@ -124,7 +123,7 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 	            }
 				//
 				if(actorId != 0 && msgWrap != null){ //可以后续处理
-					DFActorManager.get().send(requestId, actorId, session.getChannelId(), 
+					DFActorManager.get().send(requestId, actorId, 2, 
 							DFActorDefine.SUBJECT_NET, 
 							DFActorDefine.NET_TCP_MESSAGE,  
 							msgWrap, true, session, actorId==actorIdDef?userHandler:null, false);

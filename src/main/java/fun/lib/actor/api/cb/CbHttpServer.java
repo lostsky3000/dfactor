@@ -1,6 +1,6 @@
-package fun.lib.actor.api.http;
+package fun.lib.actor.api.cb;
 
-public interface DFHttpServerHandler {
+public interface CbHttpServer {
 
 	public void onListenResult(boolean isSucc, String errMsg);
 	

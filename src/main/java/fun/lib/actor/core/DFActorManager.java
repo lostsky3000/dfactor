@@ -68,8 +68,8 @@ public final class DFActorManager {
 	private volatile int _timerThNum = 1;
 	private final AtomicInteger _timerIdxCount = new AtomicInteger(0);
 	//
-	private LinkedBlockingQueue<DFActorWrapper> _queueGlobalActor = new LinkedBlockingQueue<>();
-	private LinkedBlockingQueue<DFActorWrapper> _queueGlobalBlockActor = new LinkedBlockingQueue<>();
+	private LinkedBlockingQueue<DFActorWrap> _queueGlobalActor = new LinkedBlockingQueue<>();
+	private LinkedBlockingQueue<DFActorWrap> _queueGlobalBlockActor = new LinkedBlockingQueue<>();
 	//
 	private volatile CountDownLatch _cdInit = null;
 	private volatile DFActorManagerConfig _initCfg = null;
@@ -284,8 +284,8 @@ public final class DFActorManager {
 		return DFSocketManager.get().doTcpConnect(cfg, srcActorId, dispatcher, _clientIoGroup, requestId);
 	}
 	//
-	private Map<Integer, DFActorWrapper> _mapActor = new HashMap<>();
-	private Map<String, DFActorWrapper> _mapActorName = new HashMap<>();
+	private Map<Integer, DFActorWrap> _mapActor = new HashMap<>();
+	private Map<String, DFActorWrap> _mapActorName = new HashMap<>();
 	//
 	private final ReentrantReadWriteLock _lockMapActor = new ReentrantReadWriteLock();
 	private final ReadLock _lockActorRead = _lockMapActor.readLock();
@@ -326,7 +326,7 @@ public final class DFActorManager {
 			e1.printStackTrace();
 			return -2;
 		}
-		final DFActorWrapper wrapper = new DFActorWrapper(actor);
+		final DFActorWrap wrapper = new DFActorWrap(actor);
 		//
 		_lockActorWrite.lock();
 		try{
@@ -361,7 +361,7 @@ public final class DFActorManager {
 	}
 	
 	protected int removeActor(int id){
-		DFActorWrapper wrap = null;
+		DFActorWrap wrap = null;
 		//
 		_lockActorWrite.lock();
 		try{
@@ -398,7 +398,7 @@ public final class DFActorManager {
 	}
 	protected int send(int srcId, int dstId, int requestId, 
 			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler, boolean isCb){
-		DFActorWrapper wrap = null;
+		DFActorWrap wrap = null;
 		//
 		_lockActorRead.lock();
 		try{
@@ -420,7 +420,7 @@ public final class DFActorManager {
 	}
 	protected int send(int srcId, String dstName, int requestId, 
 			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
-		DFActorWrapper wrap = null;
+		DFActorWrap wrap = null;
 		_lockActorRead.lock();
 		try{
 			wrap = _mapActorName.get(dstName);
@@ -516,14 +516,14 @@ public final class DFActorManager {
 			while(_onLoop){
 				try{
 					if(_isLogicActorThread){  //logic actor
-						final DFActorWrapper wrap = _queueGlobalActor.poll(1, TimeUnit.SECONDS);
+						final DFActorWrap wrap = _queueGlobalActor.poll(1, TimeUnit.SECONDS);
 						if(wrap != null){
 							if(wrap.consumeMsg(_consumeType) == 0){ //back to global queue
 								_queueGlobalActor.offer(wrap);
 							}
 						}
 					}else{	//block actor
-						final DFActorWrapper wrap = _queueGlobalBlockActor.poll(1, TimeUnit.SECONDS);
+						final DFActorWrap wrap = _queueGlobalBlockActor.poll(1, TimeUnit.SECONDS);
 						if(wrap != null){
 							if(wrap.consumeMsg(_consumeType) == 0){ //back to global queue
 								_queueGlobalBlockActor.offer(wrap);

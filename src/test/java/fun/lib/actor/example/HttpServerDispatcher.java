@@ -4,11 +4,10 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
+import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.http.DFHttpDispatcher;
-import fun.lib.actor.api.http.DFHttpSvrRequest;
-import fun.lib.actor.api.http.DFHttpServerHandler;
+import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -34,10 +33,10 @@ public final class HttpServerDispatcher {
 			actorId = sys.createActor("/user", UserActor.class);
 			mapUri.put("/user", actorId);
 			//
-			net.doHttpServer(8080, new DFHttpServerHandler() {
+			net.doHttpServer(8080, new CbHttpServer() {
 				@Override
 				public int onHttpRequest(Object msg) {
-					DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
+					DFHttpSvrReq req = (DFHttpSvrReq) msg;
 					//response
 					req.response("echo from server, entryModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 						.send();
@@ -54,7 +53,7 @@ public final class HttpServerDispatcher {
 		}
 		@Override
 		public int onQueryMsgActorId(int port, InetSocketAddress addrRemote, Object msg) {
-			DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
+			DFHttpSvrReq req = (DFHttpSvrReq) msg;
 			Integer actorId = mapUri.get(req.getUri());
 			if(actorId != null && actorId != 0){ //有处理actor的映射
 				return actorId;
@@ -70,7 +69,7 @@ public final class HttpServerDispatcher {
 	private static class IndexActor extends DFActor{
 		@Override
 		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg) {
-			DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
+			DFHttpSvrReq req = (DFHttpSvrReq) msg;
 			//response
 			req.response("echo from server, indexModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 				.send();
@@ -84,7 +83,7 @@ public final class HttpServerDispatcher {
 	private static class UserActor extends DFActor{
 		@Override
 		public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg) {
-			DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
+			DFHttpSvrReq req = (DFHttpSvrReq) msg;
 			//response
 			req.response("echo from server, userModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 				.send();

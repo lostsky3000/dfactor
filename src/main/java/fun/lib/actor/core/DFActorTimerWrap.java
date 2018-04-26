@@ -3,12 +3,12 @@ package fun.lib.actor.core;
 import fun.lib.actor.api.DFActorTimer;
 import fun.lib.actor.api.cb.CbTimeout;
 
-public final class DFActorTimerWrapper implements DFActorTimer{
+public final class DFActorTimerWrap implements DFActorTimer{
 	
 	private final int id;
 	private final DFActorManager _mgr;
 	
-	protected DFActorTimerWrapper(int id) {
+	protected DFActorTimerWrap(int id) {
 		this.id = id;
 		_mgr = DFActorManager.get();
 	}

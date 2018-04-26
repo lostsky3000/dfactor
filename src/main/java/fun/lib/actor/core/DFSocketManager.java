@@ -15,9 +15,9 @@ import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.api.DFUdpDecoder;
-import fun.lib.actor.api.http.DFHttpClientHandler;
+import fun.lib.actor.api.cb.CbHttpClient;
+import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.http.DFHttpDispatcher;
-import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
@@ -84,7 +84,7 @@ public final class DFSocketManager {
 	protected void doUdpListen(final DFUdpServerCfg cfg, final int defaultActorId, DFActorUdpDispatcher dispatcher,
 			final int requestId){
 		//start listen
-		final DFUdpChannelWrapper channelWrapper = new DFUdpChannelWrapper();
+		final DFUdpChannelWrap channelWrapper = new DFUdpChannelWrap();
 		final DFUdpIoGroup group = new DFUdpIoGroup(cfg, defaultActorId);
 		//
 		Bootstrap boot = new Bootstrap();
@@ -209,8 +209,8 @@ public final class DFSocketManager {
 		private final int actorIdDef;
 		private final int port;
 		private final int requestId;
-		private final DFUdpChannelWrapper channel;
-		protected UdpHandler(int actorIdDef, DFActorUdpDispatcher dispatcher, DFUdpDecoder decoder, int port, int requestId, DFUdpChannelWrapper channel) {
+		private final DFUdpChannelWrap channel;
+		protected UdpHandler(int actorIdDef, DFActorUdpDispatcher dispatcher, DFUdpDecoder decoder, int port, int requestId, DFUdpChannelWrap channel) {
 			this.actorIdDef = actorIdDef;
 			this.dispatcher = dispatcher;
 			this.decoder = decoder;
@@ -493,7 +493,7 @@ public final class DFSocketManager {
 		private final DFActorTcpDispatcher _dispatcher;
 		private final DFTcpDecoder _decoder;
 		private final DFTcpEncoder _encoder;
-		private volatile DFTcpChannelWrapper _session = null;
+		private volatile DFTcpChannelWrap _session = null;
 		private volatile int _sessionId = 0;
 		private volatile InetSocketAddress _addrRemote = null;
 		private TcpHandler(final int actorIdDef, final int requestId, final int decodeType, DFActorTcpDispatcher dispatcher,
@@ -508,7 +508,7 @@ public final class DFSocketManager {
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			_addrRemote = (InetSocketAddress) ctx.channel().remoteAddress();
-			_session = new DFTcpChannelWrapper(_addrRemote.getHostString(), _addrRemote.getPort(), 
+			_session = new DFTcpChannelWrap(_addrRemote.getHostString(), _addrRemote.getPort(), 
 					ctx.channel(), _decodeType, _encoder);
 			_session.setOpenTime(System.currentTimeMillis());
 			_sessionId = _session.getChannelId();
@@ -596,7 +596,7 @@ public final class DFSocketManager {
 		private final DFActorTcpDispatcher _dispatcher;
 		private final DFTcpDecoder _decoder;
 		private final DFTcpEncoder _encoder;
-		private volatile DFTcpChannelWrapper _session = null;
+		private volatile DFTcpChannelWrap _session = null;
 		private volatile int _sessionId = 0;
 		private volatile InetSocketAddress _addrRemote = null;
 		public TcpWsHandler(int actorIdDef, int requestId, int decodeType, DFActorTcpDispatcher dispatcher, 
@@ -611,7 +611,7 @@ public final class DFSocketManager {
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			_addrRemote = (InetSocketAddress) ctx.channel().remoteAddress();
-			_session = new DFTcpChannelWrapper(_addrRemote.getHostString(), _addrRemote.getPort(), 
+			_session = new DFTcpChannelWrap(_addrRemote.getHostString(), _addrRemote.getPort(), 
 					ctx.channel(), _decodeType, _encoder);
 			_session.setOpenTime(System.currentTimeMillis());
 			_sessionId = _session.getChannelId();
@@ -760,12 +760,12 @@ public final class DFSocketManager {
 					pipe.addLast(new HttpServerCodec());
 					pipe.addLast(new HttpObjectAggregator(64*1024));
 //					pipe.addLast(new HttpServerExpectContinueHandler());
-					pipe.addLast(new DFHttpHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, (DFHttpServerHandler) _userHandler));
+					pipe.addLast(new DFHttpSvrHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, (CbHttpServer) _userHandler));
 				}else{ //client
 					pipe.addLast(new HttpClientCodec());
 					pipe.addLast(new HttpObjectAggregator(64*1024));
 					pipe.addLast(new DFHttpCliHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, 
-										(DFHttpClientHandler) _userHandler, (DFHttpCliReqWrap) _reqData));
+										(CbHttpClient) _userHandler, (DFHttpCliReqWrap) _reqData));
 				}
 			}
 			else{

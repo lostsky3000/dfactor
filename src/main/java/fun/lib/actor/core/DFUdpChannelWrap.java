@@ -4,10 +4,10 @@ import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.kcp.KcpServer;
 import io.netty.channel.Channel;
 
-public final class DFUdpChannelWrapper implements DFUdpChannel{
+public final class DFUdpChannelWrap implements DFUdpChannel{
 
 	private volatile Channel channel = null;
-	protected DFUdpChannelWrapper(){
+	protected DFUdpChannelWrap(){
 		
 	}
 	private volatile KcpServer kcpServer;

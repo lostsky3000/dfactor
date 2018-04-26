@@ -36,10 +36,10 @@ public class DFActor {
 		this.consumeType = consumeType;
 		_mgr = DFActorManager.get();
 		//
-		timer = new DFActorTimerWrapper(id);
-		log = new DFActorLogWrapper(id, name);
-		sys = new DFActorSystemWrapper(id, log, this);
-		net = new DFActorNetWrapper(id);
+		timer = new DFActorTimerWrap(id);
+		log = new DFActorLogWrap(id, name);
+		sys = new DFActorSystemWrap(id, log, this);
+		net = new DFActorNetWrap(id);
 	}
 	
 	public int getId(){

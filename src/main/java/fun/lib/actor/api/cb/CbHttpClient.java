@@ -1,6 +1,6 @@
-package fun.lib.actor.api.http;
+package fun.lib.actor.api.cb;
 
-public interface DFHttpClientHandler {
+public interface CbHttpClient {
 
 	/**
 	 * http请求响应回调

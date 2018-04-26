@@ -1,11 +1,10 @@
 package fun.lib.actor.example;
-import fun.lib.actor.api.http.DFHttpSvrRequest;
-import fun.lib.actor.api.http.DFHttpServerHandler;
+
+import fun.lib.actor.api.cb.CbHttpServer;
+import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.po.DFTcpServerCfg;
-import fun.lib.actor.po.SslConfig;
 /**
  * 简单httpserver示例
  * @author lostsky
@@ -21,10 +20,10 @@ public final class SimpleHttpServer {
 	private static class EntryActor extends DFActor{
 		@Override
 		public void onStart(Object param) {
-			net.doHttpServer(8080, new DFHttpServerHandler() {
+			net.doHttpServer(8080, new CbHttpServer() {
 				@Override
 				public int onHttpRequest(Object msg) {
-					DFHttpSvrRequest req = (DFHttpSvrRequest) msg;
+					DFHttpSvrReq req = (DFHttpSvrReq) msg;
 					//response
 					req.response("echo from server, uri="+req.getUri())
 						.send();

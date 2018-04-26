@@ -3,19 +3,19 @@ package fun.lib.actor.core;
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFActorUdpDispatcher;
-import fun.lib.actor.api.http.DFHttpClientHandler;
+import fun.lib.actor.api.cb.CbHttpClient;
+import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.http.DFHttpDispatcher;
-import fun.lib.actor.api.http.DFHttpServerHandler;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
 
-public final class DFActorNetWrapper  implements DFActorNet{
+public final class DFActorNetWrap  implements DFActorNet{
 	
 	private final int id;
 	private final DFActorManager _mgr;
 	
-	public DFActorNetWrapper(int id) {
+	public DFActorNetWrap(int id) {
 		this.id = id;
 		_mgr = DFActorManager.get();
 	}
@@ -53,7 +53,7 @@ public final class DFActorNetWrapper  implements DFActorNet{
 	}
 	//http
 	@Override
-	public void doHttpServer(int port, DFHttpServerHandler handler) {
+	public void doHttpServer(int port, CbHttpServer handler) {
 		DFTcpServerCfg cfg = new DFTcpServerCfg(port)
 				.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
 				.setUserHandler(handler);
@@ -61,7 +61,7 @@ public final class DFActorNetWrapper  implements DFActorNet{
 		mgr.doTcpListen(cfg, id, port);
 	}
 	@Override
-	public void doHttpServer(int port, DFHttpServerHandler handler, DFHttpDispatcher dispatcher) {
+	public void doHttpServer(int port, CbHttpServer handler, DFHttpDispatcher dispatcher) {
 		DFTcpServerCfg cfg = new DFTcpServerCfg(port)
 				.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
 				.setUserHandler(handler);
@@ -69,14 +69,14 @@ public final class DFActorNetWrapper  implements DFActorNet{
 		mgr.doTcpListen(cfg, id, dispatcher, port);
 	}	
 	@Override
-	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler) {
+	public void doHttpServer(DFTcpServerCfg cfg, CbHttpServer handler) {
 		cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
 				.setUserHandler(handler);
 		final DFSocketManager mgr = DFSocketManager.get();
 		mgr.doTcpListen(cfg, id, cfg.port);
 	}
 	@Override
-	public void doHttpServer(DFTcpServerCfg cfg, DFHttpServerHandler handler, DFHttpDispatcher dispatcher) {
+	public void doHttpServer(DFTcpServerCfg cfg, CbHttpServer handler, DFHttpDispatcher dispatcher) {
 		cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
 				.setUserHandler(handler);
 		final DFSocketManager mgr = DFSocketManager.get();
@@ -106,7 +106,7 @@ public final class DFActorNetWrapper  implements DFActorNet{
 	}
 	//http client
 	@Override
-	public void doHttpClient(DFTcpClientCfg cfg, DFHttpClientHandler handler) {
+	public void doHttpClient(DFTcpClientCfg cfg, CbHttpClient handler) {
 		cfg.setTcpDecodeType(DFActorDefine.TCP_DECODE_HTTP)
 			.setUserHandler(handler);
 		_mgr.doTcpConnect(cfg, id, 0);

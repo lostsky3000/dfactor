@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONObject;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.api.http.DFHttpCliRequest;
-import fun.lib.actor.api.http.DFHttpSvrReponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -16,7 +15,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
-public final class DFTcpChannelWrapper implements DFTcpChannel{
+public final class DFTcpChannelWrap implements DFTcpChannel{
 
 	private static int s_sessionIdCount = 1;
 	//
@@ -31,7 +30,7 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 	private long _openTime = 0;
 	private final DFTcpEncoder _encoder;
 	//
-	protected DFTcpChannelWrapper(String remoteHost, int remotePort, final Channel channel, 
+	protected DFTcpChannelWrap(String remoteHost, int remotePort, final Channel channel, 
 			final int decodeType, DFTcpEncoder encoder){
 		this._remoteHost = remoteHost;
 		this._remotePort = remotePort;
@@ -39,7 +38,7 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 		this._tcpDecodeType = decodeType;
 		this._encoder = encoder;
 		//
-		synchronized (DFTcpChannelWrapper.class) {
+		synchronized (DFTcpChannelWrap.class) {
 			this._sessionId = s_sessionIdCount;
 			if(++s_sessionIdCount >= Integer.MAX_VALUE){
 				s_sessionIdCount = 1;
@@ -97,8 +96,8 @@ public final class DFTcpChannelWrapper implements DFTcpChannel{
 				_channel.writeAndFlush(msg);
 			}
 		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){
-			if(msg instanceof DFHttpSvrReponse){
-				DFHttpSvrReponse rsp = (DFHttpSvrReponse) msg;
+			if(msg instanceof DFHttpSvrRspWrap){
+				DFHttpSvrRspWrap rsp = (DFHttpSvrRspWrap) msg;
 				_channel.writeAndFlush(rsp.getRawResponse()).addListener(ChannelFutureListener.CLOSE);
 			}else if(msg instanceof DFHttpCliReqWrap){
 				DFHttpCliReqWrap req = (DFHttpCliReqWrap) msg;

@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -89,7 +90,7 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	            if(method.equals(HttpMethod.GET)){
 	            	HttpHeaders headers = req.headers();
 	            	//
-	            	dfReq = new DFHttpSvrReqWrap(_session, uri, DFHttpMethod.GET, keepAlive, null, null);
+	            	dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, null, 0, null);
 	            	//headers
 	            	dfReq.setHeaders(headers);
 	            	//values
@@ -117,10 +118,11 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	            }else if(method.equals(HttpMethod.POST)){
 	            	HttpHeaders headers = req.headers();
 	            	final String contentType = headers.get(DFHttpHeader.CONTENT_TYPE);
+	            	final int contentLen = (int) HttpUtil.getContentLength(req);
 	            	//data
 	            	if(contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
-	            		dfReq = new DFHttpSvrReqWrap(_session, uri, DFHttpMethod.POST, keepAlive, 
-	            						contentType==null?DFHttpContentType.UNKNOWN:contentType, null);
+	            		dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, 
+	            						contentType==null?DFHttpContentType.UNKNOWN:contentType, contentLen, null);
 	            		HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(req);
 	                	List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
 	                    for (InterfaceHttpData parm : parmList) {
@@ -138,8 +140,8 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 		            			buf.retain();
 		            		}
 	            		}
-	            		dfReq = new DFHttpSvrReqWrap(_session, uri, DFHttpMethod.POST, keepAlive, 
-        								contentType==null?DFHttpContentType.UNKNOWN:contentType, appData);
+	            		dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, 
+        								contentType==null?DFHttpContentType.UNKNOWN:contentType, contentLen, appData);
 	            	}
 	            	//headers
 	            	dfReq.setHeaders(headers);

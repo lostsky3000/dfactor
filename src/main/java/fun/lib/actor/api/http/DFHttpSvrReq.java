@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import fun.lib.actor.core.DFHttpSvrRspWrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpMethod;
 
 public interface DFHttpSvrReq {
 
@@ -15,8 +16,9 @@ public interface DFHttpSvrReq {
 	public Iterator<Entry<String,String>> getHeaderIterator();
 	public String getHeaderValue(String name);
 	public Object getApplicationData();
-	public String getMethod();
+	public HttpMethod getMethod();
 	public String getContentType();
+	public int getContentLength();
 	public String getUri();
 	public boolean isKeepAlive();
 	public void release();

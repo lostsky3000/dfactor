@@ -12,12 +12,14 @@ import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.api.http.DFHttpSvrRsp;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.util.ReferenceCountUtil;
 
 public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 
-	private final String method;
+	private final HttpMethod method;
 	private final String contentType;
+	private final int contentLength;
 	private final String uri;
 	private final boolean keepAlive;
 	private HttpHeaders headers = null;
@@ -27,11 +29,13 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 	private volatile DFHttpSvrRspWrap response = null;
 	private final DFTcpChannel channel;
 	
-	protected DFHttpSvrReqWrap(DFTcpChannel channel, String uri, String method, boolean keepAlive, String contentType, Object appData) {
+	protected DFHttpSvrReqWrap(DFTcpChannel channel, String uri, HttpMethod method, boolean keepAlive, 
+				String contentType, int contentLength, Object appData) {
 		this.channel = channel;
 		this.uri = uri;
 		this.method = method;
 		this.contentType = contentType;
+		this.contentLength = contentLength;
 		this.keepAlive = keepAlive;
 		this.appData = appData;
 	}
@@ -68,12 +72,16 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 		return appData;
 	}
 	@Override
-	public String getMethod() {
+	public HttpMethod getMethod() {
 		return method;
 	}
 	@Override
 	public String getContentType() {
 		return contentType;
+	}
+	@Override
+	public int getContentLength(){
+		return contentLength;
 	}
 	@Override
 	public String getUri() {

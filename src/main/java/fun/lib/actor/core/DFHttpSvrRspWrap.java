@@ -13,6 +13,8 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 
@@ -79,12 +81,12 @@ public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 	}
 	@Override
 	public DFHttpSvrRsp setContentType(String contentType){
-		putHeader(DFHttpHeader.CONTENT_TYPE, contentType);
+		putHeader(HttpHeaderNames.CONTENT_TYPE.toString(), contentType);
 		return this;
 	}
 	@Override
 	public DFHttpSvrRsp setUserAgent(String userAgent){
-		putHeader(DFHttpHeader.USER_AGENT, userAgent);
+		putHeader(HttpHeaderNames.USER_AGENT.toString(), userAgent);
 		return this;
 	}
 	@Override

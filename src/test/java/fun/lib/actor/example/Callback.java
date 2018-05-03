@@ -36,7 +36,7 @@ public final class Callback {
 				@Override
 				public int onCallback(int cmd, Object payload) {
 					log.info("recv result: 100 + 50 = "+payload+", curThread="+Thread.currentThread().getName());
-					return 0;
+					return MSG_AUTO_RELEASE;
 				}
 			});
 		}
@@ -60,7 +60,7 @@ public final class Callback {
 					cb.callback(1002, new Integer(result));
 				}
 			}
-			return DFActorDefine.MSG_AUTO_RELEASE;
+			return MSG_AUTO_RELEASE;
 		}
 		public Computer(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);

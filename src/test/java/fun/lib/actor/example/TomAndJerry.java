@@ -4,6 +4,7 @@ import java.util.Random;
 
 import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.core.DFActor;
+import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 import fun.lib.actor.po.ActorProp;
 
@@ -75,7 +76,7 @@ public final class TomAndJerry {
 					sys.send("Jerry", 1003, new Boolean(false));
 				}
 			}
-			return 0;
+			return MSG_AUTO_RELEASE;
 		}
 	}
 	//Tom
@@ -108,7 +109,7 @@ public final class TomAndJerry {
 				//tom exit
 				sys.exit();
 			}
-			return 0;
+			return MSG_AUTO_RELEASE;
 		}
 	}
 	//Jerry
@@ -141,7 +142,7 @@ public final class TomAndJerry {
 				//delay exit
 				timer.timeout(2000, 0);
 			}
-			return 0;
+			return MSG_AUTO_RELEASE;
 		}
 		@Override
 		public void onTimeout(int requestId) {

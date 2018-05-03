@@ -66,7 +66,7 @@ public class TcpCustomDecAndEnc {
 			//向客户端返回
 			channel.write("echo from server, tm="+System.currentTimeMillis());  //写入String，由编码器负责编码
 			//消息对象交由框架释放
-			return DFActorDefine.MSG_AUTO_RELEASE; 
+			return MSG_AUTO_RELEASE; 
 		}
 		@Override
 		public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
@@ -139,7 +139,7 @@ public class TcpCustomDecAndEnc {
 			final String str = (String) msg.readCharSequence(msgLen, Charset.forName("utf-8"));
 			log.debug("recv msg from svr: "+str);
 			
-			return DFActorDefine.MSG_AUTO_RELEASE;
+			return MSG_AUTO_RELEASE;
 		}
 		@Override
 		public void onTcpClientConnResult(int requestId, boolean isSucc, String errMsg) {

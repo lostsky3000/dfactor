@@ -65,7 +65,7 @@ public final class BlockActor {
 				// do io
 				log.info("do io work! param="+param+",  curThread="+Thread.currentThread().getName());
 			}
-			return 0;
+			return MSG_AUTO_RELEASE;
 		}
 	}
 

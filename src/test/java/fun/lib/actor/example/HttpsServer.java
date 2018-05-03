@@ -38,7 +38,7 @@ public final class HttpsServer {
 									//response
 									req.response("echo from ssl server, uri="+req.getUri())
 										.send();
-									return DFActorDefine.MSG_AUTO_RELEASE;
+									return MSG_AUTO_RELEASE;
 								}
 								@Override
 								public void onListenResult(boolean isSucc, String errMsg) {

@@ -36,7 +36,7 @@ public final class Sendback {
 		@Override
 		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 			log.info("recv back msg, cmd="+cmd);
-			return DFActorDefine.MSG_AUTO_RELEASE;
+			return MSG_AUTO_RELEASE;
 		}
 		
 		public EntryActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
@@ -51,7 +51,7 @@ public final class Sendback {
 			log.info("recv req msg, cmd="+cmd+", data="+payload);
 			//sendback
 			sys.sendback(1002, null);
-			return DFActorDefine.MSG_AUTO_RELEASE;
+			return MSG_AUTO_RELEASE;
 		}
 		public BackActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
 			super(id, name, consumeType, isBlockActor);

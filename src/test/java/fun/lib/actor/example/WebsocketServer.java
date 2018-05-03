@@ -52,7 +52,7 @@ public final class WebsocketServer {
 			//response
 			channel.write("echo from server: "+msg);
 			//消息对象交由框架释放
-			return DFActorDefine.MSG_AUTO_RELEASE;  //DFActorDefine.MSG_MANUAL_RELEASE
+			return MSG_AUTO_RELEASE; 
 		}
 		@Override
 		public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {

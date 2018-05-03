@@ -34,7 +34,7 @@ public final class HttpClient {
 							}else{
 								log.info("conn http server failed, err="+errMsg);
 							}
-							return DFActorDefine.MSG_AUTO_RELEASE;
+							return MSG_AUTO_RELEASE;
 						}
 					});
 		}

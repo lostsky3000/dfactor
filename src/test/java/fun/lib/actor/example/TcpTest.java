@@ -70,7 +70,7 @@ public class TcpTest {
 			//向客户端返回
 			channel.write(bufOut);
 			//消息对象交由框架释放
-			return DFActorDefine.MSG_AUTO_RELEASE;  //DFActorDefine.MSG_MANUAL_RELEASE
+			return MSG_AUTO_RELEASE;  //DFActorDefine.MSG_MANUAL_RELEASE
 		}
 		@Override
 		public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
@@ -118,7 +118,7 @@ public class TcpTest {
 			final String str = (String) msg.readCharSequence(msgLen, Charset.forName("utf-8"));
 			log.debug("recv msg from svr: "+str);
 			
-			return DFActorDefine.MSG_AUTO_RELEASE;
+			return MSG_AUTO_RELEASE;
 		}
 		@Override
 		public void onTcpClientConnResult(int requestId, boolean isSucc, String errMsg) {

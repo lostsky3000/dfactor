@@ -141,4 +141,14 @@ public class DFActor {
 	public static int transTimeRealToTimer(long timeMilli){
 		return (int) (timeMilli/TIMER_UNIT_MILLI);
 	}
+	
+	
+	/**
+	 * 消息由框架负责释放
+	 */
+	public static final int MSG_AUTO_RELEASE = 1;
+	/**
+	 * 消息由使用者负责释放
+	 */
+	public static final int MSG_MANUAL_RELEASE = 2;
 }

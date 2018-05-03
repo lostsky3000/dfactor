@@ -27,7 +27,7 @@ public final class SimpleHttpServer {
 					//response
 					req.response("echo from server, uri="+req.getUri())
 						.send();
-					return DFActorDefine.MSG_AUTO_RELEASE;
+					return MSG_AUTO_RELEASE;
 				}
 				@Override
 				public void onListenResult(boolean isSucc, String errMsg) {

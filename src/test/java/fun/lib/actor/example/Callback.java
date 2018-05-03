@@ -5,6 +5,7 @@ import fun.lib.actor.api.cb.CbMsgReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
+import fun.lib.actor.po.ActorProp;
 
 /**
  * 演示call的用法，异步回调完成actor间通信
@@ -34,7 +35,7 @@ public final class Callback {
 			sys.call("Computer", 1001, new String("add,100,50"), new CbMsgRsp() {
 				@Override
 				public int onCallback(int cmd, Object payload) {
-					log.info("recv result: 100 + 50 = "+payload);
+					log.info("recv result: 100 + 50 = "+payload+", curThread="+Thread.currentThread().getName());
 					return 0;
 				}
 			});
@@ -52,6 +53,7 @@ public final class Callback {
 		@Override
 		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
 			if(cb != null){
+				log.info("recv req, curThread="+Thread.currentThread().getName());
 				String[] arrReq = ((String)payload).split(",");
 				if(arrReq[0].equals("add")){
 					int result = Integer.parseInt(arrReq[1]) + Integer.parseInt(arrReq[2]);

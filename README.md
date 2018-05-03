@@ -47,7 +47,7 @@ net.doHttpServer(8080, new DFHttpServerHandler() {
 	...
 });  //start http server
 ```
-几行代码完成HTTPS服务器启动，[本例代码](src/test/java/fun/lib/actor/example/SimpleHttpServer.java)
+几行代码完成HTTP服务器启动，[本例代码](src/test/java/fun/lib/actor/example/SimpleHttpServer.java)
 
 
 
@@ -71,7 +71,7 @@ net.doHttpServer(8080, new DFHttpServerHandler() {
 
 [BlockActor](src/test/java/fun/lib/actor/example/BlockActor.java)  block类型actor使用示例(适用数据库操作等io场景)
 
-[TcpTest](src/test/java/fun/lib/actor/example/TcpTest.java)  tcp服务端客户端通信示例
+[TcpTest](src/test/java/fun/lib/actor/example/TcpTest.java)  TCP服务端客户端通信示例
 
 [TcpCustomDecAndEnc](src/test/java/fun/lib/actor/example/TcpCustomDecAndEnc.java)  TCP自定义消息编解码器示例
 

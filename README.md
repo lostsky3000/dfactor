@@ -39,13 +39,16 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 
 启动一个简单的http-echo服务器
 ```java
-net.doHttpServer(8080, new DFHttpServerHandler() {
+net.doHttpServer(8080, new CbHttpServer() {
 	@Override
-	public void onHttpRequest(DFHttpRequest req) {
-		req.response("echo from server, uri="+req.getUri()).send();
+	public int onHttpRequest(Object msg) {
+		DFHttpSvrReq req = (DFHttpSvrReq) msg;
+		//response
+		req.response("echo from server").send();
+		return MSG_AUTO_RELEASE;
 	}
-	...
-});  //start http server
+	...				
+});
 ```
 几行代码完成HTTP服务器启动，[本例代码](src/test/java/fun/lib/actor/example/SimpleHttpServer.java)
 

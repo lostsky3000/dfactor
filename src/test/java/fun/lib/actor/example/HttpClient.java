@@ -40,8 +40,8 @@ public final class HttpClient {
 		}
 		
 		
-		public EntryActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public EntryActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 		
 	}

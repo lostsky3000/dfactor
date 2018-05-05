@@ -154,7 +154,7 @@ public final class DFActorWrap {
 					}else if(msg.subject == DFActorDefine.SUBJECT_NET){
 						if(msg.cmd == DFActorDefine.NET_UDP_MESSAGE){ //udp msg
 							final int ret = _actor.onUdpServerRecvMsg(msg.sessionId, (DFUdpChannel) msg.context, (DatagramPacket) msg.payload);
-							if(ret == DFActorDefine.MSG_AUTO_RELEASE){ //auto release
+							if(ret != DFActorDefine.MSG_MANUAL_RELEASE){ //auto release
 								ReferenceCountUtil.release(msg.payload);
 							}
 						}else if(msg.cmd == DFActorDefine.NET_TCP_MESSAGE){ //tcp msg
@@ -164,7 +164,7 @@ public final class DFActorWrap {
 									msg.userHandler != null){  //http, has callback
 								if(msg.sessionId == 1){  //recv rsp as server
 									CbHttpServer handler = (CbHttpServer) msg.userHandler;
-									if(handler.onHttpRequest(payload) == DFActorDefine.MSG_AUTO_RELEASE){
+									if(handler.onHttpRequest(payload) != DFActorDefine.MSG_MANUAL_RELEASE){
 										if(payload instanceof DFHttpSvrReq){
 											((DFHttpSvrReq)payload).release();
 										}else{
@@ -173,7 +173,7 @@ public final class DFActorWrap {
 									}
 								}else{  //recv rsp as client
 									CbHttpClient handler = (CbHttpClient) msg.userHandler;
-									if(handler.onHttpResponse(payload, true, null) == DFActorDefine.MSG_AUTO_RELEASE){
+									if(handler.onHttpResponse(payload, true, null) != DFActorDefine.MSG_MANUAL_RELEASE){
 										if(payload instanceof DFHttpCliResponse){
 											((DFHttpCliResponse)payload).release();
 										}else{
@@ -186,7 +186,7 @@ public final class DFActorWrap {
 								int curDstActor = chWrap.getMsgActor();
 								if(curDstActor == _actor.id || curDstActor == 0){
 									int ret = _actor.onTcpRecvMsg(msg.srcId, chWrap, payload);
-									if(ret == DFActorDefine.MSG_AUTO_RELEASE && payload!=null){ //auto release
+									if(ret != DFActorDefine.MSG_MANUAL_RELEASE && payload!=null){ //auto release
 										ReferenceCountUtil.release(payload);
 									}
 								}else{  //dstActor has changed

@@ -20,8 +20,8 @@ public final class WebsocketServer {
 	}
 	
 	private static class Server extends DFActor{
-		public Server(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Server(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}
 		private final int serverPort = 10001;

@@ -35,8 +35,8 @@ public final class DFActorDefine {
 	public static final int NET_KCP_INACTIVE = 14;
 	
 	//
-	public static final int MSG_AUTO_RELEASE = 1;
-	public static final int MSG_MANUAL_RELEASE = 2;
+	public static final int MSG_AUTO_RELEASE = 0;
+	public static final int MSG_MANUAL_RELEASE = -2409;
 	
 	//
 	public static final int TCP_DECODE_LENGTH = 1;

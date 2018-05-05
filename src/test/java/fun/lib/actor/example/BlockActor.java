@@ -27,8 +27,8 @@ public final class BlockActor {
 	}
 	//逻辑actor
 	private static class LogicActor extends DFActor{
-		public LogicActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public LogicActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}
 		@Override
@@ -50,8 +50,8 @@ public final class BlockActor {
 	
 	//block actor
 	private static class DbActor extends DFActor{
-		public DbActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public DbActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}
 		@Override

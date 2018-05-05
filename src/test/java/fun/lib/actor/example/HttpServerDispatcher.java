@@ -61,8 +61,8 @@ public final class HttpServerDispatcher {
 			return id;  //默认转发给本actor
 		}
 		
-		public EntryActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public EntryActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 	}
 	
@@ -75,8 +75,8 @@ public final class HttpServerDispatcher {
 				.send();
 			return MSG_AUTO_RELEASE;
 		}
-		public IndexActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public IndexActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 	}
 	
@@ -89,8 +89,8 @@ public final class HttpServerDispatcher {
 				.send();
 			return MSG_AUTO_RELEASE;
 		}
-		public UserActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public UserActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 		
 	}

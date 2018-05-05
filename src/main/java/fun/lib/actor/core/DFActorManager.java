@@ -316,11 +316,12 @@ public final class DFActorManager {
 			name = DFActorDefine.ACTOR_NAME_DEF_PFX+id;
 		}
 		try {
-			Class[] paramsType = {Integer.class, String.class, Integer.class, Boolean.class};
-			Object[] params = {new Integer(id), name, new Integer(consumeType), new Boolean(isBlockActor)};
+			Class[] paramsType = {Integer.class, String.class, Boolean.class};
+			Object[] params = {new Integer(id), name, new Boolean(isBlockActor)};
 			Constructor<? extends DFActor> ctor = classz.getDeclaredConstructor(paramsType);
 			ctor.setAccessible(true);
 			actor = ctor.newInstance(params);
+			actor.setConsumeType(consumeType);
 		} catch (InstantiationException | IllegalAccessException | NoSuchMethodException 
 				| SecurityException | IllegalArgumentException | InvocationTargetException e1) {
 			e1.printStackTrace();

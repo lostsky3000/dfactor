@@ -41,8 +41,8 @@ public final class Callback {
 			});
 		}
 		
-		public Man(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Man(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 		
 	}
@@ -62,8 +62,8 @@ public final class Callback {
 			}
 			return MSG_AUTO_RELEASE;
 		}
-		public Computer(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Computer(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 		
 	}

@@ -39,8 +39,8 @@ public final class Sendback {
 			return MSG_AUTO_RELEASE;
 		}
 		
-		public EntryActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public EntryActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 	}
 	
@@ -53,8 +53,8 @@ public final class Sendback {
 			sys.sendback(1002, null);
 			return MSG_AUTO_RELEASE;
 		}
-		public BackActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public BackActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 	}
 

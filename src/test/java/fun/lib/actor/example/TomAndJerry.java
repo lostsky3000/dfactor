@@ -23,8 +23,8 @@ public final class TomAndJerry {
 	//导演
 	private static class Director extends DFActor{
 		private final Random rand = new Random();
-		public Director(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Director(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}
 		@Override
@@ -81,8 +81,8 @@ public final class TomAndJerry {
 	}
 	//Tom
 	private static class Tom extends DFActor{
-		public Tom(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Tom(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 		private int spd = 0;
 		private int curPos = 0; 
@@ -114,8 +114,8 @@ public final class TomAndJerry {
 	}
 	//Jerry
 	private static class Jerry extends DFActor{
-		public Jerry(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Jerry(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 		}
 		private int spd = 0;
 		private int curPos = 0; 

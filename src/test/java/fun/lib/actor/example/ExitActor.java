@@ -21,8 +21,8 @@ public final class ExitActor {
 	 *
 	 */
 	private static class EntryActor extends DFActor{
-		public EntryActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public EntryActor(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}
 		@Override

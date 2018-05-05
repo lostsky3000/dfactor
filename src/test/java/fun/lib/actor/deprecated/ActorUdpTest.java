@@ -20,8 +20,8 @@ import io.netty.channel.socket.DatagramPacket;
 
 public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 
-	protected ActorUdpTest(Integer id, String name, Integer consumeType, Boolean isIoActor) {
-		super(id, name, consumeType, isIoActor);
+	protected ActorUdpTest(Integer id, String name, Boolean isIoActor) {
+		super(id, name, isIoActor);
 		// TODO Auto-generated constructor stub
 	}
 

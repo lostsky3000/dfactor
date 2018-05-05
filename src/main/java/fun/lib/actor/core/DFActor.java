@@ -14,7 +14,7 @@ public class DFActor {
 	public static final long TIMER_UNIT_MILLI = 10;
 	protected final int id;
 	protected final String name;
-	protected final int consumeType;
+	protected int consumeType = DFActorDefine.CONSUME_AUTO;
 	private final DFActorManager _mgr;
 	protected final DFActorLog log;
 	protected final DFActorSystem sys;
@@ -23,23 +23,24 @@ public class DFActor {
 	protected final boolean isBlockActor;
 	//
 	protected int lastSrcId = 0;
-//	protected Object lastUserHandler = null;
-//	protected boolean curCanCb = false;
 	
-	public DFActor(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
+	public DFActor(Integer id, String name, Boolean isBlockActor) {
 		this.id = id;
 		this.name = name;
 		this.isBlockActor = isBlockActor;
-		if(consumeType < DFActorDefine.CONSUME_AUTO || consumeType > DFActorDefine.CONSUME_ALL){ //consumeType invalid
-			consumeType = DFActorDefine.CONSUME_AUTO;
-		}
-		this.consumeType = consumeType;
 		_mgr = DFActorManager.get();
 		//
 		timer = new DFActorTimerWrap(id);
 		log = new DFActorLogWrap(id, name);
 		sys = new DFActorSystemWrap(id, log, this);
 		net = new DFActorNetWrap(id);
+	}
+	
+	protected void setConsumeType(int consumeType){
+		if(consumeType < DFActorDefine.CONSUME_AUTO || consumeType > DFActorDefine.CONSUME_ALL){ //consumeType invalid
+			consumeType = DFActorDefine.CONSUME_AUTO;
+		}
+		this.consumeType = consumeType;
 	}
 	
 	public int getId(){
@@ -146,11 +147,11 @@ public class DFActor {
 	/**
 	 * 消息由框架负责释放
 	 */
-	public static final int MSG_AUTO_RELEASE = 1;
+	public static final int MSG_AUTO_RELEASE = 0;
 	/**
 	 * 消息由使用者负责释放
 	 */
-	public static final int MSG_MANUAL_RELEASE = 2;
+	public static final int MSG_MANUAL_RELEASE = -2409;
 	
 	
 	//

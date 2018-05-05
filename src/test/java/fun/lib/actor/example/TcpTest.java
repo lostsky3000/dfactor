@@ -28,8 +28,8 @@ public class TcpTest {
 	}
 	//server
 	private static class Server extends DFActor{
-		public Server(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Server(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}
 		private final int serverPort = 10001;
@@ -81,8 +81,8 @@ public class TcpTest {
 	}	
 	//client
 	private static class Client extends DFActor{
-		public Client(Integer id, String name, Integer consumeType, Boolean isBlockActor) {
-			super(id, name, consumeType, isBlockActor);
+		public Client(Integer id, String name, Boolean isBlockActor) {
+			super(id, name, isBlockActor);
 			// TODO Auto-generated constructor stub
 		}		
 		//服务端端口

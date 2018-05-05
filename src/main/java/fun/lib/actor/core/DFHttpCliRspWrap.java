@@ -3,11 +3,11 @@ package fun.lib.actor.core;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import fun.lib.actor.api.http.DFHttpCliResponse;
+import fun.lib.actor.api.http.DFHttpCliRsp;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders;
 
-public final class DFHttpCliRspWrap implements DFHttpCliResponse{
+public final class DFHttpCliRspWrap implements DFHttpCliRsp{
 	
 	private final int statusCode;
 	private final HttpHeaders headers;

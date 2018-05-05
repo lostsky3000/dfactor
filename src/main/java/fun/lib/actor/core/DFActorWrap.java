@@ -17,7 +17,7 @@ import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.cb.CbMsgReq;
-import fun.lib.actor.api.http.DFHttpCliResponse;
+import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
@@ -174,8 +174,8 @@ public final class DFActorWrap {
 								}else{  //recv rsp as client
 									CbHttpClient handler = (CbHttpClient) msg.userHandler;
 									if(handler.onHttpResponse(payload, true, null) != DFActorDefine.MSG_MANUAL_RELEASE){
-										if(payload instanceof DFHttpCliResponse){
-											((DFHttpCliResponse)payload).release();
+										if(payload instanceof DFHttpCliRsp){
+											((DFHttpCliRsp)payload).release();
 										}else{
 											ReferenceCountUtil.release(payload);
 										}
@@ -307,8 +307,8 @@ public final class DFActorWrap {
 					if(payload != null){ //
 						if(payload instanceof DFHttpSvrReq){
 							((DFHttpSvrReq)payload).release();
-						}else if(payload instanceof DFHttpCliResponse){
-							((DFHttpCliResponse)payload).release();
+						}else if(payload instanceof DFHttpCliRsp){
+							((DFHttpCliRsp)payload).release();
 						}else if(payload instanceof ByteBuf){
 							ReferenceCountUtil.release(payload);
 						}

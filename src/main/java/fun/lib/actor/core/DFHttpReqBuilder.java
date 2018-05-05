@@ -1,10 +1,10 @@
 package fun.lib.actor.core;
 
-import fun.lib.actor.api.http.DFHttpCliRequest;
+import fun.lib.actor.api.http.DFHttpCliReq;
 
 public final class DFHttpReqBuilder {
 
-	public static DFHttpCliRequest build(){
+	public static DFHttpCliReq build(){
 		return new DFHttpCliReqWrap();
 	}
 }

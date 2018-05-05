@@ -2,7 +2,7 @@ package fun.lib.actor.core;
 
 import java.nio.charset.Charset;
 
-import fun.lib.actor.api.http.DFHttpCliRequest;
+import fun.lib.actor.api.http.DFHttpCliReq;
 import fun.lib.actor.api.http.DFHttpHeader;
 import fun.lib.actor.api.http.DFHttpMethod;
 import io.netty.buffer.ByteBuf;
@@ -16,7 +16,7 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 
-public final class DFHttpCliReqWrap implements DFHttpCliRequest{
+public final class DFHttpCliReqWrap implements DFHttpCliReq{
 	private String uri = "/";
 	private HttpMethod method = HttpMethod.GET;
 	private DefaultFullHttpRequest reqRaw = null;
@@ -30,12 +30,12 @@ public final class DFHttpCliReqWrap implements DFHttpCliRequest{
 	}
 	
 	@Override
-	public DFHttpCliRequest useDefaultHeader(boolean use){
+	public DFHttpCliReq useDefaultHeader(boolean use){
 		useDefHeader = use;
 		return this;
 	}
 	@Override
-	public DFHttpCliRequest setReqData(String data){
+	public DFHttpCliReq setReqData(String data){
 		if(reqDataBuf != null){
 			return this;
 		}
@@ -43,7 +43,7 @@ public final class DFHttpCliReqWrap implements DFHttpCliRequest{
 		return this;
 	}
 	@Override
-	public DFHttpCliRequest setReqData(ByteBuf data){
+	public DFHttpCliReq setReqData(ByteBuf data){
 		if(reqDataStr != null){
 			return this;
 		}
@@ -52,12 +52,12 @@ public final class DFHttpCliReqWrap implements DFHttpCliRequest{
 	}
 	
 	@Override
-	public DFHttpCliRequest addHeader(String name, String val){
+	public DFHttpCliReq addHeader(String name, String val){
 		headers.add(name, val);
 		return this;
 	}
 	@Override
-	public DFHttpCliRequest method(String method){
+	public DFHttpCliReq method(String method){
 		if(method.equals(DFHttpMethod.POST)){
 			this.method = HttpMethod.POST;
 		}else{
@@ -66,12 +66,12 @@ public final class DFHttpCliReqWrap implements DFHttpCliRequest{
 		return this;
 	}
 	@Override
-	public DFHttpCliRequest uri(String uri){
+	public DFHttpCliReq uri(String uri){
 		this.uri = uri;
 		return this;
 	}
 	@Override
-	public DFHttpCliRequest end(){
+	public DFHttpCliReq end(){
 		if(reqRaw != null){
 			return this;
 		}

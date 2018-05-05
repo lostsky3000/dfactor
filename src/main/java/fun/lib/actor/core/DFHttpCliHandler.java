@@ -4,7 +4,7 @@ import java.net.InetSocketAddress;
 
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.cb.CbHttpClient;
-import fun.lib.actor.api.http.DFHttpCliResponse;
+import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
@@ -81,7 +81,7 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 				long contentLen = HttpUtil.getContentLength(rsp);
 				String contentType = headers.get(HttpHeaderNames.CONTENT_TYPE);
 				//
-				DFHttpCliResponse dfRsp = null;
+				DFHttpCliRsp dfRsp = null;
 				ByteBuf buf = rsp.content();
 				//parse msg
 				boolean isString = contentIsString(contentType);

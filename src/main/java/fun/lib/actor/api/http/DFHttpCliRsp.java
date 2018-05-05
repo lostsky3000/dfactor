@@ -5,7 +5,7 @@ import java.util.Map.Entry;
 
 import io.netty.buffer.ByteBuf;
 
-public interface DFHttpCliResponse {
+public interface DFHttpCliRsp {
 	
 	public boolean isBinary();
 	

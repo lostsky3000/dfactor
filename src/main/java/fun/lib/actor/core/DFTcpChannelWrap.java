@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFTcpEncoder;
-import fun.lib.actor.api.http.DFHttpCliRequest;
+import fun.lib.actor.api.http.DFHttpCliReq;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;

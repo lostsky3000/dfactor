@@ -15,7 +15,7 @@ public final class DFTcpServerCfg {
 	private volatile boolean keepAlive = true;
 	private volatile int soBackLog = 128;
 	
-	private volatile int tcpDecodeType = DFActorDefine.TCP_DECODE_RAW;
+	private volatile int tcpProtocol = DFActorDefine.TCP_DECODE_RAW;
 	private volatile int tcpMsgMaxLength = 4096;
 	
 	private volatile String wsUri = "";
@@ -89,20 +89,20 @@ public final class DFTcpServerCfg {
 		return this;
 	}
 	
-	public int getTcpDecodeType(){
-		return tcpDecodeType;
+	public int getTcpProtocol(){
+		return tcpProtocol;
 	}
-	public DFTcpServerCfg setTcpDecodeType(int tcpDecodeType){
-		if(tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH 
-				||tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
-				||tcpDecodeType == DFActorDefine.TCP_DECODE_WEBSOCKET 
-				||tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP
+	public DFTcpServerCfg setTcpProtocol(int tcpProtocol){
+		if(tcpProtocol == DFActorDefine.TCP_DECODE_LENGTH 
+				||tcpProtocol == DFActorDefine.TCP_DECODE_RAW 
+				||tcpProtocol == DFActorDefine.TCP_DECODE_WEBSOCKET 
+				||tcpProtocol == DFActorDefine.TCP_DECODE_HTTP
 				){ //valid
 			
 		}else{ //invalid
-			tcpDecodeType = DFActorDefine.TCP_DECODE_RAW;
+			tcpProtocol = DFActorDefine.TCP_DECODE_RAW;
 		}
-		this.tcpDecodeType = tcpDecodeType;
+		this.tcpProtocol = tcpProtocol;
 		return this;
 	}
 	public int getTcpMsgMaxLength(){

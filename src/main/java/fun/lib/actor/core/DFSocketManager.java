@@ -275,7 +275,7 @@ public final class DFSocketManager {
 			.option(ChannelOption.SO_SNDBUF, cfg.getSoSendBufLen())
 			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int)cfg.getConnTimeout())
 			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
-			.handler(new TcpHandlerInit(false, cfg.getTcpDecodeType(), 
+			.handler(new TcpHandlerInit(false, cfg.getTcpProtocol(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslCfg()
 					, cfg.getReqData()));
@@ -333,7 +333,7 @@ public final class DFSocketManager {
 			.childOption(ChannelOption.SO_RCVBUF, cfg.getSoRecvBufLen())
 			.childOption(ChannelOption.SO_SNDBUF, cfg.getSoSendBufLen())
 			.childOption(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
-			.childHandler(new TcpHandlerInit(true, cfg.getTcpDecodeType(), 
+			.childHandler(new TcpHandlerInit(true, cfg.getTcpProtocol(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslConfig(), null));
 		if(DFSysUtil.isLinux()){

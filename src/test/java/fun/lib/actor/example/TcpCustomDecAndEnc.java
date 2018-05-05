@@ -38,7 +38,7 @@ public class TcpCustomDecAndEnc {
 		@Override
 		public void onStart(Object param) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 2, 1) 
-				.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH) //设置tcp server编码类型为二进制流，前两个字节标识消息长度
+				.setTcpProtocol(TCP_PROTOCOL_LENGTH) //设置tcp server编码类型为二进制流，前两个字节标识消息长度
 				.setDecoder(this)  //设置自定义消息解码器  ByteBuf->String
 				.setEncoder(this); //设置自定义消息编码器  String->ByteBuf
 			log.info("onStart, ready to listen on port "+serverPort);
@@ -114,7 +114,7 @@ public class TcpCustomDecAndEnc {
 			//开始连接服务端
 			DFTcpClientCfg cfg = new DFTcpClientCfg("127.0.0.1", serverPort)
 				.setConnTimeout(5000) //设置连接超时，毫秒
-				.setTcpDecodeType(DFActorDefine.TCP_DECODE_LENGTH); //设置解码器为length，头两字节为包长度
+				.setTcpProtocol(TCP_PROTOCOL_LENGTH); //设置解码器为length，头两字节为包长度
 			net.doTcpConnect(cfg, serverPort);
 			
 			//启动定时器定时发送  一秒发送一次

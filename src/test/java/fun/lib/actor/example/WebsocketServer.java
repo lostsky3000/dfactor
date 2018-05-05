@@ -28,7 +28,7 @@ public final class WebsocketServer {
 		@Override
 		public void onStart(Object param) {
 			DFTcpServerCfg cfg = new DFTcpServerCfg(serverPort, 1, 1)
-				.setTcpDecodeType(DFActorDefine.TCP_DECODE_WEBSOCKET)
+				.setTcpProtocol(TCP_PROTOCOL_WEBSOCKET)
 				.setWsUri("test");  //如 ws://127.0.0.1:10001/test
 			log.info("onStart, ready to listen on port "+serverPort);
 			//启动端口监听

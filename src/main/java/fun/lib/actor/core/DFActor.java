@@ -151,4 +151,29 @@ public class DFActor {
 	 * 消息由使用者负责释放
 	 */
 	public static final int MSG_MANUAL_RELEASE = 2;
+	
+	
+	//
+	/**
+	 * TCP数据按长度分包，头两字节表示长度
+	 */
+	public static final int TCP_PROTOCOL_LENGTH = 1;
+	/**
+	 * TCP数据不分包
+	 */
+	public static final int TCP_PROTOCOL_RAW = 2;
+	/**
+	 * WebSocket协议
+	 */
+	public static final int TCP_PROTOCOL_WEBSOCKET = 3;
+	/**
+	 * HTTP协议
+	 */
+	public static final int TCP_PROTOCOL_HTTP = 4;
+
 }
+
+
+
+
+

@@ -37,7 +37,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 public final class DFActorManager {
 
-	
 	private static final long TIMER_TICK_DURATION = 10;
 	private static final long TIMER_REAL_DURATION_MILLI = 10;
 	private static final int SCHEDULE_TICK_INIT_RANGE = (int) (1000/TIMER_TICK_DURATION);
@@ -313,7 +312,7 @@ public final class DFActorManager {
 			}
 		}
 		if(name == null){ //没有名字
-			name = DFActorDefine.ACTOR_NAME_DEF_PFX+id;
+			name = DFActorDefine.ACTOR_NAME_DEF_PFX + id;
 		}
 		try {
 			Class[] paramsType = {Integer.class, String.class, Boolean.class};
@@ -482,9 +481,9 @@ public final class DFActorManager {
 			this.id = id;
 			this._initSysActor = initSysActor;
 			this._isLogicActorThread = isLogicActorThread;
-			if(id < 3){
+			if(id < 2){
 				_consumeType = DFActorDefine.CONSUME_SINGLE;
-			}else if(id < 5){
+			}else if(id < 4){
 				_consumeType = DFActorDefine.CONSUME_HALF;
 			}else{
 				_consumeType = DFActorDefine.CONSUME_ALL;

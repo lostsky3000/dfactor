@@ -172,6 +172,25 @@ public class DFActor {
 	 */
 	public static final int TCP_PROTOCOL_HTTP = 4;
 
+	
+	//
+	/**
+	 * 每次消费消息数量由框架决定
+	 */
+	public static final int CONSUME_AUTO = 0;
+	/**
+	 * 每次消费一条消息
+	 */
+	public static final int CONSUME_SINGLE = 1;
+//	public static final int CONSUME_QUARTER = 2;
+	/**
+	 * 每次消费消息队列中一半的消息
+	 */
+	public static final int CONSUME_HALF = 3;
+	/**
+	 * 每次消费消息队列中全部消息
+	 */
+	public static final int CONSUME_ALL = 4;
 }
 
 

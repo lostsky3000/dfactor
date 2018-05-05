@@ -303,9 +303,15 @@ public final class DFActorWrap {
 				final Iterator<DFActorMessage> itMsg = q.iterator();
 				while(itMsg.hasNext()){
 					final DFActorMessage m = itMsg.next();
-					if(m.subject==DFActorDefine.SUBJECT_NET
-							&&m.cmd==DFActorDefine.NET_TCP_MESSAGE){ //tcp binary msg
-						ReferenceCountUtil.release(m.payload);
+					final Object payload = m.payload;
+					if(payload != null){ //
+						if(payload instanceof DFHttpSvrReq){
+							((DFHttpSvrReq)payload).release();
+						}else if(payload instanceof DFHttpCliResponse){
+							((DFHttpCliResponse)payload).release();
+						}else if(payload instanceof ByteBuf){
+							ReferenceCountUtil.release(payload);
+						}
 						m.payload = null;
 					}
 				}

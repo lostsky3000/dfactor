@@ -11,10 +11,11 @@ public final class DFActorDefine {
 	public static final int CONSUME_ALL = 4;
 		
 	//
-	public static final int SUBJECT_TIMER = 1;
-	public static final int SUBJECT_SCHEDULE = 2;
-	public static final int SUBJECT_NET = 3;
-	public static final int SUBJECT_USER = 4;
+	public static final int SUBJECT_START = 1;
+	public static final int SUBJECT_TIMER = 2;
+	public static final int SUBJECT_SCHEDULE = 3;
+	public static final int SUBJECT_NET = 4;
+	public static final int SUBJECT_USER = 5;
 	
 	//
 	protected static final int NET_TCP_LISTEN_RESULT = 1;

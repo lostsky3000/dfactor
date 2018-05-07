@@ -31,7 +31,7 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 - io和业务分离模型，使业务逻辑计算不受io瓶颈制约，达到最大效能
 - 内置服务器开发常用模块，如计时器，定时任务等
 - 开发接口简单易用，示例丰富，少量代码快速搭建模型
-- 内置mysql,redis第三方驱动
+- 内置redis, mysql客户端驱动，配合专门io线程使用，实现异步操作数据库及缓存
 
 
 
@@ -87,6 +87,9 @@ net.doHttpServer(8080, new CbHttpServer() {
 [HttpsServer](src/test/java/fun/lib/actor/example/HttpsServer.java) HTTPS服务器示例
 
 [HttpClient](src/test/java/fun/lib/actor/example/HttpClient.java) HTTP请求外部服务器示例
+
+[RedisTest](src/test/java/fun/lib/actor/example/RedisTest.java) 使用io线程异步操作Redis示例
+
 
 ## FAQ
 

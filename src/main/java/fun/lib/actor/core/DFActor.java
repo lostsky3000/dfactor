@@ -2,6 +2,7 @@ package fun.lib.actor.core;
 
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorNet;
+import fun.lib.actor.api.DFActorRedis;
 import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.DFActorTimer;
 import fun.lib.actor.api.DFTcpChannel;
@@ -20,6 +21,7 @@ public class DFActor {
 	protected final DFActorSystem sys;
 	protected final DFActorNet net;
 	protected final DFActorTimer timer;
+	protected final DFActorRedis redis;
 	protected final boolean isBlockActor;
 	//
 	protected int lastSrcId = 0;
@@ -34,6 +36,7 @@ public class DFActor {
 		log = new DFActorLogWrap(id, name);
 		sys = new DFActorSystemWrap(id, log, this);
 		net = new DFActorNetWrap(id);
+		redis = new DFActorRedisWrap();
 	}
 	
 	protected void setConsumeType(int consumeType){

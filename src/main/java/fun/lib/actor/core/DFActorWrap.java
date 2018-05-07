@@ -230,7 +230,10 @@ public final class DFActorWrap {
 							_actor.onUdpServerListenResult(msg.sessionId, isSucc, event.getMsg(), 
 									(DFUdpChannel) event.getExtObj1());
 						}
-					}else{
+					}else if(msg.subject == DFActorDefine.SUBJECT_START){
+						_actor.onStart(msg.payload);
+					}
+					else{
 						_actor.lastSrcId = msg.srcId;
 						boolean noCb = true;
 						CbMsgReq queryCb = null;

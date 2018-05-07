@@ -244,6 +244,8 @@ public final class DFActorManager {
 		svcShutdown.submit(new Runnable() {
 			@Override
 			public void run() {
+				//close all db conn
+				DFDbManager.get().closeAllPool();
 				//close all listen socket
 				DFSocketManager.get().doTcpListenCloseAll();
 				//
@@ -339,17 +341,24 @@ public final class DFActorManager {
 		}finally{
 			_lockActorWrite.unlock();
 		}
-		//call actor start
-		try{
-			actor.onStart(param);
-		}catch(Throwable e){
-			e.printStackTrace();
-		}
-		if(scheduleUnit > 0){ //need schedule
+		//need schedule
+		if(scheduleUnit > 0){ 
 			final int idxTimer = Math.abs(_timerIdxCount.incrementAndGet())%_timerThNum;
 			_lsTimer.get(idxTimer).addSchedule(scheduleUnit*DFActor.TIMER_UNIT_MILLI, 
 					new DFActorScheduleWrapper(wrapper.getActorId()), getTimerNowNano());
 		}
+		//send actor start event
+		try{
+			if(wrapper.pushMsg(0, 0, DFActorDefine.SUBJECT_START, 0, param, null, false, null, false) == 0){ //add to global queue
+				if(wrapper.isLogicActor()){
+					_queueGlobalActor.offer(wrapper);
+				}else{
+					_queueGlobalBlockActor.offer(wrapper);
+				}
+			}
+		}catch(Throwable e){
+			e.printStackTrace();
+		}		
 		return id;
 	}
 	private int _getSysActorIdByName(final String name){

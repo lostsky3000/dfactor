@@ -22,5 +22,11 @@ public final class DFActorRedisWrap implements DFActorRedis{
 	public void closePool(int id) {
 		dbMgr.closeRedisPool(id);
 	}
+	@Override
+	public void closeConn(Jedis conn) {
+		if(conn != null){
+			conn.close();
+		}
+	}
 
 }

@@ -1,23 +1,21 @@
 package fun.lib.actor.core;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
-import com.funtag.util.cache.DFRedisConfig;
-import com.funtag.util.cache.DFRedisUtil;
+import java.sql.Connection;
+
+import fun.lib.actor.po.DFDbCfg;
 import fun.lib.actor.po.DFRedisCfg;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 
 public final class DFDbManager {
 
 	private static final DFDbManager instance = new DFDbManager();
 	
+	private final DFRedisManager redisMgr;
+	private final DFMysqlManager mysqlMgr;
+	
 	private DFDbManager(){
-		
+		redisMgr = new DFRedisManager();
+		mysqlMgr = new DFMysqlManager();
 	}
 	protected static DFDbManager get(){
 		return instance;
@@ -25,96 +23,35 @@ public final class DFDbManager {
 	
 	protected void closeAllPool(){
 		this.closeAllRedisPool();
+		this.closeAllDbPool();
+	}
+	
+	//db(mysql)
+	protected int initDbPool(DFDbCfg cfg){
+		return mysqlMgr.initPool(cfg);
+	}
+	protected Connection getDbConn(int id){
+		return mysqlMgr.getConn(id);
+	}
+	protected void closeDbPool(int id){
+		mysqlMgr.closePool(id);
+	}
+	protected void closeAllDbPool(){
+		mysqlMgr.closeAllPool();
 	}
 	
 	//redis
-	private final ReentrantReadWriteLock lockRedis = new ReentrantReadWriteLock();
-	private final ReadLock lockRedisRead = lockRedis.readLock();
-	private final WriteLock lockRedisWrite = lockRedis.writeLock();
-	private final HashMap<Integer,RedisPoolWrap> mapRedis = new HashMap<>();
-	private int redisIdCount = 1;
 	protected int initRedisPool(DFRedisCfg cfg){
-		JedisPool pool = DFRedisUtil.createJedisPool(
-				cfg.getHost(), cfg.getPort(), cfg.getAuth(),
-				cfg.getMaxTotal(), cfg.getMaxIdle(), cfg.getMinIdle(),
-				cfg.getConnTimeoutMilli(), cfg.getBorrowTimeoutMilli());
-		RedisPoolWrap wrap = new RedisPoolWrap(pool);
-		lockRedisWrite.lock();
-		int curId = redisIdCount;
-		try{
-			mapRedis.put(curId, wrap);
-			if(redisIdCount >= Integer.MAX_VALUE){
-				redisIdCount = 1;
-			}else{
-				++redisIdCount;
-			}
-		}finally{
-			lockRedisWrite.unlock();
-		}
-		return curId;
+		return redisMgr.initPool(cfg);
 	}
 	protected Jedis getRedisConn(int id){
-		Jedis j = null;
-		lockRedisRead.lock();
-		try{
-			final RedisPoolWrap pool = mapRedis.get(id);
-			if(pool != null){
-				j = pool.getConn();
-			}
-		}catch(Throwable e){
-			e.printStackTrace();
-		}
-		finally{
-			lockRedisRead.unlock();
-		}
-		return j;
+		return redisMgr.getConn(id);
 	}
 	protected void closeRedisPool(int id){
-		lockRedisWrite.lock();
-		try{
-			RedisPoolWrap wrap = mapRedis.remove(id);
-			if(wrap != null){
-				wrap.close();
-			}
-		}finally{
-			lockRedisWrite.unlock();
-		}
+		redisMgr.closePool(id);
 	}
 	protected void closeAllRedisPool(){
-		lockRedisWrite.lock();
-		try{
-			Iterator<RedisPoolWrap> it = mapRedis.values().iterator();
-			while(it.hasNext()){
-				RedisPoolWrap wrap = it.next();
-				wrap.close();
-			}
-			mapRedis.clear();
-		}finally{
-			lockRedisWrite.unlock();
-		}
+		redisMgr.closeAllPool();
 	}
 	
-	class RedisPoolWrap{
-		private JedisPool pool = null;
-		public RedisPoolWrap(JedisPool p) {
-			pool = p;
-		}
-		private Jedis getConn(){
-			Jedis j = null;
-			if(pool != null){
-				try{
-					j = pool.getResource();
-				}catch(Throwable e){
-					throw e;
-				}
-			}
-			return j;
-		}
-		private void close(){
-			if(pool != null){
-				pool.close();
-				pool = null;
-			}
-		}
-	}
 }

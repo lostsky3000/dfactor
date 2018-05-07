@@ -90,13 +90,14 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 [RedisTest](src/test/java/fun/lib/actor/example/RedisTest.java) 使用io线程异步操作Redis示例
 
+[DbTest](src/test/java/fun/lib/actor/example/DbTest.java) 使用io线程异步操作Mysql示例
 
 ## FAQ
 
 
 ## 后续计划
 
-- 增加 mysql,redis,mongodb 异步操作
+- 增加常用服务端业务示例，如房间类型游戏等等
 
 
 

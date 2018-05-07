@@ -6,9 +6,9 @@ public final class DFRedisCfg {
 	private int port = 0;
 	private String auth = null;
 	
-	private int maxTotal = 1;
-	private int maxIdle = 1;
-	private int minIdle = 1;
+	private int maxTotal = 10;
+	private int maxIdle = 4;
+	private int minIdle = 2;
 	private int connTimeoutMilli = 5000;
 	private int borrowTimeoutMilli = 10000;
 	

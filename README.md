@@ -92,7 +92,7 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 [MysqlTest](src/test/java/fun/lib/actor/example/MysqlTest.java) 使用io线程异步操作Mysql示例
 
-[MongodbTest](src/test/java/fun/lib/actor/example/MongodbTest.java) 使用io线程异步操作Mysql示例
+[MongodbTest](src/test/java/fun/lib/actor/example/MongodbTest.java) 使用io线程异步操作Mongodb示例
 
 ## FAQ
 

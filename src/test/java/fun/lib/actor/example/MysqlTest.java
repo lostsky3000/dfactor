@@ -16,7 +16,7 @@ import fun.lib.actor.po.DFDbCfg;
  * @author lostsky
  *
  */
-public final class DbTest {
+public final class MysqlTest {
 
 	public static void main(String[] args) {
 		DFActorManager.get().start(EntryActor.class);
@@ -48,7 +48,7 @@ public final class DbTest {
 						@Override
 						public int onCallback(int cmd, Object payload) {
 							log.info(payload.toString());
-							return MSG_AUTO_RELEASE;
+							return 0;
 						}
 					});
 					//
@@ -90,7 +90,7 @@ public final class DbTest {
 			}
 			//callback logicActor
 			cb.callback(0, rsp);
-			return MSG_AUTO_RELEASE;
+			return 0;
 		}
 	}
 }

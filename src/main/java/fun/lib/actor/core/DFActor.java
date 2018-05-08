@@ -2,6 +2,7 @@ package fun.lib.actor.core;
 
 import fun.lib.actor.api.DFActorDb;
 import fun.lib.actor.api.DFActorLog;
+import fun.lib.actor.api.DFActorMongo;
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorRedis;
 import fun.lib.actor.api.DFActorSystem;
@@ -24,6 +25,7 @@ public class DFActor {
 	protected final DFActorTimer timer;
 	protected final DFActorRedis redis;
 	protected final DFActorDb db;
+	protected final DFActorMongo mongo;
 	protected final boolean isBlockActor;
 	//
 	protected int lastSrcId = 0;
@@ -38,8 +40,10 @@ public class DFActor {
 		log = new DFActorLogWrap(id, name);
 		sys = new DFActorSystemWrap(id, log, this);
 		net = new DFActorNetWrap(id);
+		//
 		redis = new DFActorRedisWrap();
 		db = new DFActorDbWrap();
+		mongo = new DFActorMongoWrap();
 	}
 	
 	protected void setConsumeType(int consumeType){

@@ -490,9 +490,7 @@ public final class DFActorManager {
 			this.id = id;
 			this._initSysActor = initSysActor;
 			this._isLogicActorThread = isLogicActorThread;
-			if(id < 2){
-				_consumeType = DFActorDefine.CONSUME_SINGLE;
-			}else if(id < 4){
+			if(id < 3){
 				_consumeType = DFActorDefine.CONSUME_HALF;
 			}else{
 				_consumeType = DFActorDefine.CONSUME_ALL;

@@ -44,11 +44,33 @@ public interface DFActorSystem {
 	 */
 	public int createActor(ActorProp prop);
 	
-	
+	/**
+	 * 调用其它actor，由其它actor的调用线程回调cb中的方法
+	 * @param dstId 目标actorId
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @param cb 回调
+	 * @return
+	 */
 	public int callHere(int dstId, int cmd, Object payload, CbCallHere cb);
-	
+	/**
+	 * 调用其它actor，由其它actor的调用线程回调cb中的方法
+	 * @param dstId 目标actorName
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @param cb 回调
+	 * @return
+	 */
 	public int callHere(String dstName, int cmd, Object payload, CbCallHere cb);
 	
+	/**
+	 * 调用框架自带的blockActor，由调用blockActor的线程回调cb中的方法
+	 * @param shardId shardId%block线程数量，算出消息由哪个blockActor处理
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @param cb 回调
+	 * @return
+	 */
 	public int callHereBlock(int shardId, int cmd, Object payload, CbCallHereBlock cb);
 	
 	/**

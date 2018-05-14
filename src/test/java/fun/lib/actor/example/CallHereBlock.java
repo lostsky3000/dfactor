@@ -9,7 +9,7 @@ import fun.lib.actor.core.DFActorManager;
  * 利用异步回调机制+框架提供的BlockActor，简化io操作代码，在业务actor中编写io操作代码
  * 根据此例，可改写MysqlTest.java, MongodbTest.java, RedisTest,java等例子，
  * 实现在业务actor里编写block操作代码，增加代码可读性可维护性
- * @author admin
+ * @author lostsky
  *
  */
 public final class CallHereBlock {

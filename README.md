@@ -32,6 +32,7 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 - 内置服务器开发常用模块，如计时器，定时任务等
 - 开发接口简单易用，示例丰富，少量代码快速搭建模型
 - 内置redis, mysql, mongoDb 客户端驱动，配合专门io线程使用，实现异步操作数据库及缓存
+- 可 daemon 方式启动，spi模式运行，加载外部 jar 文件实现逻辑快速部署和模块解耦 [示例](src/test/java/fun/lib/actor/example/StartAsDaemon.java)
 
 
 
@@ -97,6 +98,9 @@ net.doHttpServer(8080, new CbHttpServer() {
 [CallHere](src/test/java/fun/lib/actor/example/CallHere.java) 利用异步回调机制，在一个actor中编写另一个actor业务代码的示例
 
 [CallHereBlock](src/test/java/fun/lib/actor/example/CallHereBlock.java) 利用异步回调机制+框架提供的BlockActor，简化io操作代码，在业务actor中编写io操作代码
+
+[StartAsDaemon](src/test/java/fun/lib/actor/example/StartAsDaemon.java) daemon模式启动示例，加载外部jar执行逻辑的示例，方便部署和模块解耦
+[测试外部jar文件下载](spi.jar)
 
 
 参照[CallHere](src/test/java/fun/lib/actor/example/CallHere.java)和

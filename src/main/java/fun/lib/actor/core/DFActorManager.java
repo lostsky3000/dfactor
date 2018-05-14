@@ -1,8 +1,17 @@
 package fun.lib.actor.core;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
+import java.net.JarURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.concurrent.locks.StampedLock;
 
 import com.funtag.util.log.DFLogFactory;
@@ -142,7 +153,6 @@ public final class DFActorManager {
 		return start(cfg, prop);
 	}
 	
-	
 	/**
 	 * 启动dfactor
 	 * @param cfg 启动配置
@@ -232,6 +242,116 @@ public final class DFActorManager {
 			bRet = true;
 		} while (false);
 		
+		return bRet;
+	}
+	
+	/**
+	 * 启动dfactor为daemon模式，加载外部jar
+	 * @param cfg 启动配置
+	 * @param dirJar 外部jar文件所在目录
+	 * @param entryActorFullName 启动actor全路径名
+	 * @param params 启动actor参数
+	 * @return
+	 */
+	public boolean startAsDaemon(DFActorManagerConfig cfg, String dirJar, String entryActorFullName, Object params){
+		boolean bRet = false;
+		do {
+			File dir = new File(dirJar);
+			if(!dir.isDirectory()){ //not dir
+				log.E("dirJar invalid: "+dirJar);
+				break;
+			}
+			//filter jar file
+			File[] arrJarFile = dir.listFiles(new FilenameFilter() {
+				@Override
+				public boolean accept(File dir, String name) {
+					File tmpFile = new File(dir.getAbsolutePath()+File.separator + name);
+					if(tmpFile.isFile() && name.endsWith(".jar")){
+						return true;
+					}
+					return false;
+				}
+			});
+			//check jar num
+			int size = arrJarFile.length;
+			if(size < 1){
+				log.E("no jar found in dir: "+dirJar);
+				break;
+			}
+			//load jar
+			URL[] urls = new URL[size];
+			try {
+				for(int i=0; i<size; ++i){
+					urls[i] = arrJarFile[i].toURI().toURL();	
+				}
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+				break;
+			}
+			//
+			Class clzEntry = null;
+			Class clz = null;
+			ClassLoader defLoader = Thread.currentThread().getContextClassLoader();
+			try {
+				clz = defLoader.loadClass(DFActor.class.getName());
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+			URLClassLoader urlCl = new URLClassLoader(urls, defLoader);
+			try {
+				for(int i=0; i<size; ++i){
+					String jarPath = "jar:file:/"+arrJarFile[i].getAbsolutePath()+"!/";
+					URL urlJar = new URL(jarPath);
+					JarURLConnection jarConn = (JarURLConnection) urlJar.openConnection();
+					JarFile jar = jarConn.getJarFile();
+					Enumeration<JarEntry> enumJar = jar.entries();
+					while(enumJar.hasMoreElements()){
+						JarEntry en = enumJar.nextElement();
+						String name = en.getName();
+						if(!en.isDirectory() && name.endsWith(".class")){
+							String clzName = name.substring(0, name.length() - 6).replaceAll("/", ".");
+							clz = urlCl.loadClass(clzName);
+							if(clz == null){
+								continue;
+							}
+//							Type[] arrType = clz.getGenericInterfaces();
+//							Type superType = clz.getGenericSuperclass();
+//							superType.getClass().getName();
+//							boolean primitive = clz.isPrimitive();
+//							if(!primitive && clz.isAssignableFrom(DFActor.class)){
+//								
+//							}
+							if(clzEntry == null && clzName.equals(entryActorFullName)){
+								clzEntry = clz;
+							}
+						}
+					}
+					jar.close();
+				}
+				if(clzEntry != null){ //find entryActor
+					ActorProp prop = ActorProp.newProp()
+							.classz(clzEntry)
+							.param(params);
+					return this.start(cfg, prop);
+				}
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+				break;
+			} catch (IOException e) {
+				e.printStackTrace();
+				break;
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+				break;
+			}finally{
+				try {
+					urlCl.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			bRet = true;
+		} while (false);
 		return bRet;
 	}
 	

@@ -9,11 +9,14 @@ import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.DFActorTimer;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.cb.CbMsgRsp;
-import fun.lib.actor.api.cb.CbMsgReq;
+import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.CallHereContext;
+import fun.lib.actor.api.cb.CbActorReq;
+import fun.lib.actor.api.cb.CbActorRspAsync;
+import fun.lib.actor.api.cb.CbCallHere;
 import io.netty.channel.socket.DatagramPacket;
 
-public class DFActor {
+public class DFActor implements CallHereContext{
 	public static final long TIMER_UNIT_MILLI = 10;
 	protected final int id;
 	protected final String name;
@@ -28,7 +31,10 @@ public class DFActor {
 	protected final DFActorMongo mongo;
 	protected final boolean isBlockActor;
 	//
-	protected int lastSrcId = 0;
+	protected int _lastSrcId = 0;
+	protected boolean _hasCalledback = false;
+	protected Object _lastUserHandler = null;
+	
 	
 	public DFActor(Integer id, String name, Boolean isBlockActor) {
 		this.id = id;
@@ -72,7 +78,8 @@ public class DFActor {
 	 * @param cb 发送方是否有回调，非null则直接调用回调
 	 * @return
 	 */
-	public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb){return DFActorDefine.MSG_AUTO_RELEASE;};
+	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb){return MSG_AUTO_RELEASE;};
+	
 	
 //	/**
 //	 * 接收其它actor发过来的消息
@@ -201,6 +208,54 @@ public class DFActor {
 	 * 每次消费消息队列中全部消息
 	 */
 	public static final int CONSUME_ALL = 4;
+
+	
+	
+	//call here
+	@Override
+	public void callback(int cmd, Object payload) {
+		if(_hasCalledback){
+			return ;
+		}
+		_hasCalledback = true;
+		_mgr.sendCallback(id, _lastSrcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, _lastUserHandler);
+	}
+	@Override
+	public DFActorSystem getSys() {
+		return sys;
+	}
+	@Override
+	public DFActorNet getNet() {
+		return net;
+	}
+	@Override
+	public DFActorTimer getTimer() {
+		return timer;
+	}
+	@Override
+	public DFActorRedis getRedis() {
+		return redis;
+	}
+	@Override
+	public DFActorDb getDb() {
+		return db;
+	}
+	@Override
+	public DFActorMongo getMongo() {
+		return mongo;
+	}
+
+	@Override
+	public String getActorName() {
+		// TODO Auto-generated method stub
+		return this.name;
+	}
+
+	@Override
+	public DFActorLog getLog() {
+		// TODO Auto-generated method stub
+		return this.log;
+	}
 }
 
 

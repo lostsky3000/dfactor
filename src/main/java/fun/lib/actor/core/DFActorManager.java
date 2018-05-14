@@ -29,6 +29,7 @@ import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.helper.ActorLog;
 import fun.lib.actor.helper.DFActorLogLevel;
+import fun.lib.actor.helper.DFSysBlockActor;
 import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFTcpClientCfg;
 import io.netty.channel.EventLoopGroup;
@@ -79,6 +80,9 @@ public final class DFActorManager {
 	private volatile int _entryScheduleUnit = 0;
 	private volatile int _entryConsumeType = DFActorDefine.CONSUME_AUTO;
 	private volatile EventLoopGroup _clientIoGroup = null;
+	
+	private int _blockThNum = 0;
+	private int[] _arrSysBlockId = null;
 	
 	private int logLevel = DFActorLogLevel.DEBUG;
 	public int getLogLevel(){
@@ -175,6 +179,9 @@ public final class DFActorManager {
 			//
 			int logicWorkerThNum = cfg.getLogicWorkerThreadNum();
 			int blockWorkerThNum = cfg.getBlockWorkerThreadNum();
+			_blockThNum = blockWorkerThNum;
+			_arrSysBlockId = new int[_blockThNum];
+			
 			_timerThNum = cfg.getTimerThreadNum();
 			_cdInit = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _timerThNum); //worker + timer
 			_cdWorkerStop = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _timerThNum);
@@ -207,7 +214,7 @@ public final class DFActorManager {
 				}else{   //io worker thread
 					loop = new LoopWorker(i+1, false, false);
 					th = new Thread(loop);
-					th.setName("thread-io-worker-"+(i-logicWorkerThNum));
+					th.setName("thread-block-worker-"+(i-logicWorkerThNum));
 				}
 				_lsLoopWorker.add(loop);
 				arrWorkerTh[i] = th;
@@ -449,6 +456,14 @@ public final class DFActorManager {
 		return 1;
 	}
 	
+	protected int callSysBlockActor(int srcId, int shardId, int cmd, Object payload, Object userHandler){
+		if(_blockThNum < 1){ //no sys block
+			return -1;
+		}
+		int dstId = _arrSysBlockId[shardId%_blockThNum];
+		return this.send(srcId, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, userHandler, false);
+	}
+	
 	//actor message pool
 	private final ThreadLocal<LinkedList<DFActorMessage>> _actorMsgPool = new ThreadLocal<LinkedList<DFActorMessage>>(){
 		protected java.util.LinkedList<DFActorMessage> initialValue() {
@@ -518,6 +533,13 @@ public final class DFActorManager {
 				//create entry actor
 				createActor(_entryName, _entryClassz, _entryParam, _entryScheduleUnit, 
 						_entryConsumeType, false);
+				
+				if(_blockThNum > 0){   //create sys block actor
+					for(int i=0; i<_blockThNum; ++i){
+						int tmpId = createActor(null, DFSysBlockActor.class, null, 0, DFActorDefine.CONSUME_SINGLE, true);
+						_arrSysBlockId[i] = tmpId;
+					}
+				}
 			}
 			final String thName = Thread.currentThread().getName();
 			while(_onLoop){

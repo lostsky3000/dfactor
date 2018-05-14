@@ -2,8 +2,8 @@ package fun.lib.actor.example;
 
 import com.mongodb.client.MongoDatabase;
 
-import fun.lib.actor.api.cb.CbMsgReq;
-import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbActorReq;
+import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
@@ -39,7 +39,7 @@ public final class MongodbTest {
 				@Override
 				public void onTimeout() {
 					//send db stuff to dbActor
-					sys.call(dbActor, 0, null, new CbMsgRsp() {
+					sys.call(dbActor, 0, null, new CbActorRsp() {
 						@Override
 						public int onCallback(int cmd, Object payload) {
 							log.info(payload.toString());
@@ -66,7 +66,7 @@ public final class MongodbTest {
 			poolId = (int) param;
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			MongoDatabase db = mongo.getDatabase(poolId, "db_test");
 			cb.callback(0, "recv mongodb rsp, dbName="+db.getName());
 			return 0;

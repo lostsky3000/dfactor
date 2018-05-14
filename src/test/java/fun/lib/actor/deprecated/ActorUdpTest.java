@@ -4,7 +4,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.cb.CbMsgReq;
+import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
@@ -27,7 +27,7 @@ public final class ActorUdpTest extends DFActor implements DFActorUdpDispatcher{
 
 	private DFUdpChannel channel = null;
 	@Override
-	public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 		
 		return DFActorDefine.MSG_AUTO_RELEASE;
 	}

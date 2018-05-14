@@ -2,7 +2,10 @@ package fun.lib.actor.core;
 
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorSystem;
-import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.CbActorRspAsync;
+import fun.lib.actor.api.cb.CbCallHere;
+import fun.lib.actor.api.cb.CbCallHereBlock;
 import fun.lib.actor.po.ActorProp;
 
 public final class DFActorSystemWrap implements DFActorSystem{
@@ -52,7 +55,9 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	}
 	@Override
 	public int sendback(int cmd, Object payload) {
-		return _mgr.send(id, actor.lastSrcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
+		int ret = _mgr.send(id, actor._lastSrcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
+		actor._lastSrcId = 0;
+		return ret;
 	}
 	
 	
@@ -74,12 +79,24 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	}
 	//
 	@Override
-	public int call(int dstId, int cmd, Object payload, CbMsgRsp cb) {
+	public int call(int dstId, int cmd, Object payload, CbActorRsp cb) {
 		return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb, false);
 	}
 	@Override
-	public int call(String dstName, int cmd, Object payload, CbMsgRsp cb) {
+	public int call(String dstName, int cmd, Object payload, CbActorRsp cb) {
 		return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb);
+	}
+	@Override
+	public int callHere(int dstId, int cmd, Object payload, CbCallHere cb) {
+		return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb, false);
+	}
+	@Override
+	public int callHere(String dstName, int cmd, Object payload, CbCallHere cb) {
+		return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb);
+	}
+	@Override
+	public int callHereBlock(int shardId, int cmd, Object payload, CbCallHereBlock cb) {
+		return _mgr.callSysBlockActor(id, shardId, cmd, payload, cb); 
 	}
 	
 	

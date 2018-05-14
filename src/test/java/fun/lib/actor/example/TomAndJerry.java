@@ -2,7 +2,7 @@ package fun.lib.actor.example;
 
 import java.util.Random;
 
-import fun.lib.actor.api.cb.CbMsgReq;
+import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -54,7 +54,7 @@ public final class TomAndJerry {
 		private int posJerry = 0;
 		private boolean gameOver = false;
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			if(gameOver){
 				return 0;
 			}
@@ -98,7 +98,7 @@ public final class TomAndJerry {
 			sys.send("Director", 1001, new Integer(curPos));
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			if(cmd == 1003){ //game over
 				boolean got = (Boolean)payload;
 				if(got){
@@ -131,7 +131,7 @@ public final class TomAndJerry {
 			sys.send("Director", 1002, new Integer(curPos));
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			if(cmd == 1003){ //game over
 				boolean got = (Boolean)payload;
 				if(got){

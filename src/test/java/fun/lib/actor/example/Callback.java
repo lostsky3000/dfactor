@@ -1,7 +1,7 @@
 package fun.lib.actor.example;
 
-import fun.lib.actor.api.cb.CbMsgRsp;
-import fun.lib.actor.api.cb.CbMsgReq;
+import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -32,7 +32,7 @@ public final class Callback {
 		public void onTimeout(int requestId) {
 			//start calc query
 			log.info("ask to calc 100 + 50 = ? ...");
-			sys.call("Computer", 1001, new String("add,100,50"), new CbMsgRsp() {
+			sys.call("Computer", 1001, new String("add,100,50"), new CbActorRsp() {
 				@Override
 				public int onCallback(int cmd, Object payload) {
 					log.info("recv result: 100 + 50 = "+payload+", curThread="+Thread.currentThread().getName());
@@ -51,7 +51,7 @@ public final class Callback {
 	//计算机，运算并返回结果
 	private static class Computer extends DFActor{
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			if(cb != null){
 				log.info("recv req, curThread="+Thread.currentThread().getName());
 				String[] arrReq = ((String)payload).split(",");

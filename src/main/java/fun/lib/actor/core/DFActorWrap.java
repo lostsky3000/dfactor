@@ -12,11 +12,13 @@ import com.funtag.util.concurrent.DFSpinLock;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.CbCallHere;
+import fun.lib.actor.api.cb.CbCallHereBlock;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.cb.CbHttpServer;
-import fun.lib.actor.api.cb.CbMsgReq;
+import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.define.DFActorErrorCode;
@@ -68,10 +70,7 @@ public final class DFActorWrap {
 		//
 		_actorMgr = DFActorManager.get();
 	}
-//	protected int pushMsg(int srcId, int sessionId, 
-//			int subject, int cmd, Object payload, Object context, boolean addTail){
-//		return pushMsg(srcId, sessionId, subject, cmd, payload, context, addTail, null);
-//	}
+	
 	protected int pushMsg(int srcId, int sessionId, 
 			int subject, int cmd, Object payload, Object context, boolean addTail, 
 			Object userHandler, boolean isCb){
@@ -234,16 +233,44 @@ public final class DFActorWrap {
 						_actor.onStart(msg.payload);
 					}
 					else{
-						_actor.lastSrcId = msg.srcId;
+						_actor._lastSrcId = msg.srcId;
 						boolean noCb = true;
-						CbMsgReq queryCb = null;
-						if(msg.userHandler != null){ //callback
-							if(msg.isCb){ //callback
-								CbMsgRsp cb = (CbMsgRsp) msg.userHandler;
-								cb.onCallback(msg.cmd, msg.payload);
+						CbActorReq queryCb = null;
+						Object userHandler = msg.userHandler;
+						if(userHandler != null){ //callback
+							if(userHandler instanceof CbCallHere){
+								CbCallHere tmpCb = (CbCallHere) userHandler;
+								if(msg.isCb){
+									tmpCb.onCallback(msg.cmd, msg.payload);
+								}else{
+									_actor._hasCalledback = false;
+									_actor._lastUserHandler = userHandler;
+									tmpCb.inOtherActor(msg.cmd, msg.payload, _actor);
+									_actor._hasCalledback = true;
+									_actor._lastUserHandler = null;
+								}
 								noCb = false;
-							}else{ //query, has callback func
-								queryCb = new DFMsgBackWrap(msg.srcId, msg.userHandler);
+							}else if(userHandler instanceof CbCallHereBlock){
+								CbCallHereBlock tmpCb = (CbCallHereBlock) userHandler;
+								if(msg.isCb){
+									tmpCb.onCallback(msg.cmd, msg.payload);
+								}else{
+									_actor._hasCalledback = false;
+									_actor._lastUserHandler = userHandler;
+									tmpCb.inBlockActor(msg.cmd, msg.payload, _actor);
+									_actor._hasCalledback = true;
+									_actor._lastUserHandler = null;
+								}
+								noCb = false;
+							}
+							else{
+								if(msg.isCb){ //callback
+									CbActorRsp cb = (CbActorRsp) userHandler;
+									cb.onCallback(msg.cmd, msg.payload);
+									noCb = false;
+								}else{ //query, has callback func
+									queryCb = new DFMsgBackWrap(msg.srcId, userHandler);
+								}
 							}
 						}
 						if(noCb){
@@ -325,7 +352,7 @@ public final class DFActorWrap {
 		}
 	}
 	
-	class DFMsgBackWrap implements CbMsgReq{
+	class DFMsgBackWrap implements CbActorReq{
 		private int srcId = 0;
 		private Object userHandler = null;
 		private boolean hasCalled = false;

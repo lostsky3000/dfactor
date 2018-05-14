@@ -1,6 +1,9 @@
 package fun.lib.actor.api;
 
-import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.CbActorRspAsync;
+import fun.lib.actor.api.cb.CbCallHereBlock;
+import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.po.ActorProp;
 
@@ -42,6 +45,12 @@ public interface DFActorSystem {
 	public int createActor(ActorProp prop);
 	
 	
+	public int callHere(int dstId, int cmd, Object payload, CbCallHere cb);
+	
+	public int callHere(String dstName, int cmd, Object payload, CbCallHere cb);
+	
+	public int callHereBlock(int shardId, int cmd, Object payload, CbCallHereBlock cb);
+	
 	/**
 	 * 向指定id的actor发消息，带有回调
 	 * @param dstId 目标actorId
@@ -50,7 +59,7 @@ public interface DFActorSystem {
 	 * @param cb 回调
 	 * @return 0成功  非0失败
 	 */
-	public int call(int dstId, int cmd, Object payload, CbMsgRsp cb);
+	public int call(int dstId, int cmd, Object payload, CbActorRsp cb);
 	
 	/**
 	 * 向指定name的actor发消息，带有回调
@@ -60,8 +69,7 @@ public interface DFActorSystem {
 	 * @param cb 回调
 	 * @return 0成功  非0失败
 	 */
-	public int call(String dstName, int cmd, Object payload, CbMsgRsp cb);
-	
+	public int call(String dstName, int cmd, Object payload, CbActorRsp cb);
 	
 	/**
 	 * 回复当前消息来源actor

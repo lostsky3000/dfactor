@@ -94,6 +94,18 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 [MongodbTest](src/test/java/fun/lib/actor/example/MongodbTest.java) 使用io线程异步操作Mongodb示例
 
+[CallHere](src/test/java/fun/lib/actor/example/CallHere.java) 利用异步回调机制，在一个actor中编写另一个actor业务代码的示例
+
+[CallHereBlock](src/test/java/fun/lib/actor/example/CallHereBlock.java) 利用异步回调机制+框架提供的BlockActor，简化io操作代码，在业务actor中编写io操作代码
+
+
+参照[CallHere](src/test/java/fun/lib/actor/example/CallHere.java)和
+[CallHereBlock](src/test/java/fun/lib/actor/example/CallHereBlock.java)，可改写 
+[RedisTest](src/test/java/fun/lib/actor/example/RedisTest.java), 
+[MysqlTest](src/test/java/fun/lib/actor/example/MysqlTest.java), 
+[MongodbTest](src/test/java/fun/lib/actor/example/MongodbTest.java) 等例子，实现在业务actor里编写阻塞业务代码，增加代码可读性可维护性
+
+
 ## FAQ
 
 

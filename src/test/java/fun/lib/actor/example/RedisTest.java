@@ -1,7 +1,7 @@
 package fun.lib.actor.example;
 
-import fun.lib.actor.api.cb.CbMsgReq;
-import fun.lib.actor.api.cb.CbMsgRsp;
+import fun.lib.actor.api.cb.CbActorReq;
+import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
@@ -39,7 +39,7 @@ public final class RedisTest {
 				@Override
 				public void onTimeout() {
 					//send redis task to ioActor
-					sys.call(ioActor, 0, null, new CbMsgRsp() {
+					sys.call(ioActor, 0, null, new CbActorRsp() {
 						@Override
 						public int onCallback(int cmd, Object payload) {
 							//recv redis task from ioActor
@@ -66,7 +66,7 @@ public final class RedisTest {
 			poolId = (int) param;
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			//do redis stuff
 			Jedis j = null;
 			try{

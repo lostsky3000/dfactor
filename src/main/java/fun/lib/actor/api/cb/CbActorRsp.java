@@ -1,6 +1,6 @@
 package fun.lib.actor.api.cb;
 
-public interface CbMsgRsp {
+public interface CbActorRsp {
 
 	public int onCallback(int cmd, Object payload);
 }

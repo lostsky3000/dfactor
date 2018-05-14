@@ -1,6 +1,6 @@
 package fun.lib.actor.example;
 
-import fun.lib.actor.api.cb.CbMsgReq;
+import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
@@ -34,7 +34,7 @@ public final class Sendback {
 			timer.timeout(1000, 1);
 		}	
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			log.info("recv back msg, cmd="+cmd);
 			return MSG_AUTO_RELEASE;
 		}
@@ -47,7 +47,7 @@ public final class Sendback {
 	//
 	private static class BackActor extends DFActor{
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbMsgReq cb) {
+		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
 			log.info("recv req msg, cmd="+cmd+", data="+payload);
 			//sendback
 			sys.sendback(1002, null);

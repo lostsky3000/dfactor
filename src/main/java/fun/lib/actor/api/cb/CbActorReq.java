@@ -1,6 +1,6 @@
 package fun.lib.actor.api.cb;
 
-public interface CbMsgReq {
+public interface CbActorReq {
 
 	/**
 	 * 向消息来源actor发送回复

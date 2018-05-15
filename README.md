@@ -82,11 +82,6 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 ![线程使用情况](https://github.com/lostsky3000/dfactor/raw/master/assets/treetask_thread.png)
 
-GC情况
-
-![GC情况](https://github.com/lostsky3000/dfactor/raw/master/assets/treetask_gc.png)
-
-
 
 
 可以做下试验：

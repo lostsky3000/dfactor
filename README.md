@@ -54,6 +54,23 @@ net.doHttpServer(8080, new CbHttpServer() {
 几行代码完成HTTP服务器启动，[本例代码](src/test/java/fun/lib/actor/example/SimpleHttpServer.java)
 
 
+## 性能
+
+[TreeTask](src/test/java/fun/lib/actor/benchmark/TreeTask.java) 百万级actor压力测试
+
+树状actor压力测试，从根节点开始依次创建 6 层深的树
+每一层的节点数量为 10
+每次任务从根节点开始，向下请求，到达最底层节点时，向上返回结果消息，直到到达根节点
+默认树深度为6，每层节点数为10，总共创建 1111111(N) 个actor
+一次消息请求，所有子节点都会收到一次请求一次响应(最底层只收到一次请求)
+每个节点收到请求和收到响应都会调用_doTask，模拟业务逻辑的消耗(数组的随机打乱+排序)
+使用 jvisualvm 观察程序运行时，线程和gc情况，如果出现fullGC，需增加jvm分配内存
+
+可以做下试验：
+将_doTask()内实现注释掉，观察框架任务调度本身的消耗
+调整启动参数的逻辑线程数
+观察只有任务调度消耗和包含了逻辑处理消耗时，不同逻辑线程数下的性能
+
 
 ## 示例
 
@@ -120,7 +137,7 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 
 
-## 支持
+## 社区&支持
 
 QQ群：726932841
 

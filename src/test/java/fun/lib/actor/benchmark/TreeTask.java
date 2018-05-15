@@ -84,11 +84,11 @@ public final class TreeTask {
 			if(cmd == CMD_LEAF_START){
 				_childrenCount += (int) payload;
 				if(++_leafDoneCount >= LEAF_NUM){
-					if(_cfg.depth == 1){ //root
+					if(_cfg.depth == 1){ //当前是根节点
 						log.info("all node start done, allNodeNum="+(_childrenCount+1));
-						//start task
+						//开始新的任务
 						_reqNewTask();
-					}else{
+					}else{ //非根节点，继续向上报告节点创建完成
 						sys.send(_cfg.parent, CMD_LEAF_START, _childrenCount+1);
 					}
 				}
@@ -110,7 +110,7 @@ public final class TreeTask {
 						sys.send(_cfg.parent, CMD_RSP, payload);
 					}else{ //已到达根节点，统计耗时
 						_tmTaskEnd = System.currentTimeMillis();
-						log.info("all task done, tmCost="+(_tmTaskEnd - _tmTaskBegin));
+						log.info("all task done, tmCost="+(_tmTaskEnd - _tmTaskBegin)+"ms");
 						//开始新的任务请求
 						_reqNewTask();
 					}

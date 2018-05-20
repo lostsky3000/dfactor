@@ -5,8 +5,8 @@ import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
 import fun.lib.actor.po.ActorProp;
+import fun.lib.actor.po.DFActorManagerConfig;
 import fun.lib.actor.po.DFTcpServerCfg;
 /**
  * 简单httpserver示例

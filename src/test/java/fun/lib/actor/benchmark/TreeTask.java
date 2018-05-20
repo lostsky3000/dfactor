@@ -7,8 +7,8 @@ import java.util.Random;
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
 import fun.lib.actor.po.ActorProp;
+import fun.lib.actor.po.DFActorManagerConfig;
 
 /**
  * 树状actor压力测试，从根节点开始依次创建 MAX_DEPTH 层深的树

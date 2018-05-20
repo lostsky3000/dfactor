@@ -5,7 +5,7 @@ public final class DFActorMessage {
 	protected int srcId;
 	protected int dstId;
 	protected int sessionId;
-	protected int subject;
+	protected byte subject;
 	protected int cmd;
 	protected Object payload;
 	protected Object context;
@@ -17,7 +17,7 @@ public final class DFActorMessage {
 		this.srcId = srcId;
 		this.dstId = dstId;
 		this.sessionId = sessionId;
-		this.subject = subject;
+		this.subject = (byte)subject;
 		this.cmd = cmd;
 		this.payload = payload;	
 		this.context = context;
@@ -30,7 +30,7 @@ public final class DFActorMessage {
 		this.srcId = srcId;
 		this.dstId = dstId;
 		this.sessionId = sessionId;
-		this.subject = subject;
+		this.subject = (byte)subject;
 		this.cmd = cmd;
 		this.payload = payload;
 		this.context = context;

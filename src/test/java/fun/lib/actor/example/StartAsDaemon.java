@@ -1,7 +1,7 @@
 package fun.lib.actor.example;
 
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
+import fun.lib.actor.po.DFActorManagerConfig;
 
 /**
  * daemon模式启动dfactor示例, 加载外部jar执行逻辑

@@ -1,5 +1,6 @@
-package fun.lib.actor.core;
+package fun.lib.actor.po;
 
+import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.helper.DFActorLogLevel;
 
 public final class DFActorManagerConfig {
@@ -15,6 +16,8 @@ public final class DFActorManagerConfig {
 	private volatile int sysLogConsumeType = DFActorDefine.CONSUME_AUTO;
 	
 	private volatile int timerTickPerWheel = 10000;
+	
+	private volatile DFActorClusterConfig clusterCfg = null;
 	
 	public DFActorManagerConfig() {
 		// TODO Auto-generated constructor stub
@@ -89,5 +92,11 @@ public final class DFActorManagerConfig {
 		return this;
 	}
 	
-	
+	public DFActorClusterConfig getClusterConfig(){
+		return clusterCfg;
+	}
+	public DFActorManagerConfig setClusterConfig(DFActorClusterConfig cfg){
+		this.clusterCfg = cfg;
+		return this;
+	}
 }

@@ -34,8 +34,8 @@ public final class DFActorWrap {
 	private final LinkedList<DFActorMessage>[] _arrQueue = new LinkedList[2];
 	private int[] _arrQueueSize = new int[2];
 	private LinkedList<DFActorMessage> _queueWrite = null;
-	private int _queueWriteIdx = 0;
-	private int _queueReadIdx = 1;
+	private byte _queueWriteIdx = 0;
+	private byte _queueReadIdx = 1;
 	
 	private final ReentrantReadWriteLock _lockQueue = new ReentrantReadWriteLock();
 //	private final ReadLock _lockQueueRead = _lockQueue.readLock();
@@ -44,7 +44,7 @@ public final class DFActorWrap {
 //	private final StampedLock _lockQueue = new StampedLock();
 	
 	private final DFActor _actor;
-	private final int _actorConsumeType;
+	private final byte _actorConsumeType;
 	private boolean _bInGlobalQueue = false;
 	private volatile boolean _bRemoved = false;
 	private final int _actorId;
@@ -56,7 +56,7 @@ public final class DFActorWrap {
 	protected DFActorWrap(final DFActor actor) {
 		this._actor = actor;
 		_actorId = actor.getId();
-		_actorConsumeType = actor.getConsumeType();
+		_actorConsumeType = (byte) actor.getConsumeType();
 		_isLogicActor = !actor.isBlockActor;
 		_consumeLock = _actorId + "_" + actor.name;
 		//
@@ -115,7 +115,7 @@ public final class DFActorWrap {
 				queueRead = _arrQueue[_queueWriteIdx];
 				//swap write queue
 				_queueWriteIdx = _queueReadIdx;
-				_queueReadIdx = (_queueReadIdx + 1)%2;
+				_queueReadIdx = (byte) ((_queueReadIdx + 1)%2);
 				_queueWrite = _arrQueue[_queueWriteIdx];
 			}
 		}finally{

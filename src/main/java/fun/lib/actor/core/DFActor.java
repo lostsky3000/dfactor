@@ -20,7 +20,7 @@ public class DFActor implements CallHereContext{
 	public static final long TIMER_UNIT_MILLI = 10;
 	protected final int id;
 	protected final String name;
-	protected int consumeType = DFActorDefine.CONSUME_AUTO;
+	protected byte consumeType = DFActorDefine.CONSUME_AUTO;
 	private final DFActorManager _mgr;
 	protected final DFActorLog log;
 	protected final DFActorSystem sys;
@@ -56,7 +56,7 @@ public class DFActor implements CallHereContext{
 		if(consumeType < DFActorDefine.CONSUME_AUTO || consumeType > DFActorDefine.CONSUME_ALL){ //consumeType invalid
 			consumeType = DFActorDefine.CONSUME_AUTO;
 		}
-		this.consumeType = consumeType;
+		this.consumeType = (byte) consumeType;
 	}
 	
 	public int getId(){

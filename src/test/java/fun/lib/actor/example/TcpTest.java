@@ -6,7 +6,7 @@ import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
-import fun.lib.actor.core.DFActorManagerConfig;
+import fun.lib.actor.po.DFActorManagerConfig;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import io.netty.buffer.ByteBuf;

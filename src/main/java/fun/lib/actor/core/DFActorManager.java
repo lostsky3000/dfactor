@@ -238,8 +238,8 @@ public final class DFActorManager {
 			_arrSysBlockId = new int[_blockThNum];
 			//
 			_timerThNum = cfg.getTimerThreadNum();
-			_cdInit = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _timerThNum); //worker + timer
-			_cdWorkerStop = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _timerThNum);
+			_cdInit = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _clusterThNum + _timerThNum); //worker + timer
+			_cdWorkerStop = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _clusterThNum + _timerThNum);
 			//start timer thread
 			_lsTimer = new ArrayList<>(_timerThNum);
 			_lsLoopTimer = new ArrayList<>(_timerThNum);

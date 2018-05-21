@@ -1,10 +1,14 @@
 package fun.lib.actor.api;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+
 import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
+import io.netty.buffer.ByteBuf;
 
 public interface DFActorNet {
 	/**
@@ -90,4 +94,6 @@ public interface DFActorNet {
 	//udp
 	public void doUdpServer(final DFUdpServerCfg cfg, DFActorUdpDispatcher listener, final int requestId);
 	public void doUdpServerClose(int port);
+	
+	public int doUdpSend(ByteBuf buf, InetSocketAddress addr);
 }

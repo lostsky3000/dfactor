@@ -1,5 +1,14 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
+## 开发中
+
+- 集群功能，快速组网，节点和服务自动发现
+
+## 后续计划
+
+- 增加常用服务端业务示例，如房间类型游戏等等
+
+
 # dfactor
 
 dfactor 是一个基于actor模型的消息处理框架
@@ -151,11 +160,6 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 
 ## FAQ
-
-
-## 后续计划
-
-- 增加常用服务端业务示例，如房间类型游戏等等
 
 
 

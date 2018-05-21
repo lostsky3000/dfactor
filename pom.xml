@@ -80,5 +80,18 @@
 	    <version>3.6.3</version>
 	</dependency>
 	
+	<!-- protobuf -->
+	<dependency>
+	  <groupId>com.google.protobuf</groupId>
+	  <artifactId>protobuf-java</artifactId>
+	  <version>3.5.1</version>
+	</dependency>
+	<!-- protobuf-util -->
+	<dependency>
+	  <groupId>com.google.protobuf</groupId>
+	  <artifactId>protobuf-java-util</artifactId>
+	  <version>3.5.1</version>
+	</dependency>
+	
   </dependencies>
 </project>

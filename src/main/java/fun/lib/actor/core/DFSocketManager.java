@@ -1,6 +1,7 @@
 package fun.lib.actor.core;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -75,7 +77,52 @@ public final class DFSocketManager {
 		return instance;
 	}
 	
-	//udp
+	//udp client
+	protected int doUdpSend(ByteBuf buf, InetSocketAddress addr){
+		EventLoopGroup group;
+		if(DFSysUtil.isLinux()){
+			group = new EpollEventLoopGroup(1);
+		}else{
+			group = new NioEventLoopGroup(1);
+		}
+        return doUdpSend(group, buf, addr);
+	}
+	protected int doUdpSend(final EventLoopGroup group, ByteBuf buf, InetSocketAddress addr){
+		try {
+            Bootstrap b = new Bootstrap();
+            b.group(group).channel(NioDatagramChannel.class)
+            .option(ChannelOption.SO_BROADCAST, false) //
+            .handler(new UdpSendHandlerDefault()); //
+            Channel ch = b.bind(0).sync().channel();
+            //
+            ChannelFuture f = ch.writeAndFlush(new DatagramPacket(buf, addr));//.sync();
+            f.addListener(new GenericFutureListener<Future<? super Void>>() {
+				@Override
+				public void operationComplete(Future<? super Void> future) throws Exception {
+					group.shutdownGracefully();
+				}
+			});
+            return 0;
+        } catch (Exception e) {
+        	e.printStackTrace();
+            group.shutdownGracefully();
+        }
+        return 1;
+	}
+	
+	private static class UdpSendHandlerDefault extends SimpleChannelInboundHandler<DatagramPacket>{
+		@Override
+		protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
+			// TODO Auto-generated method stub
+		}
+		@Override
+		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+			cause.printStackTrace();
+			ctx.close();
+		}
+	}
+	
+	//udp server
 	private final HashMap<Integer, DFUdpIoGroup> mapUdpGroup = new HashMap<>();
 	private final ReentrantReadWriteLock lockUdpSvr = new ReentrantReadWriteLock();
 	private final ReadLock readLockUdpSvr = lockUdpSvr.readLock();

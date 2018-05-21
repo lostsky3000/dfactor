@@ -1,5 +1,8 @@
 package fun.lib.actor.core;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+
 import fun.lib.actor.api.DFActorNet;
 import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFActorUdpDispatcher;
@@ -9,6 +12,7 @@ import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
+import io.netty.buffer.ByteBuf;
 
 public final class DFActorNetWrap  implements DFActorNet{
 	
@@ -110,6 +114,12 @@ public final class DFActorNetWrap  implements DFActorNet{
 		cfg.setTcpProtocol(DFActorDefine.TCP_DECODE_HTTP)
 			.setUserHandler(handler);
 		_mgr.doTcpConnect(cfg, id, 0);
+	}
+
+	@Override
+	public int doUdpSend(ByteBuf buf, InetSocketAddress addr) {
+		final DFSocketManager mgr = DFSocketManager.get();
+		return mgr.doUdpSend(buf, addr);
 	}
 
 	

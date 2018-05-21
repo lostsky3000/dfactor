@@ -8,8 +8,10 @@ import fun.lib.actor.po.DFActorManagerConfig;
 public final class ClusterTest {
 	
 	public static void main(String[] args) {
-		DFActorClusterConfig cfgCluster = DFActorClusterConfig.newCfg()
-				.addIpWhite("192.168.123.7");
+		DFActorClusterConfig cfgCluster = DFActorClusterConfig.newCfg();
+//				.setPingTest(false)
+//				.addSpecifyIP("192.168.123.7");
+//				.setIPRange("192.168.123.5", "192.168.123.16");
 		DFActorManagerConfig cfgStart = new DFActorManagerConfig()
 				.setClusterConfig(cfgCluster);
 		

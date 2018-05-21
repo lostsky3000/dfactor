@@ -2,6 +2,7 @@ package fun.lib.actor.core;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -16,16 +17,23 @@ import com.funtag.util.net.DFIpUtil;
 import fun.lib.actor.api.DFActorUdpDispatcher;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
+import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFActorClusterConfig;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
 import fun.lib.actor.po.IPRange;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.CharsetUtil;
 
 public final class DFClusterActor extends DFActor{
 	
-	private static final int PORT_RANGE = 30;
+	private static final int PORT_RANGE = 20;
+	private static final int MAX_PORT = 65536;
 	
 	public DFClusterActor(Integer id, String name, Boolean isBlockActor) {
 		super(id, name, isBlockActor);
@@ -33,35 +41,32 @@ public final class DFClusterActor extends DFActor{
 	}
 	
 	private String _uniqueId = null;
-	private String _lanIP = null;
-	private String[] _arrLanIPSec = null;
-	private int _curListenPort = 0;
+	private String _selfLanIP = null;
+	private String[] _arrLanIPSeg = null;
+	private int _curTcpPort = 0;
 	private int _curUdpPort = 0;
+	private LinkedList<InetAddress> _lsLanHost = null;
 	
 	private DFActorClusterConfig _cfgCluster = null;
 	private ActorProp _propEntry = null;
 	@Override
 	public void onStart(Object param) {
-		log.info("onStart");
+		log.info("onStart, curThread="+Thread.currentThread().getName());
 		//
 		HashMap<String,Object> mapParam = (HashMap<String, Object>) param;
 		_cfgCluster = (DFActorClusterConfig) mapParam.get("cluster");
 		_propEntry = (ActorProp) mapParam.get("entry");
 		//get machine info
-		_uniqueId = DFCipherUtil.getUUIDDigest();
-		log.info("uniqueId = "+_uniqueId);
 		if(!_checkMachine()){
-			log.error("no valid lanIP detected");
 			_doShutdown();
 			return ;
 		}
 		//start tcp listen
-		_curListenPort = _cfgCluster.getListenPort();
-		_tryDoListen();
-		
+		_curTcpPort = _cfgCluster.getBasePort();
+		_tryTcpListen();
 	}
-	private void _tryDoListen(){
-		DFTcpServerCfg cfg = new DFTcpServerCfg(_curListenPort, 1, 0)
+	private void _tryTcpListen(){
+		DFTcpServerCfg cfg = new DFTcpServerCfg(_curTcpPort, 1, 0)
 			.setSoBackLog(1024)
 			.setTcpProtocol(DFActorDefine.TCP_DECODE_LENGTH);
 		net.doTcpServer(cfg);
@@ -69,30 +74,35 @@ public final class DFClusterActor extends DFActor{
 	@Override
 	public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
 		if(isSucc){
-			log.info("listen on port "+_curListenPort+" succ");
+			log.info("listen tcp on port "+_curTcpPort+" succ");
 			//try udp listen
-			_curUdpPort = _cfgCluster.getListenPort() + 1;
-			_tryDoUdpListen();
-		}else{
-			int nextPort = _curListenPort + 1;
-			log.error("listen on port "+_curListenPort+" failed, "+errMsg);
-			if(_curListenPort <= _cfgCluster.getListenPort() + PORT_RANGE && nextPort < 35536){ //continue
-				log.info("retry listen on port "+nextPort);
-				_curListenPort = nextPort;
-				_tryDoListen();
+			int nextPort = _curTcpPort + 1;
+			if(nextPort <= _cfgCluster.getBasePort() + PORT_RANGE && nextPort < MAX_PORT){
+				_curUdpPort = nextPort;
+				_tryUdpListen();
 			}else{
-				log.error("listen failed, curPort = "+_curListenPort);
+				log.error("listen udp on port "+nextPort+" failed");
+				_doShutdown();
+			}
+		}else{
+			int nextPort = _curTcpPort + 1;
+			log.error("listen tcp on port "+_curTcpPort+" failed, "+errMsg);
+			if(nextPort <= _cfgCluster.getBasePort() + PORT_RANGE && nextPort < MAX_PORT){ //continue
+				log.info("retry listen tcp on port "+nextPort);
+				_curTcpPort = nextPort;
+				_tryTcpListen();
+			}else{
+				log.error("listen tcp failed, curPort = "+_curTcpPort);
 				_doShutdown();
 			}
 		}
 	}
 	
-	private void _tryDoUdpListen(){
+	private void _tryUdpListen(){
 		DFUdpServerCfg cfg = new DFUdpServerCfg(_curUdpPort, 1, false);
 		net.doUdpServer(cfg, new DFActorUdpDispatcher() {
 			@Override
 			public int onQueryMsgActorId(Object msg) {
-				// TODO Auto-generated method stub
 				return id;
 			}
 		}, 10001);
@@ -107,10 +117,10 @@ public final class DFClusterActor extends DFActor{
 			}else{ //listen udp failed
 				int nextPort = _curUdpPort + 1;
 				log.error("listen udp on port "+_curUdpPort+" failed, "+errMsg);
-				if(_curUdpPort <= _cfgCluster.getListenPort() + PORT_RANGE && nextPort < 35536){ //continue
+				if(nextPort <= _cfgCluster.getBasePort() + PORT_RANGE && nextPort < MAX_PORT){ //continue
 					log.info("retry listen udp on port "+nextPort);
 					_curUdpPort = nextPort;
-					_tryDoUdpListen();
+					_tryUdpListen();
 				}else{
 					log.error("listen udp failed, curPort = "+_curUdpPort);
 					_doShutdown();
@@ -120,12 +130,9 @@ public final class DFClusterActor extends DFActor{
 	}
 	@Override
 	public int onUdpServerRecvMsg(int requestId, DFUdpChannel channel, DatagramPacket pack) {
-		log.info("recv udp msg: len = "+pack.content().readableBytes());
+		log.info("recv udp msg: len="+pack.content().readableBytes()+", sender="+pack.sender());
 		return 0;
 	}
-	
-	
-	
 	@Override
 	public void onTcpConnOpen(int requestId, DFTcpChannel channel) {
 		
@@ -140,81 +147,112 @@ public final class DFClusterActor extends DFActor{
 		return 0;
 	}
 	
+	//
 	private void _tryBroadcast(){
-		LinkedList<String> lsWhiteIp = _cfgCluster.getIPWhiteList();
-		IPRange ipRange = _cfgCluster.getIPRange();
-		if(ipRange == null && lsWhiteIp == null){ //no ip range cfg
-			String ipPfx = _arrLanIPSec[0]+"."+_arrLanIPSec[1]+"."+_arrLanIPSec[2];
-			String ipBegin = ipPfx+".1";
-			String ipEnd = ipPfx+".255";
-			ipRange = new IPRange(ipBegin, ipEnd);
-			log.info("no ipRange specify, use "+ipBegin+" to "+ipEnd);
-		}
-		LinkedList<InetAddress> lsAddr = new LinkedList<>();
-		if(ipRange != null){
-			log.info("start check ip range from "+ipRange.ipBegin+" to "+ipRange.ipEnd);
-			long nBegin = DFIpUtil.ipToNumber(ipRange.ipBegin);
-			long nEnd = DFIpUtil.ipToNumber(ipRange.ipEnd);
-			for(long i=nBegin; i<=nEnd; ++i){
-				String host = DFIpUtil.numberToIp(i);
-				if(host.equals(_lanIP)){ //self
-					continue;
-				}
-				try {
-					InetAddress inetAddr = InetAddress.getByName(host);
-					if(inetAddr.isReachable(20)){
-						log.info("pingtest, got: "+host);
-						lsAddr.offer(inetAddr);
-					}else{
-						log.warn("pingtest, can't reach: "+host);
+		boolean bRet = false;
+		do{
+			log.info("try to search lan host...");
+			LinkedList<String> lsSpecifyIp = _cfgCluster.getSpecifyIPList();
+			IPRange ipRange = _cfgCluster.getIPRange();
+			_lsLanHost = new LinkedList<>();
+			if(lsSpecifyIp != null && !lsSpecifyIp.isEmpty()){ //use specify ip list
+				log.info("use specify ipList for search");
+				Iterator<String> it = lsSpecifyIp.iterator();
+				while(it.hasNext()){
+					try {
+						String host = it.next();
+						if(host.equals(_selfLanIP)){ //self
+							continue;
+						}
+						_lsLanHost.add(InetAddress.getByName(host));
+					} catch (UnknownHostException e) {
+						e.printStackTrace();
+						break;
 					}
-				} catch (UnknownHostException e) {
-					e.printStackTrace();
-					continue;
-				} catch (IOException e) {
-					e.printStackTrace();
-					continue;
+				}
+			}else if(ipRange != null){ //use ip range
+				log.info("use ipRange for search");
+				long nBegin = DFIpUtil.ipToNumber(ipRange.ipBegin);
+				long nEnd = DFIpUtil.ipToNumber(ipRange.ipEnd);
+				for(long i=nBegin; i<=nEnd; ++i){
+					String host = DFIpUtil.numberToIp(i);
+					if(host.equals(_selfLanIP)){ //self
+						continue;
+					}
+					try {
+						_lsLanHost.add(InetAddress.getByName(host));
+					} catch (UnknownHostException e) {
+						e.printStackTrace();
+						break;
+					}
+				}
+			}else{ //broadcast to all host in lan
+				log.info("search all lan host");
+				String ipPfx = _arrLanIPSeg[0]+"."+_arrLanIPSeg[1]+"."+_arrLanIPSeg[2]+".";
+				for(int i=1; i<=254; ++i){
+					String host = ipPfx + i;
+					try {
+						if(host.equals(_selfLanIP)){ //self
+							continue;
+						}
+						_lsLanHost.add(InetAddress.getByName(host));
+					} catch (UnknownHostException e) {
+						e.printStackTrace();
+						break;
+					}
 				}
 			}
-		}
-		if(lsWhiteIp != null){
-			log.info("start check ip white list");
-			Iterator<String> it = lsWhiteIp.iterator();
-			while(it.hasNext()){
-				String host = it.next();
-				if(host.equals(_lanIP)){ //self
-					continue;
-				}
-				try {
-					InetAddress inetAddr = InetAddress.getByName(host);
-					if(inetAddr.isReachable(20)){
-						log.info("pingtest, got: "+host);
-						lsAddr.offer(inetAddr);
-					}else{
-						log.warn("pingtest, can't reach: "+host);
-					}
-				} catch (UnknownHostException e) {
-					e.printStackTrace();
-					continue;
-				} catch (IOException e) {
-					e.printStackTrace();
-					continue;
-				}
+			if(_lsLanHost.isEmpty()){
+				log.error("get lanhost failed");
+				break;
 			}
+			bRet = true;
+		}while(false);
+		if(bRet){
+			//broadcast
+			_doBroadcast();
+		}else{
+			log.error("try to broadcast failed");
+			_doShutdown();
 		}
-		//broadcast
-		_doBroadcast(lsAddr);
 	}
-	private void _doBroadcast(LinkedList<InetAddress> lsAddr){
-		Iterator<InetAddress> it = lsAddr.iterator();
+	private void _doBroadcast(){
+		log.info("start broadcast to lanHost, hostNum="+_lsLanHost.size());
+		boolean pingTest = _cfgCluster.isPingTest();
+		Iterator<InetAddress> it = _lsLanHost.iterator();
 		while(it.hasNext()){
 			InetAddress addr = it.next();
-			
+			if(pingTest){
+				try {
+					if(!addr.isReachable(100)){
+						log.warn("ping unreachable, host="+addr);
+						continue;
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+					continue;
+				}
+			}
+			//
+			int maxPort = Math.min(MAX_PORT, _cfgCluster.getBasePort()+PORT_RANGE);
+			for(int i=_cfgCluster.getBasePort(); i <= maxPort; ++i){
+				_doSendSelfBroadcast(new InetSocketAddress(addr, i));
+			}
 		}
+	}
+	
+	private void _doSendSelfBroadcast(InetSocketAddress addr){
+		log.debug("send selfBroadcast to "+addr);
+		ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(20);
+		buf.writeCharSequence("heheda", CharsetUtil.UTF_8);
+		net.doUdpSend(buf, addr);
 	}
 	
 	private boolean _checkMachine(){
 		try {
+			_uniqueId = DFCipherUtil.getUUIDDigest();
+			log.info("uniqueId = "+_uniqueId);
+			//
 			Enumeration<NetworkInterface> emNet = NetworkInterface.getNetworkInterfaces();
 			while(emNet.hasMoreElements()){
 				NetworkInterface net = emNet.nextElement();
@@ -228,8 +266,8 @@ public final class DFClusterActor extends DFActor{
 							continue ;
 						}
 						if(DFIpUtil.isLanIP(ip)){ //bingo
-							_lanIP = ip;
-							_arrLanIPSec = _lanIP.split("\\.");
+							_selfLanIP = ip;
+							_arrLanIPSeg = _selfLanIP.split("\\.");
 							log.info("find local lanIP: "+ip);
 							return true;
 						}
@@ -241,10 +279,13 @@ public final class DFClusterActor extends DFActor{
 			e.printStackTrace();
 			return false;
 		}
+		log.error("no valid lanIP detected");
 		return false;
 	}
 	
 	private void _doShutdown(){
 		DFActorManager.get().shutdown();
 	}
+	
+	
 }

@@ -8,11 +8,17 @@ public final class DFActorClusterConfig {
 		
 	}
 	
-	private int listenPort = 30203;
+	private String nodeName = null;
+	private String nodeType = null;
+	private String nodeSubType = null;
+	//
+	private int basePort = 30203;
 	private String clusterName = "cluster.name.test";
 	private IPRange ipRange = null;
-	private LinkedList<String> lsWhiteIp = null;
+	private LinkedList<String> lsSpecifyIp = null;
+	private boolean pingTest = false;
 	
+	//
 	public String getClusterName(){
 		return this.clusterName;
 	}
@@ -21,11 +27,11 @@ public final class DFActorClusterConfig {
 		return this;
 	}
 	
-	public int getListenPort(){
-		return this.listenPort;
+	public int getBasePort(){
+		return this.basePort;
 	}
-	public DFActorClusterConfig setListenPort(int port){
-		this.listenPort = port;
+	public DFActorClusterConfig setBasePort(int port){
+		this.basePort = port;
 		return this;
 	}
 	
@@ -37,15 +43,55 @@ public final class DFActorClusterConfig {
 		return this;
 	}
 	
-	public LinkedList<String> getIPWhiteList(){
-		return this.lsWhiteIp;
+	public LinkedList<String> getSpecifyIPList(){
+		return this.lsSpecifyIp;
 	}
-	public DFActorClusterConfig addIpWhite(String ip){
-		if(lsWhiteIp == null){
-			lsWhiteIp = new LinkedList<>();
+	public DFActorClusterConfig addSpecifyIP(String ip){
+		if(lsSpecifyIp == null){
+			lsSpecifyIp = new LinkedList<>();
 		}
-		lsWhiteIp.offer(ip);
+		lsSpecifyIp.add(ip);
+		ipRange = null;
 		return this;
+	}
+	public DFActorClusterConfig addSpecifyIPList(String[] arrIP){
+		if(lsSpecifyIp == null){
+			lsSpecifyIp = new LinkedList<>();
+		}
+		int num = arrIP.length;
+		for(int i=0; i<num; ++i){
+			lsSpecifyIp.add(arrIP[i]);
+		}
+		ipRange = null;
+		return this;
+	}
+	public boolean isPingTest(){
+		return this.pingTest;
+	}
+	public DFActorClusterConfig setPingTest(boolean pingTest){
+		this.pingTest = pingTest;
+		return this;
+	}
+	
+	
+	//
+	public String getNodeName(){
+		return this.nodeName;
+	}
+	public DFActorClusterConfig setNodeName(String nodeName){
+		this.nodeName = nodeName;
+		return this;
+	}
+	public String getNodeType(){
+		return this.nodeType;
+	}
+	public DFActorClusterConfig setNodeType(String nodeType, String nodeSubType){
+		this.nodeType = nodeType;
+		this.nodeSubType = nodeSubType;
+		return this;
+	}
+	public String getNodeSubType(){
+		return this.nodeSubType;
 	}
 	
 	//

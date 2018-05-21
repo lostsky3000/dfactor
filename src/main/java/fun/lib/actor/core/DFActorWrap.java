@@ -48,16 +48,18 @@ public final class DFActorWrap {
 	private boolean _bInGlobalQueue = false;
 	private volatile boolean _bRemoved = false;
 	private final int _actorId;
-	private final boolean _isLogicActor;
+	private final boolean _isBlockActor;
 	private final DFActorManager _actorMgr;
 	private final String _consumeLock;
+	private final boolean _isClusterActor;
 	
 	
-	protected DFActorWrap(final DFActor actor) {
+	protected DFActorWrap(final DFActor actor, final boolean isCluster) {
 		this._actor = actor;
 		_actorId = actor.getId();
 		_actorConsumeType = (byte) actor.getConsumeType();
-		_isLogicActor = !actor.isBlockActor;
+		_isBlockActor = actor.isBlockActor;
+		_isClusterActor = isCluster;
 		_consumeLock = _actorId + "_" + actor.name;
 		//
 		for(int i=0; i<2; ++i){
@@ -321,8 +323,11 @@ public final class DFActorWrap {
 	protected String getActorName(){
 		return _actor.name;
 	}
-	protected boolean isLogicActor(){
-		return _isLogicActor;
+	protected boolean isBlockActor(){
+		return _isBlockActor;
+	}
+	protected boolean isClusterActor(){
+		return _isClusterActor;
 	}
 	
 	private void _release(){

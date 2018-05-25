@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
+import java.net.InetSocketAddress;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -52,6 +53,7 @@ import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFActorClusterConfig;
 import fun.lib.actor.po.DFActorManagerConfig;
 import fun.lib.actor.po.DFTcpClientCfg;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -88,19 +90,6 @@ public final class DFActorManager {
 	private volatile int _timerThNum = 1;
 	private final AtomicInteger _timerIdxCount = new AtomicInteger(0);
 	//
-//	private LinkedBlockingQueue<DFActorWrap> _queueGlobalActor = new LinkedBlockingQueue<>();
-//	private ConcurrentLinkedQueue<DFActorWrap> _queueGlobalActor = new ConcurrentLinkedQueue<>();
-//	private Lock _lockActor = new ReentrantLock();
-//	private Condition _condActor = _lockActor.newCondition();
-	
-//	private LinkedBlockingQueue<DFActorWrap> _queueGlobalBlockActor = new LinkedBlockingQueue<>();
-//	private ConcurrentLinkedQueue<DFActorWrap> _queueGlobalBlockActor = new ConcurrentLinkedQueue<>();
-//	private Lock _lockBlockActor = new ReentrantLock();
-//	private Condition _condBlockActor = _lockBlockActor.newCondition();
-	
-//	private volatile byte _idxQueueActor = 0;
-//	private ConcurrentLinkedQueue<DFActorWrap>[] _arrQueueActor = null;
-	
 	private final ConcurrentLinkedQueue<DFActorWrap> _queueGlobalActor = new ConcurrentLinkedQueue<>();
 	private final Lock _lockQueueActor = new ReentrantLock();
 	private final Condition _condQueueActor = _lockQueueActor.newCondition();
@@ -125,6 +114,7 @@ public final class DFActorManager {
 	private volatile boolean _entryIsBlock = false;
 	private volatile int _entryConsumeType = DFActorDefine.CONSUME_AUTO;
 	private volatile EventLoopGroup _clientIoGroup = null;
+	private volatile EventLoopGroup _clusterIoGroup = null;
 	
 	
 	private int _blockThNum = 0;
@@ -218,7 +208,9 @@ public final class DFActorManager {
 				_entryConsumeType = entryConsumeType;
 			}
 			if(cfg.getClusterConfig() != null){ //has cluster
+				int ioThNum = Math.max(1, cfg.getClusterConfig().getIoThreadNum());
 				_clusterThNum = 1;  //use one thread for cluster biz
+				_clusterIoGroup = DFSysUtil.isLinux()?new EpollEventLoopGroup(ioThNum):new NioEventLoopGroup(ioThNum);
 			}else{
 				_clusterThNum = 0;
 			}
@@ -263,15 +255,15 @@ public final class DFActorManager {
 				LoopWorker loop = null;
 				Thread th = null;
 				if(i < logicWorkerThNum){  //logic worker thread
-					loop = new LoopWorker(i+1, i==0?true:false, false, false);
+					loop = new LoopWorker(i+1, i==0?true:false, _queueGlobalActor, _lockQueueActor, _condQueueActor);
 					th = new Thread(loop);
 					th.setName("thread-logic-worker-"+i);
 				}else if(i < logicWorkerThNum + blockWorkerThNum){   //block worker thread
-					loop = new LoopWorker(i+1, false, false, true);
+					loop = new LoopWorker(i+1, false, _queueGlobalBlockActor, _lockQueueBlockActor, _condQueueBlockActor);
 					th = new Thread(loop);
 					th.setName("thread-block-worker-"+(i-logicWorkerThNum));
 				}else{ //cluster thread
-					loop = new LoopWorker(i+1, false, true, false);
+					loop = new LoopWorker(i+1, false, _queueGlobalClusterActor, _lockQueueClusterActor, _condQueueClusterActor);
 					th = new Thread(loop);
 					th.setName("thread-cluster-worker-"+(i-logicWorkerThNum-blockWorkerThNum));
 				}
@@ -441,10 +433,34 @@ public final class DFActorManager {
 					_clientIoGroup.shutdownGracefully();
 					_clientIoGroup = null;
 				}
+				if(_clusterIoGroup != null){
+					_clusterIoGroup.shutdownGracefully();
+					_clusterIoGroup = null;
+				}
 				//
 				svcShutdown.shutdown();
 			}
 		});
+	}
+	
+	protected int doUdpSend(ByteBuf buf, InetSocketAddress addrDst){
+		return DFSocketManager.get().doUdpSend(_clientIoGroup, buf, addrDst);
+	}
+	protected int doUdpSendViaCluster(ByteBuf buf, InetSocketAddress addrDst){
+		return DFSocketManager.get().doUdpSend(_clusterIoGroup, buf, addrDst);
+	}
+	protected int doUdpSendViaCluster(ByteBuf buf, InetSocketAddress addrDst, InetSocketAddress addrSender){
+		return DFSocketManager.get().doUdpSend(_clusterIoGroup, buf, addrDst, addrSender);
+	}
+	protected EventLoopGroup getClusterIoGroup(){
+		return _clusterIoGroup;
+	}
+	
+	protected int doTcpConnectViaCluster(final DFTcpClientCfg cfg, final int srcActorId, final int requestId){
+		return DFSocketManager.get().doTcpConnect(cfg, srcActorId, _clusterIoGroup, requestId);
+	}
+	protected int doTcpConnectViaCluster(final DFTcpClientCfg cfg, final int srcActorId, final DFActorTcpDispatcher dispatcher, final int requestId){
+		return DFSocketManager.get().doTcpConnect(cfg, srcActorId, dispatcher, _clusterIoGroup, requestId);
 	}
 	
 	protected int doTcpConnect(final DFTcpClientCfg cfg, final int srcActorId, final int requestId){
@@ -454,11 +470,9 @@ public final class DFActorManager {
 		return DFSocketManager.get().doTcpConnect(cfg, srcActorId, dispatcher, _clientIoGroup, requestId);
 	}
 	//
-//	private Map<Integer, DFActorWrap> _mapActor = new HashMap<>();
 	private HashMap<Integer,String> _mapActor = new HashMap<>();
 	private ConcurrentHashMap<Integer, DFActorWrap> _cmapActor = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, DFActorWrap> _cmapActorName = new ConcurrentHashMap<>();
-//	private Map<String, DFActorWrap> _mapActorName = new HashMap<>();
 	private HashSet<String> _setActorName = new HashSet<>();
 	//
 	private final ReentrantReadWriteLock _lockMapActor = new ReentrantReadWriteLock();
@@ -529,7 +543,7 @@ public final class DFActorManager {
 		}
 		//send actor start event
 		try{
-			if(wrap.pushMsg(0, 0, DFActorDefine.SUBJECT_START, 0, param, null, false, null, false) == 0){ //add to global queue
+			if(wrap.pushMsg(0, 0, DFActorDefine.SUBJECT_START, 0, param, null, false, null, false, null) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
 					_queueGlobalClusterActor.offer(wrap);
 					_doGlobalClusterQueueNotify();
@@ -588,25 +602,22 @@ public final class DFActorManager {
 	
 	protected int sendCallback(int srcId, int dstId, int requestId, 
 			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
-		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, true);
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, true, null);
 	}
 	protected int send(int srcId, int dstId, int requestId, 
 			int subject, int cmd, Object payload, final boolean addTail){
-		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null, null, false);
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null, null, false, null);
 	}
 	protected int send(int srcId, int dstId, int requestId, 
 			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler, boolean isCb){
-		
-		DFActorWrap wrap = _cmapActor.get(dstId); //null;
-//		//
-//		_lockActorRead.lock();
-//		try{
-//			wrap = _mapActor.get(dstId);
-//		}finally{
-//			_lockActorRead.unlock();
-//		}
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, isCb, null);
+	}
+	protected int send(int srcId, int dstId, int requestId, 
+			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler, boolean isCb
+			, Object payload2){
+		DFActorWrap wrap = _cmapActor.get(dstId); 
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb, payload2) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
 					_queueGlobalClusterActor.offer(wrap);
 					_doGlobalClusterQueueNotify();
@@ -623,16 +634,14 @@ public final class DFActorManager {
 		return 1;
 	}
 	protected int send(int srcId, String dstName, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
+			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler){
+		return send(srcId, dstName, requestId, subject, cmd, payload, addTail, context, userHandler, null);
+	}
+	protected int send(int srcId, String dstName, int requestId, 
+			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler, Object payload2){
 		DFActorWrap wrap = _cmapActorName.get(dstName);
-//		_lockActorRead.lock();
-//		try{
-//			wrap = _mapActorName.get(dstName);
-//		}finally{
-//			_lockActorRead.unlock();
-//		}
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, false) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, false, payload2) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
 					_queueGlobalClusterActor.offer(wrap);
 					_doGlobalClusterQueueNotify();
@@ -654,7 +663,7 @@ public final class DFActorManager {
 			return -1;
 		}
 		int dstId = _arrSysBlockId[shardId%_blockThNum];
-		return this.send(srcId, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, userHandler, false);
+		return this.send(srcId, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, userHandler, false, null);
 	}
 	
 	//actor message pool
@@ -664,12 +673,12 @@ public final class DFActorManager {
 		};
 	};
 	protected DFActorMessage newActorMessage(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb){
+			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb, Object payload2){
 		final DFActorMessage msg = _actorMsgPool.get().poll();
 		if(msg == null){
-			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb);
+			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2);
 		}else{
-			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb);
+			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2);
 		}
 		return msg;
 	}
@@ -700,13 +709,18 @@ public final class DFActorManager {
 		protected final int id;
 		private final int _consumeType;
 		private final boolean _initSysActor;
-		private final boolean _isBlockThread;
-		private final boolean _isClusterThread;
-		protected LoopWorker(int id, boolean initSysActor, boolean isClusterThread, boolean isBlockThread) {
+		//
+		private final ConcurrentLinkedQueue<DFActorWrap> _queueActor;
+		private final Lock _lockActor;
+		private final Condition _condActor;
+		
+		protected LoopWorker(int id, boolean initSysActor,
+				ConcurrentLinkedQueue<DFActorWrap> queueActor, Lock lockActor, Condition condActor) {
 			this.id = id;
 			this._initSysActor = initSysActor;
-			this._isClusterThread = isClusterThread;
-			this._isBlockThread = isBlockThread;
+			this._queueActor = queueActor;
+			this._lockActor = lockActor;
+			this._condActor = condActor;
 //			if(id < 3){
 //				_consumeType = DFActorDefine.CONSUME_HALF;
 //			}else{
@@ -760,35 +774,25 @@ public final class DFActorManager {
 			DFActorWrap wrap = null;
 			while(_onLoop){
 				try{
-					if(_isClusterThread){  //cluster
-						wrap = _queueGlobalClusterActor.poll();
-						if(wrap != null){
-							if(wrap.consumeMsg(_consumeType) == 0){ //back to global queue
-								_queueGlobalClusterActor.offer(wrap);
-								_doGlobalClusterQueueNotify();
+					wrap = _queueActor.poll();
+					if(wrap != null){
+						if(wrap.consumeMsg(_consumeType) == 0){ //back to global queue
+							_queueActor.offer(wrap);
+							//notify worker thread
+							_lockActor.lock();
+							try{
+								_condActor.signal();
+							}finally{
+								_lockActor.unlock();
 							}
-						}else{
-							_doGlobalClusterQueueWait();
 						}
-					}else if(_isBlockThread){
-						wrap = _queueGlobalBlockActor.poll();
-						if(wrap != null){
-							if(wrap.consumeMsg(_consumeType) == 0){ //back to global queue
-								_queueGlobalBlockActor.offer(wrap);
-								_doGlobalBlockQueueNotify();
-							}
-						}else{
-							_doGlobalBlockQueueWait();
-						}
-					}else{ //logic thread
-						wrap = _queueGlobalActor.poll();
-						if(wrap != null){
-							if(wrap.consumeMsg(_consumeType) == 0){ //back to global queue
-								_queueGlobalActor.offer(wrap);
-								_doGlobalQueueNotify();
-							}
-						}else{
-							_doGlobalQueueWait();
+					}else{  //no msg now, wait
+						//make worker thread wait
+						_lockActor.lock();
+						try{
+							_condActor.await(1000, TimeUnit.MILLISECONDS);
+						}finally{
+							_lockActor.unlock();
 						}
 					}
 				}catch(Throwable e){
@@ -805,16 +809,6 @@ public final class DFActorManager {
 		}
 	}
 	//
-	private void _doGlobalQueueWait(){
-		_lockQueueActor.lock();
-		try{
-			_condQueueActor.await(1000, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}finally{
-			_lockQueueActor.unlock();
-		}
-	}
 	private void _doGlobalQueueNotify(){
 		_lockQueueActor.lock();
 		try{
@@ -824,16 +818,6 @@ public final class DFActorManager {
 		}
 	}
 	//
-	private void _doGlobalBlockQueueWait(){
-		_lockQueueBlockActor.lock();
-		try{
-			_condQueueBlockActor.await(1000, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}finally{
-			_lockQueueBlockActor.unlock();
-		}
-	}
 	private void _doGlobalBlockQueueNotify(){
 		_lockQueueBlockActor.lock();
 		try{
@@ -843,16 +827,6 @@ public final class DFActorManager {
 		}
 	}
 	//
-	private void _doGlobalClusterQueueWait(){
-		_lockQueueClusterActor.lock();
-		try{
-			_condQueueClusterActor.await(1000, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}finally{
-			_lockQueueClusterActor.unlock();
-		}
-	}
 	private void _doGlobalClusterQueueNotify(){
 		_lockQueueClusterActor.lock();
 		try{
@@ -928,7 +902,7 @@ public final class DFActorManager {
 		}
 		@Override
 		public void onTimeout() {
-			send(0, srcId, 0, DFActorDefine.SUBJECT_TIMER, requestId, null, false, null, cb, false);
+			send(0, srcId, 0, DFActorDefine.SUBJECT_TIMER, requestId, null, false, null, cb, false, null);
 		}
 	}
 	

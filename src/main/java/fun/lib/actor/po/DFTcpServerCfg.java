@@ -3,11 +3,13 @@ package fun.lib.actor.po;
 import fun.lib.actor.api.DFTcpDecoder;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.core.DFActorDefine;
+import io.netty.channel.EventLoopGroup;
 
 public final class DFTcpServerCfg {
 	public final int port;
 	public final int workerThreadNum;
 	public final int bossThreadNum;
+	public final EventLoopGroup ioGroup;
 	//
 	private volatile int soRecvBufLen = 2048;
 	private volatile int soSendBufLen = 2048;
@@ -39,9 +41,16 @@ public final class DFTcpServerCfg {
 		}
 		this.workerThreadNum = workerThreadNum;
 		this.bossThreadNum = bossThreadNum;
+		ioGroup = null;
 	}
 	public DFTcpServerCfg(int port) {
 		this(port, Runtime.getRuntime().availableProcessors(), 1);
+	}
+	public DFTcpServerCfg(int port, EventLoopGroup ioGroup){
+		this.port = port;
+		this.ioGroup = ioGroup;
+		this.workerThreadNum = 0;
+		this.bossThreadNum = 0;
 	}
 	
 	public String getWsUri(){

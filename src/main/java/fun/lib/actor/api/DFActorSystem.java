@@ -6,6 +6,7 @@ import fun.lib.actor.api.cb.CbCallHereBlock;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.po.ActorProp;
+import io.netty.buffer.ByteBuf;
 
 public interface DFActorSystem {
 	
@@ -117,11 +118,52 @@ public interface DFActorSystem {
 	 */
 	public int send(String dstName, int cmd, Object payload);
 	
+	/**
+	 * 向集群指定结点的actor发送消息
+	 * @param dstNode 结点名字
+	 * @param dstActor 目标actor名字
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public int sendToCluster(String dstNode, String dstActor, int cmd, String payload);
+	
+	/**
+	 * 向集群指定结点的actor发送消息
+	 * @param dstNode 结点名字
+	 * @param dstActor 目标actor名字
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public int sendToCluster(String dstNode, String dstActor, int cmd, byte[] payload);
+	
+	/**
+	 * 向集群指定结点的actor发送消息
+	 * @param dstNode 结点名字
+	 * @param dstActor 目标actor名字
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public int sendToCluster(String dstNode, String dstActor, int cmd, ByteBuf payload);
+	
+	/**
+	 * 检测指定结点是否在线
+	 * @param nodeName
+	 * @return
+	 */
+	public boolean isNodeOnline(String nodeName);
 	
 	/**
 	 * 结束当前actor
 	 */
 	public void exit();
+	
+	/**
+	 * 关闭整个dfactor
+	 */
+	public void shutdown();
 	
 	/**
 	 * 注册计时器，仅回调一次，Use timer.timeout() instead

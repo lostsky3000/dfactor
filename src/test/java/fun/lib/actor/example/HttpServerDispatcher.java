@@ -46,7 +46,7 @@ public final class HttpServerDispatcher {
 				public void onListenResult(boolean isSucc, String errMsg) {
 					log.info("listen result: isSucc="+isSucc+", err="+errMsg);
 					if(!isSucc){
-						DFActorManager.get().shutdown();
+						sys.shutdown();
 					}
 				}
 			}, this);  //start http server

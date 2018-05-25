@@ -75,11 +75,12 @@ public final class DFActorWrap {
 	
 	protected int pushMsg(int srcId, int sessionId, 
 			int subject, int cmd, Object payload, Object context, boolean addTail, 
-			Object userHandler, boolean isCb){
+			Object userHandler, boolean isCb, Object payload2){
 		if(_bRemoved){
 			return 1;
 		}
-		final DFActorMessage msg = _actorMgr.newActorMessage(srcId, _actorId, sessionId, subject, cmd, payload, context, userHandler, isCb);
+		final DFActorMessage msg = _actorMgr.newActorMessage(
+				srcId, _actorId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2);
 				//new DFActorMessage(srcId, _actorId, sessionId, subject, cmd, payload);
 		//
 		_lockQueueWrite.lock();
@@ -233,6 +234,8 @@ public final class DFActorWrap {
 						}
 					}else if(msg.subject == DFActorDefine.SUBJECT_START){
 						_actor.onStart(msg.payload);
+					}else if(msg.subject == DFActorDefine.SUBJECT_CLUSTER){
+						_actor.onClusterMessage((String)msg.payload2, (String)msg.context, (String)msg.userHandler, msg.cmd, msg.payload);
 					}
 					else{
 						_actor._lastSrcId = msg.srcId;

@@ -7,10 +7,14 @@ public final class DFActorClusterConfig {
 	private DFActorClusterConfig(){
 		
 	}
+	private DFActorClusterConfig(String nodeName){
+		setNodeName(nodeName);
+	}
 	
 	private String nodeName = null;
-	private String nodeType = null;
-	private String nodeSubType = null;
+	private String nodeType = "cluster.node.test";
+	private int ioThreadNum = 1;
+	private String secretKey = "lostsky3000winthegame_dada";
 	//
 	private int basePort = 30203;
 	private String clusterName = "cluster.name.test";
@@ -23,7 +27,9 @@ public final class DFActorClusterConfig {
 		return this.clusterName;
 	}
 	public DFActorClusterConfig setClusterName(String name){
-		this.clusterName = name;
+		if(name != null && name.length() > 0){
+			this.clusterName = name;
+		}
 		return this;
 	}
 	
@@ -72,30 +78,46 @@ public final class DFActorClusterConfig {
 		this.pingTest = pingTest;
 		return this;
 	}
-	
+	public int getIoThreadNum(){
+		return ioThreadNum;
+	}
+	public DFActorClusterConfig setIoThreadNum(int ioThNum){
+		ioThreadNum = Math.max(1, ioThNum);
+		return this;
+	}
 	
 	//
 	public String getNodeName(){
 		return this.nodeName;
 	}
 	public DFActorClusterConfig setNodeName(String nodeName){
-		this.nodeName = nodeName;
+		if(nodeName != null && nodeName.length() > 0){
+			this.nodeName = nodeName;
+		}
 		return this;
 	}
 	public String getNodeType(){
 		return this.nodeType;
 	}
-	public DFActorClusterConfig setNodeType(String nodeType, String nodeSubType){
-		this.nodeType = nodeType;
-		this.nodeSubType = nodeSubType;
+	public DFActorClusterConfig setNodeType(String nodeType){
+		if(nodeType != null && nodeType.length() > 0){
+			this.nodeType = nodeType;
+		}
 		return this;
 	}
-	public String getNodeSubType(){
-		return this.nodeSubType;
+	
+	public String getSecretKey(){
+		return this.secretKey;
+	}
+	public DFActorClusterConfig setSecretKey(String secretKey){
+		if(secretKey != null && secretKey.length() > 0){
+			this.secretKey = secretKey;
+		}
+		return this;
 	}
 	
 	//
-	public static DFActorClusterConfig newCfg(){
-		return new DFActorClusterConfig();
+	public static DFActorClusterConfig newCfg(String nodeName){
+		return new DFActorClusterConfig(nodeName);
 	}
 }

@@ -147,7 +147,7 @@ public final class TomAndJerry {
 		@Override
 		public void onTimeout(int requestId) {
 			log.info("shutdown dfactor,    curThread="+Thread.currentThread().getName());
-			DFActorManager.get().shutdown();
+			sys.shutdown();
 		}
 	}
 }

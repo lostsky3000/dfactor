@@ -37,7 +37,7 @@ public final class Shutdown {
 		public void onTimeout(int requestId) {
 			log.info("onTimeout, requestId="+requestId+", curThread="+Thread.currentThread().getName());
 			//关闭整个dfactor
-			DFActorManager.get().shutdown();
+			sys.shutdown();
 		}
 		
 	}

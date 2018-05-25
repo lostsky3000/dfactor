@@ -118,8 +118,7 @@ public final class DFActorNetWrap  implements DFActorNet{
 
 	@Override
 	public int doUdpSend(ByteBuf buf, InetSocketAddress addr) {
-		final DFSocketManager mgr = DFSocketManager.get();
-		return mgr.doUdpSend(buf, addr);
+		return _mgr.doUdpSend(buf, addr);
 	}
 
 	

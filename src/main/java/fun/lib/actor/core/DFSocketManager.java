@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
@@ -40,6 +41,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
@@ -78,42 +80,63 @@ public final class DFSocketManager {
 	}
 	
 	//udp client
-	protected int doUdpSend(ByteBuf buf, InetSocketAddress addr){
-		EventLoopGroup group;
-		if(DFSysUtil.isLinux()){
-			group = new EpollEventLoopGroup(1);
-		}else{
-			group = new NioEventLoopGroup(1);
-		}
-        return doUdpSend(group, buf, addr);
+	private volatile Channel _udpSendChannel = null;
+	protected int doUdpSend(EventLoopGroup ioGroupUdpSend, ByteBuf buf, InetSocketAddress addrDst){
+		return this.doUdpSend(ioGroupUdpSend, buf, addrDst, null);
 	}
-	protected int doUdpSend(final EventLoopGroup group, ByteBuf buf, InetSocketAddress addr){
-		try {
-            Bootstrap b = new Bootstrap();
-            b.group(group).channel(NioDatagramChannel.class)
-            .option(ChannelOption.SO_BROADCAST, false) //
-            .handler(new UdpSendHandlerDefault()); //
-            Channel ch = b.bind(0).sync().channel();
-            //
-            ChannelFuture f = ch.writeAndFlush(new DatagramPacket(buf, addr));//.sync();
-            f.addListener(new GenericFutureListener<Future<? super Void>>() {
-				@Override
-				public void operationComplete(Future<? super Void> future) throws Exception {
-					group.shutdownGracefully();
+	protected int doUdpSend(final EventLoopGroup ioGroupUdpSend, ByteBuf buf, InetSocketAddress addrDst, InetSocketAddress addrSender){
+		if(_udpSendChannel == null){
+			synchronized ("udpSendChannel123321") {
+				if(_udpSendChannel == null){
+					try {
+			            Bootstrap b = new Bootstrap();
+			            Class<? extends Channel> clzChannel = null;
+			            if(ioGroupUdpSend instanceof EpollEventLoopGroup){
+			            	clzChannel = EpollDatagramChannel.class;
+			            }else{
+			            	clzChannel = NioDatagramChannel.class;
+			            }
+			            b.group(ioGroupUdpSend).channel(clzChannel)
+			            .option(ChannelOption.SO_BROADCAST, false) //
+			            .handler(new UdpSendHandlerDefault()); //
+			            _udpSendChannel = b.bind(0).sync().channel();
+			            //
+			        } catch (Throwable e) {
+			        	buf.release();
+			        	e.printStackTrace();
+			        	return 2;
+			        }
 				}
-			});
-            return 0;
-        } catch (Exception e) {
-        	e.printStackTrace();
-            group.shutdownGracefully();
-        }
-        return 1;
+			}
+		}
+//		if(_udpSendChannel == null){
+//			buf.release();
+//			return 3;
+//		}
+		DatagramPacket pack = null;
+		if(addrSender == null){
+			pack = new DatagramPacket(buf, addrDst);
+		}else{
+			pack = new DatagramPacket(buf, addrDst, addrSender);
+		}
+		ChannelFuture f = _udpSendChannel.writeAndFlush(pack);
+		f.addListener(new GenericFutureListener<Future<? super Void>>() {
+			@Override
+			public void operationComplete(Future<? super Void> future) throws Exception {
+				if(!future.isSuccess()){
+					future.cause().printStackTrace();
+				}
+			}
+		});
+
+        return 0;
 	}
 	
-	private static class UdpSendHandlerDefault extends SimpleChannelInboundHandler<DatagramPacket>{
+	private class UdpSendHandlerDefault extends SimpleChannelInboundHandler<DatagramPacket>{
 		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
 			// TODO Auto-generated method stub
+			ReferenceCountUtil.release(msg);
 		}
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
@@ -135,12 +158,20 @@ public final class DFSocketManager {
 		final DFUdpIoGroup group = new DFUdpIoGroup(cfg, defaultActorId);
 		//
 		Bootstrap boot = new Bootstrap();
+		
+		Class<? extends Channel> clzChannel = null;
+		if(group.ioGroup instanceof EpollEventLoopGroup){
+        	clzChannel = EpollDatagramChannel.class;
+        }else{
+        	clzChannel = NioDatagramChannel.class;
+        }
+		
 		boot.group(group.ioGroup)
 			.option(ChannelOption.SO_BROADCAST, cfg.isBroadcast)
 			.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
 			.option(ChannelOption.SO_SNDBUF, cfg.getSoSendBuf())
 			.option(ChannelOption.SO_RCVBUF, cfg.getSoRecvBuf())
-			.channel(NioDatagramChannel.class)
+			.channel(clzChannel)
 			.handler(new UdpHandler(defaultActorId, dispatcher, cfg.getDecoder(), cfg.port, requestId, channelWrapper));
 		try{
 			ChannelFuture future = boot.bind(cfg.port); 
@@ -171,8 +202,10 @@ public final class DFSocketManager {
 								.setExtInt1(cfg.port);
 						actorMgr.send(0, defaultActorId, requestId, DFActorDefine.SUBJECT_NET, 
 								DFActorDefine.NET_UDP_LISTEN_RESULT, event, true);
-						//shutdown io group
-						group.shutdownIoGroup();
+						if(!group.isExtIoGroup){
+							//shutdown io group
+							group.shutdownIoGroup();
+						}
 					}
 				}
 			});
@@ -218,15 +251,22 @@ public final class DFSocketManager {
 		protected final EventLoopGroup ioGroup;
 		protected final DFUdpServerCfg cfg;
 		protected final int defaultActorId;
+		protected final boolean isExtIoGroup;
+		
 		protected DFUdpIoGroup(DFUdpServerCfg cfg, int defaultActorId) {
 			this.cfg = cfg;
 			this.defaultActorId = defaultActorId;
-			if(DFSysUtil.isLinux()){
-				ioGroup = new EpollEventLoopGroup(cfg.ioThreadNum);
+			if(cfg.ioGroup != null){
+				ioGroup = cfg.ioGroup;
+				isExtIoGroup = true;
 			}else{
-				ioGroup = new NioEventLoopGroup(cfg.ioThreadNum);
+				isExtIoGroup = false;
+				if(DFSysUtil.isLinux()){
+					ioGroup = new EpollEventLoopGroup(cfg.ioThreadNum);
+				}else{
+					ioGroup = new NioEventLoopGroup(cfg.ioThreadNum);
+				}
 			}
-			
 		}
 		private volatile boolean _hasShutdown = false;
 		protected synchronized int shutdownIoGroup(){
@@ -327,7 +367,7 @@ public final class DFSocketManager {
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslCfg()
 					, cfg.getReqData()));
-		if(DFSysUtil.isLinux()){
+		if(ioGroup instanceof EpollEventLoopGroup){
 			boot.channel(EpollSocketChannel.class);
 		}else{
 			boot.channel(NioSocketChannel.class);
@@ -384,7 +424,7 @@ public final class DFSocketManager {
 			.childHandler(new TcpHandlerInit(true, cfg.getTcpProtocol(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslConfig(), null));
-		if(DFSysUtil.isLinux()){
+		if(group.ioGroupWorker instanceof EpollEventLoopGroup){
 			boot.channel(EpollServerSocketChannel.class);
 		}else{
 			boot.channel(NioServerSocketChannel.class);
@@ -416,8 +456,10 @@ public final class DFSocketManager {
 								.setExtInt1(cfg.port);
 						actorMgr.send(0, srcActorId, requestId, DFActorDefine.SUBJECT_NET, 
 								DFActorDefine.NET_TCP_LISTEN_RESULT, event, true, null, cfg.getUserHandler(), false);
-						//shutdown io group
-						group.shutdownIoGroup();
+						if(!group.isExtIoGroup){
+							//shutdown io group
+							group.shutdownIoGroup();
+						}
 					}
 				}
 			});
@@ -480,25 +522,32 @@ public final class DFSocketManager {
 		protected final DFTcpServerCfg cfg;
 		protected final int srcActorId;
 		protected final int requestId;
+		protected final boolean isExtIoGroup;
+		
 		protected DFTcpIoGroup(DFTcpServerCfg cfg, int srcActorId, int requestId) {
 			this.cfg = cfg;
 			this.srcActorId = srcActorId;
 			this.requestId = requestId;
 			
-			if(DFSysUtil.isLinux()){
-				ioGroupWorker = new EpollEventLoopGroup(cfg.workerThreadNum);
+			if(cfg.ioGroup != null){
+				ioGroupWorker = cfg.ioGroup;
+				ioGroupBoss = cfg.ioGroup;
+				isExtIoGroup = true;
 			}else{
-				ioGroupWorker = new NioEventLoopGroup(cfg.workerThreadNum);
-			}
-			
-			
-			if(cfg.bossThreadNum < 1){  //no boss thread
-				ioGroupBoss = ioGroupWorker;
-			}else{  //has boss group
+				isExtIoGroup = false;
 				if(DFSysUtil.isLinux()){
-					ioGroupBoss = new EpollEventLoopGroup(cfg.bossThreadNum);
+					ioGroupWorker = new EpollEventLoopGroup(cfg.workerThreadNum);
 				}else{
-					ioGroupBoss = new NioEventLoopGroup(cfg.bossThreadNum);
+					ioGroupWorker = new NioEventLoopGroup(cfg.workerThreadNum);
+				}
+				if(cfg.bossThreadNum < 1){  //no boss thread
+					ioGroupBoss = ioGroupWorker;
+				}else{  //has boss group
+					if(DFSysUtil.isLinux()){
+						ioGroupBoss = new EpollEventLoopGroup(cfg.bossThreadNum);
+					}else{
+						ioGroupBoss = new NioEventLoopGroup(cfg.bossThreadNum);
+					}
 				}
 			}
 		}

@@ -7,6 +7,7 @@ import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.api.cb.CbCallHereBlock;
 import fun.lib.actor.po.ActorProp;
+import io.netty.buffer.ByteBuf;
 
 public final class DFActorSystemWrap implements DFActorSystem{
 	private final DFActorManager _mgr;
@@ -97,6 +98,26 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	@Override
 	public int callHereBlock(int shardId, int cmd, Object payload, CbCallHereBlock cb) {
 		return _mgr.callSysBlockActor(id, shardId, cmd, payload, cb); 
+	}
+	@Override
+	public void shutdown() {
+		DFActorManager.get().shutdown();
+	}
+	@Override
+	public int sendToCluster(String dstNode, String dstActor, int cmd, String payload) {
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToCluster(String dstNode, String dstActor, int cmd, byte[] payload) {
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToCluster(String dstNode, String dstActor, int cmd, ByteBuf payload) {
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, cmd, payload);
+	}
+	@Override
+	public boolean isNodeOnline(String nodeName) {
+		return DFClusterManager.get().isNodeOnline(nodeName);
 	}
 	
 	

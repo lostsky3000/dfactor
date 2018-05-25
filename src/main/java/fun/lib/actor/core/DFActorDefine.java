@@ -16,6 +16,7 @@ public final class DFActorDefine {
 	public static final int SUBJECT_SCHEDULE = 3;
 	public static final int SUBJECT_NET = 4;
 	public static final int SUBJECT_USER = 5;
+	public static final int SUBJECT_CLUSTER = 6;
 	
 	//
 	protected static final int NET_TCP_LISTEN_RESULT = 1;

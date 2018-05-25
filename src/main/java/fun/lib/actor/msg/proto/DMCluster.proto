@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+option java_package = "fun.lib.actor.msg";
+option java_outer_classname = "DMCluster";
+
+message NewNodeAsk{
+	string cluster_name = 1;
+	string node_name = 2;
+	string node_type = 3;
+	string unique_id = 4;
+	uint64 tm_start = 5;
+	//
+	string salt = 6;
+	string sign = 7;
+	//
+	string host = 8;
+	int32 port = 9;
+	int32 udp_port = 10;
+	int32 ask_count = 11;
+}
+
+message NewNodeRsp{
+	string cluster_name = 1;
+	string unique_id = 2;
+	int32 result = 3;
+	string errMsg = 4;
+	//
+	string salt = 5;
+	string sign = 6;
+	//
+	int32 ask_count = 7;
+}
+
+message NewNodeSucc{
+	string cluster_name = 1;
+	string unique_id = 2;
+	string node_name = 3;
+	string node_type = 4;
+	string host = 5;
+	int32 port = 6;
+	int32 udp_port = 7;
+	//
+	string salt = 8;
+	string sign = 9;
+}
+
+message AskOtherConn{
+	string cluster_name = 1;
+	string unique_id = 2;
+	string node_name = 3;
+	string node_type = 4;
+	string host = 5;
+	int32 port = 6;
+	//
+	string salt = 7;
+	string sign = 8;
+}
+
+
+
+message NewNodeLogin{
+	string cluster_name = 1;
+	string unique_id = 2;
+	string node_name = 3;
+	string node_type = 4;
+	//
+	string salt = 5;
+	string sign = 6;
+}
+
+
+message UserMsgHead{
+	string srcNode = 1;
+	string srcType = 2;
+	string srcActor = 3;
+	string dstActor = 4;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

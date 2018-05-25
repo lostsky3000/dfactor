@@ -1,12 +1,8 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-## 开发中
+## 最新
 
-- 集群功能，快速组网，节点和服务自动发现
-
-## 后续计划
-
-- 增加常用服务端业务示例，如房间类型游戏等等
+集群功能上线，去中心化自动组网，集群内结点互相发现互相通信
 
 
 # dfactor
@@ -158,10 +154,18 @@ net.doHttpServer(8080, new CbHttpServer() {
 [MysqlTest](src/test/java/fun/lib/actor/example/MysqlTest.java), 
 [MongodbTest](src/test/java/fun/lib/actor/example/MongodbTest.java) 等例子，实现在业务actor里编写阻塞业务代码，增加代码可读性可维护性
 
+[ClusterSimple](src/test/java/fun/lib/actor/example/ClusterSimple.java) 集群使用入门示例
+
 
 ## FAQ
 
+## 开发中
 
+- 集群功能，服务注册自动发现，远程方法调用
+
+## 后续计划
+
+- 增加常用服务端业务示例，如房间类型游戏等等
 
 
 ## 社区&支持

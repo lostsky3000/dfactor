@@ -44,7 +44,7 @@ public final class HttpsServer {
 								public void onListenResult(boolean isSucc, String errMsg) {
 									log.info("listen result: isSucc="+isSucc+", err="+errMsg);
 									if(!isSucc){
-										DFActorManager.get().shutdown();
+										sys.shutdown();
 									}
 								}});
 			//start http server

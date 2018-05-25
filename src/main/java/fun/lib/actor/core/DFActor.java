@@ -80,6 +80,16 @@ public class DFActor implements CallHereContext{
 	 */
 	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb){return MSG_AUTO_RELEASE;};
 	
+	/**
+	 * 接收集群内结点发过来的消息
+	 * @param srcType 发送结点的类型
+	 * @param srcNode 发送结点的名字
+	 * @param srcActor 发送actor
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public int onClusterMessage(String srcType, String srcNode, String srcActor, int cmd, Object payload){return MSG_AUTO_RELEASE;};
 	
 //	/**
 //	 * 接收其它actor发过来的消息

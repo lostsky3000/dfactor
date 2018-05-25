@@ -2,7 +2,8 @@
 
 ## 最新
 
-集群功能上线，去中心化自动组网，集群内结点互相发现互相通信
+集群功能上线，去中心化自动组网，集群内结点互相发现互相通信  
+[入门示例](src/test/java/fun/lib/actor/example/ClusterSimple.java)
 
 
 # dfactor
@@ -154,7 +155,7 @@ net.doHttpServer(8080, new CbHttpServer() {
 [MysqlTest](src/test/java/fun/lib/actor/example/MysqlTest.java), 
 [MongodbTest](src/test/java/fun/lib/actor/example/MongodbTest.java) 等例子，实现在业务actor里编写阻塞业务代码，增加代码可读性可维护性
 
-[ClusterSimple](src/test/java/fun/lib/actor/example/ClusterSimple.java) 集群使用入门示例
+[ClusterSimple](src/test/java/fun/lib/actor/example/ClusterSimple.java)  集群使用入门示例
 
 
 ## FAQ

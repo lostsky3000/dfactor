@@ -2,8 +2,7 @@
 
 ## 最新
 
-集群功能上线，去中心化自动组网，集群内结点互相发现互相通信  
-[入门示例](src/test/java/fun/lib/actor/example/ClusterSimple.java)
+集群功能上线，去中心化自动组网，集群内结点互相发现互相通信  [入门示例](src/test/java/fun/lib/actor/example/ClusterSimple.java)
 
 
 # dfactor

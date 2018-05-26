@@ -3,6 +3,8 @@ package fun.lib.actor.api;
 import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHereBlock;
+import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.po.ActorProp;
@@ -147,6 +149,60 @@ public interface DFActorSystem {
 	 * @return
 	 */
 	public int sendToCluster(String dstNode, String dstActor, int cmd, ByteBuf payload);
+	
+	//
+	/**
+	 * 调用集群指定结点，指定actor，指定方法
+	 * @param dstNode 结点名字
+	 * @param dstActor 目标actor名字
+	 * @param dstMethod 方法名
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, String payload);
+	/**
+	 * 调用集群指定结点，指定actor，指定方法
+	 * @param dstNode 结点名字
+	 * @param dstActor 目标actor名字
+	 * @param dstMethod 方法名
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, byte[] payload);
+	/**
+	 * 调用集群指定结点，指定actor，指定方法
+	 * @param dstNode 结点名字
+	 * @param dstActor 目标actor名字
+	 * @param dstMethod 方法名
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, ByteBuf payload);
+	
+	
+	
+	/**
+	 * 调用本地actor的指定方法
+	 * @param dstId 目标actorId
+	 * @param dstMethod 方法名
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public RpcFuture callMethod(int dstId, String dstMethod, int cmd, Object payload);
+	/**
+	 * 调用本地actor的指定方法
+	 * @param dstId 目标actor名字
+	 * @param dstMethod 方法名
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return
+	 */
+	public RpcFuture callMethod(String dstName, String dstMethod, int cmd, Object payload);
+	
 	
 	/**
 	 * 检测指定结点是否在线

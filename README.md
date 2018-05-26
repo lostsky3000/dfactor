@@ -1,31 +1,30 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-## 最新
+# 最新
 
-集群功能上线，去中心化自动组网，集群内结点互相发现互相通信  [入门示例](src/test/java/fun/lib/actor/example/ClusterSimple.java)
+- 增加集群内结点间rpc调用 [示例](src/test/java/fun/lib/actor/example/RpcCluster.java)， 本地actor间rpc调用 [示例](src/test/java/fun/lib/actor/example/RpcLocal.java)
+
+- 集群功能上线，去中心化自动组网，集群内结点互相发现互相通信  [入门示例](src/test/java/fun/lib/actor/example/ClusterSimple.java)
 
 
 # dfactor
 
-dfactor 是一个基于actor模型的消息处理框架
+dfactor 是一个基于actor模型的消息处理框架，充分利用多核处理器，平衡业务负载，可参考 erlang
 
 dfactor 使用java编写，天生多平台支持，开发调试方便
 
-dfactor 充分利用多核处理器，平衡业务负载
+dfactor 提供丰富的组件支持，涵盖通信，编解码，rpc，集群组网等等
 
 dfactor 提供易用的api，上手简单，编写少量代码即可快速构建从通信层到存储层的服务端程序
 
 dfactor 示例丰富，持续增加各种类型的服务器开发示例，简单业务做些修改就可使用
 
-dfactor 参考了 [skynet](https://github.com/cloudwu/skynet) 的设计(谢谢作者云风)，
-依托java丰富的第三方资源，提供了更多服务端常用功能
-
 
 ## dfactor 能做什么?
 
-dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(特别是游戏)常用的网络通信，定时任务等
+dfactor 本质是一个actor模型的消息处理框架，加上服务器开发常用的网络通信，定时任务，rpc等
 功能，原则上说可以用于任何想充分利用多核性能的业务模型，
-常见的比如聊天室, mmorpg, moba, rts, slg, 卡牌棋牌等类型游戏
+常见的比如mmorpg, moba, rts, slg, 卡牌棋牌等类型游戏，或者作为服务端中间件开发的基础组件
 
 
 ## dfactor 有哪些特性?
@@ -33,6 +32,8 @@ dfactor 本质是一个actor模型的消息处理框架，加上服务器开发(
 - 充分利用多核处理器性能优势
 - TCP, HTTP, HTTPS, UDP, WebSocket多协议支持，快速搭建通信层
 - 通信层使用netty，高性能网络io的保证
+- 集群功能支持，自动组网，结点自动发现，互相通信
+- 支持集群内结点之前rpc通信，本地actor间rpc通信
 - io和业务分离模型，使业务逻辑计算不受io瓶颈制约，达到最大效能
 - 内置服务器开发常用模块，如计时器，定时任务等
 - 开发接口简单易用，示例丰富，少量代码快速搭建模型
@@ -155,6 +156,10 @@ net.doHttpServer(8080, new CbHttpServer() {
 [MongodbTest](src/test/java/fun/lib/actor/example/MongodbTest.java) 等例子，实现在业务actor里编写阻塞业务代码，增加代码可读性可维护性
 
 [ClusterSimple](src/test/java/fun/lib/actor/example/ClusterSimple.java)  集群使用入门示例
+
+[RpcLocal](src/test/java/fun/lib/actor/example/RpcLocal.java)  本地actor间rpc调用示例
+
+[RpcCluster](src/test/java/fun/lib/actor/example/RpcCluster.java)  集群内结点间rpc调用示例
 
 
 ## FAQ

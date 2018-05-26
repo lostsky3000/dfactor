@@ -15,12 +15,12 @@ public final class DFActorTimerWrap implements DFActorTimer{
 	
 	@Override
 	public void timeout(int delayMilli, int requestId) {
-		_mgr.addTimeout(id, DFActor.transTimeRealToTimer(delayMilli), requestId, null);
+		_mgr.addTimeout(id, DFActor.transTimeRealToTimer(delayMilli), DFActorDefine.SUBJECT_TIMER, requestId, null);
 	}
 
 	@Override
 	public void timeout(int delayMilli, CbTimeout cb) {
-		_mgr.addTimeout(id, DFActor.transTimeRealToTimer(delayMilli), 0, cb);
+		_mgr.addTimeout(id, DFActor.transTimeRealToTimer(delayMilli), DFActorDefine.SUBJECT_TIMER, 0, cb);
 	}
 
 	@Override

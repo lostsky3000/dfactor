@@ -70,10 +70,12 @@ message NewNodeLogin{
 
 
 message UserMsgHead{
-	string srcNode = 1;
-	string srcType = 2;
-	string srcActor = 3;
-	string dstActor = 4;
+	string src_node = 1;
+	string src_type = 2;
+	string src_actor = 3;
+	string dst_actor = 4;
+	string dst_method = 5;
+	int32 session_id = 6;
 }
 
 

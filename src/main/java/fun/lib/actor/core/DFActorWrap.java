@@ -1,5 +1,7 @@
 package fun.lib.actor.core;
 
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -16,8 +18,10 @@ import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.api.cb.CbCallHereBlock;
 import fun.lib.actor.api.cb.CbTimeout;
+import fun.lib.actor.api.cb.RpcContext;
 import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.cb.CbHttpServer;
+import fun.lib.actor.api.cb.CbRpc;
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpSvrReq;
@@ -52,7 +56,8 @@ public final class DFActorWrap {
 	private final DFActorManager _actorMgr;
 	private final String _consumeLock;
 	private final boolean _isClusterActor;
-	
+	private HashMap<String,Method> _mapMethod = null;
+	private final DFActorSystemWrap _wrapSys;
 	
 	protected DFActorWrap(final DFActor actor, final boolean isCluster) {
 		this._actor = actor;
@@ -71,16 +76,18 @@ public final class DFActorWrap {
 		_queueWrite = _arrQueue[_queueWriteIdx];
 		//
 		_actorMgr = DFActorManager.get();
+		//
+		_wrapSys = (DFActorSystemWrap) actor.sys;
 	}
 	
 	protected int pushMsg(int srcId, int sessionId, 
 			int subject, int cmd, Object payload, Object context, boolean addTail, 
-			Object userHandler, boolean isCb, Object payload2){
+			Object userHandler, boolean isCb, Object payload2, String method){
 		if(_bRemoved){
 			return 1;
 		}
 		final DFActorMessage msg = _actorMgr.newActorMessage(
-				srcId, _actorId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2);
+				srcId, _actorId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2, method);
 				//new DFActorMessage(srcId, _actorId, sessionId, subject, cmd, payload);
 		//
 		_lockQueueWrite.lock();
@@ -232,10 +239,38 @@ public final class DFActorWrap {
 							_actor.onUdpServerListenResult(msg.sessionId, isSucc, event.getMsg(), 
 									(DFUdpChannel) event.getExtObj1());
 						}
-					}else if(msg.subject == DFActorDefine.SUBJECT_START){
-						_actor.onStart(msg.payload);
 					}else if(msg.subject == DFActorDefine.SUBJECT_CLUSTER){
 						_actor.onClusterMessage((String)msg.payload2, (String)msg.context, (String)msg.userHandler, msg.cmd, msg.payload);
+					}else if(msg.subject == DFActorDefine.SUBJECT_RPC){
+						if(msg.method != null){   //call method
+							Method method = null;
+							if(_mapMethod == null){
+								_mapMethod = new HashMap<>();
+							}else{
+								method = _mapMethod.get(msg.method);
+							}
+							if(method == null){
+								method = _actor.getClass().getMethod(msg.method, int.class, Object.class, RpcContext.class);
+								method.setAccessible(true);
+								_mapMethod.put(msg.method, method);
+							}
+							method.invoke(_actor, msg.cmd, msg.payload, 
+									new DFRpcContext((String)msg.context, (String)msg.userHandler, msg.sessionId));
+						}else{   //reponse
+							CbRpc cb = _wrapSys.procRPCCb(msg.sessionId);
+							if(cb != null){
+								cb.onResponse(msg.cmd, msg.payload);
+							}
+							cb = null;
+						}
+					}else if(msg.subject == DFActorDefine.SUBJECT_RPC_FAIL){
+						CbRpc cb =_wrapSys.procRPCCb(msg.sessionId);
+						if(cb != null){
+							cb.onFailed(msg.cmd);
+						}
+					}
+					else if(msg.subject == DFActorDefine.SUBJECT_START){
+						_actor.onStart(msg.payload);
 					}
 					else{
 						_actor._lastSrcId = msg.srcId;
@@ -376,6 +411,53 @@ public final class DFActorWrap {
 			}
 			hasCalled = true;
 			return _actorMgr.sendCallback(_actorId, srcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, userHandler);
+		}
+	}
+	class DFRpcContext implements RpcContext{
+		private boolean _hasRsp = false;
+		private final String _srcNode;
+		private final String _srcActor;
+		private final int _sid;
+		private final boolean _isRemote;
+		private DFRpcContext(String srcNode, String srcActor, int sid) {
+			this._srcNode = srcNode;
+			this._srcActor = srcActor;
+			this._sid = sid;
+			if(srcNode == null){
+				_isRemote = false;
+			}else{
+				_isRemote = true;
+			}
+		}
+		@Override
+		public void response(int cmd, Object payload) {
+			if(_hasRsp){
+				return ;
+			}
+			_hasRsp = true;
+			if(_srcNode == null){  //local 
+				_actorMgr.send(_actorId, _srcActor, _sid, DFActorDefine.SUBJECT_RPC, cmd, payload, true, null, null);
+			}else{  //remote
+				if(payload instanceof String){
+					DFClusterManager.get().sendToNode(_actor.name, _srcNode, _srcActor, null, _sid, cmd, (String) payload);
+				}else if(payload instanceof ByteBuf){
+					DFClusterManager.get().sendToNode(_actor.name, _srcNode, _srcActor, null, _sid, cmd, (ByteBuf) payload);
+				}else{
+					DFClusterManager.get().sendToNode(_actor.name, _srcNode, _srcActor, null, _sid, cmd, (byte[]) payload);
+				}
+			}
+		}
+		@Override
+		public String getSrcNode() {
+			return _srcNode;
+		}
+		@Override
+		public String getSrcActor() {
+			return _srcActor;
+		}
+		@Override
+		public boolean isRemote() {
+			return _isRemote;
 		}
 		
 	}

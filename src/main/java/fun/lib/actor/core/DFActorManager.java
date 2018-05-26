@@ -543,7 +543,7 @@ public final class DFActorManager {
 		}
 		//send actor start event
 		try{
-			if(wrap.pushMsg(0, 0, DFActorDefine.SUBJECT_START, 0, param, null, false, null, false, null) == 0){ //add to global queue
+			if(wrap.pushMsg(0, 0, DFActorDefine.SUBJECT_START, 0, param, null, false, null, false, null, null) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
 					_queueGlobalClusterActor.offer(wrap);
 					_doGlobalClusterQueueNotify();
@@ -601,23 +601,23 @@ public final class DFActorManager {
 	}
 	
 	protected int sendCallback(int srcId, int dstId, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler){
-		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, true, null);
+			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler){
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, true, null, null);
 	}
 	protected int send(int srcId, int dstId, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail){
-		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null, null, false, null);
+			int subject, int cmd, Object payload, boolean addTail){
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, null, null, false, null, null);
 	}
 	protected int send(int srcId, int dstId, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler, boolean isCb){
-		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, isCb, null);
+			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler, boolean isCb){
+		return send(srcId, dstId, requestId, subject, cmd, payload, addTail, context, userHandler, isCb, null, null);
 	}
 	protected int send(int srcId, int dstId, int requestId, 
-			int subject, int cmd, Object payload, final boolean addTail, Object context, Object userHandler, boolean isCb
-			, Object payload2){
+			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler, boolean isCb
+			, Object payload2, String method){
 		DFActorWrap wrap = _cmapActor.get(dstId); 
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb, payload2) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb, payload2, method) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
 					_queueGlobalClusterActor.offer(wrap);
 					_doGlobalClusterQueueNotify();
@@ -635,13 +635,14 @@ public final class DFActorManager {
 	}
 	protected int send(int srcId, String dstName, int requestId, 
 			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler){
-		return send(srcId, dstName, requestId, subject, cmd, payload, addTail, context, userHandler, null);
+		return send(srcId, dstName, requestId, subject, cmd, payload, addTail, context, userHandler, null, null);
 	}
 	protected int send(int srcId, String dstName, int requestId, 
-			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler, Object payload2){
+			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler, 
+			Object payload2, String method){
 		DFActorWrap wrap = _cmapActorName.get(dstName);
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, false, payload2) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, false, payload2, method) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
 					_queueGlobalClusterActor.offer(wrap);
 					_doGlobalClusterQueueNotify();
@@ -663,7 +664,7 @@ public final class DFActorManager {
 			return -1;
 		}
 		int dstId = _arrSysBlockId[shardId%_blockThNum];
-		return this.send(srcId, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, userHandler, false, null);
+		return this.send(srcId, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, userHandler, false, null, null);
 	}
 	
 	//actor message pool
@@ -673,12 +674,13 @@ public final class DFActorManager {
 		};
 	};
 	protected DFActorMessage newActorMessage(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb, Object payload2){
+			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb, 
+			Object payload2, String method){
 		final DFActorMessage msg = _actorMsgPool.get().poll();
 		if(msg == null){
-			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2);
+			return new DFActorMessage(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2, method);
 		}else{
-			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2);
+			msg.reset(srcId, dstId, sessionId, subject, cmd, payload, context, userHandler, isCb, payload2, method);
 		}
 		return msg;
 	}
@@ -687,9 +689,10 @@ public final class DFActorManager {
 		_actorMsgPool.get().offer(msg);
 	}
 	
-	protected void addTimeout(int srcId, int delay, int requestId, CbTimeout cb){
+	protected void addTimeout(int srcId, int delay, int subject, int requestId, CbTimeout cb){
 		final int idxTimer = Math.abs(_timerIdxCount.incrementAndGet())%_timerThNum;
-		_lsTimer.get(idxTimer).addTimeout(delay*DFActor.TIMER_UNIT_MILLI, new DFActorTimeoutWrapper(srcId, requestId, cb));
+		_lsTimer.get(idxTimer).addTimeout(delay*DFActor.TIMER_UNIT_MILLI, 
+				new DFActorTimeoutWrapper(srcId, subject, requestId, cb));
 	}
 	protected long getTimerStartNano(){
 		return _lsLoopTimer.get(0).getTimerStart();
@@ -891,18 +894,16 @@ public final class DFActorManager {
 		protected int requestId;
 		private int srcId;
 		private CbTimeout cb;
-		protected DFActorTimeoutWrapper(int srcId, int requestId, CbTimeout cb) {
+		private byte subject;
+		protected DFActorTimeoutWrapper(int srcId, int subject, int requestId, CbTimeout cb) {
 			this.srcId = srcId;
 			this.requestId = requestId;
 			this.cb = cb;
-		}
-		protected void reset(int srcId, int requestId){
-			this.srcId = srcId;
-			this.requestId = requestId;
+			this.subject = (byte) subject;
 		}
 		@Override
 		public void onTimeout() {
-			send(0, srcId, 0, DFActorDefine.SUBJECT_TIMER, requestId, null, false, null, cb, false, null);
+			send(0, srcId, 0, subject, requestId, null, false, null, cb, false, null, null);
 		}
 	}
 	

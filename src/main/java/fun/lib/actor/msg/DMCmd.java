@@ -9,4 +9,5 @@ public final class DMCmd {
 	public static final int NewNodeLogin = 1004;
 	
 	public static final int UserMsg = 1005;
+	public static final int RcpCallFail = 1006;
 }

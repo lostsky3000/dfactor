@@ -12,9 +12,11 @@ public final class DFActorMessage {
 	protected Object userHandler;
 	protected Object payload2;
 	protected boolean isCb = false;
+	protected String method = null;
 	
 	public DFActorMessage(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb, Object payload2) {
+			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb, 
+			Object payload2, String method) {
 		this.srcId = srcId;
 		this.dstId = dstId;
 		this.sessionId = sessionId;
@@ -25,10 +27,12 @@ public final class DFActorMessage {
 		this.userHandler = userHandler;
 		this.isCb = isCb;
 		this.payload2 = payload2;
+		this.method = method;
 	}
 	
 	protected void reset(int srcId, int dstId, int sessionId, 
-			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb, Object payload2){
+			int subject, int cmd, Object payload, Object context, Object userHandler, boolean isCb, 
+			Object payload2, String method){
 		this.srcId = srcId;
 		this.dstId = dstId;
 		this.sessionId = sessionId;
@@ -39,6 +43,7 @@ public final class DFActorMessage {
 		this.userHandler = userHandler;
 		this.isCb = isCb;
 		this.payload2 = payload2;
+		this.method = method;
 	}
 	
 	

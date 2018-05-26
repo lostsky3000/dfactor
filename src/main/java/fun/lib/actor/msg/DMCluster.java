@@ -7088,44 +7088,59 @@ public final class DMCluster {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>string srcNode = 1;</code>
+     * <code>string src_node = 1;</code>
      */
     java.lang.String getSrcNode();
     /**
-     * <code>string srcNode = 1;</code>
+     * <code>string src_node = 1;</code>
      */
     com.google.protobuf.ByteString
         getSrcNodeBytes();
 
     /**
-     * <code>string srcType = 2;</code>
+     * <code>string src_type = 2;</code>
      */
     java.lang.String getSrcType();
     /**
-     * <code>string srcType = 2;</code>
+     * <code>string src_type = 2;</code>
      */
     com.google.protobuf.ByteString
         getSrcTypeBytes();
 
     /**
-     * <code>string srcActor = 3;</code>
+     * <code>string src_actor = 3;</code>
      */
     java.lang.String getSrcActor();
     /**
-     * <code>string srcActor = 3;</code>
+     * <code>string src_actor = 3;</code>
      */
     com.google.protobuf.ByteString
         getSrcActorBytes();
 
     /**
-     * <code>string dstActor = 4;</code>
+     * <code>string dst_actor = 4;</code>
      */
     java.lang.String getDstActor();
     /**
-     * <code>string dstActor = 4;</code>
+     * <code>string dst_actor = 4;</code>
      */
     com.google.protobuf.ByteString
         getDstActorBytes();
+
+    /**
+     * <code>string dst_method = 5;</code>
+     */
+    java.lang.String getDstMethod();
+    /**
+     * <code>string dst_method = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getDstMethodBytes();
+
+    /**
+     * <code>int32 session_id = 6;</code>
+     */
+    int getSessionId();
   }
   /**
    * Protobuf type {@code UserMsgHead}
@@ -7144,6 +7159,8 @@ public final class DMCluster {
       srcType_ = "";
       srcActor_ = "";
       dstActor_ = "";
+      dstMethod_ = "";
+      sessionId_ = 0;
     }
 
     @java.lang.Override
@@ -7201,6 +7218,17 @@ public final class DMCluster {
               dstActor_ = s;
               break;
             }
+            case 42: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              dstMethod_ = s;
+              break;
+            }
+            case 48: {
+
+              sessionId_ = input.readInt32();
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -7225,10 +7253,10 @@ public final class DMCluster {
               fun.lib.actor.msg.DMCluster.UserMsgHead.class, fun.lib.actor.msg.DMCluster.UserMsgHead.Builder.class);
     }
 
-    public static final int SRCNODE_FIELD_NUMBER = 1;
+    public static final int SRC_NODE_FIELD_NUMBER = 1;
     private volatile java.lang.Object srcNode_;
     /**
-     * <code>string srcNode = 1;</code>
+     * <code>string src_node = 1;</code>
      */
     public java.lang.String getSrcNode() {
       java.lang.Object ref = srcNode_;
@@ -7243,7 +7271,7 @@ public final class DMCluster {
       }
     }
     /**
-     * <code>string srcNode = 1;</code>
+     * <code>string src_node = 1;</code>
      */
     public com.google.protobuf.ByteString
         getSrcNodeBytes() {
@@ -7259,10 +7287,10 @@ public final class DMCluster {
       }
     }
 
-    public static final int SRCTYPE_FIELD_NUMBER = 2;
+    public static final int SRC_TYPE_FIELD_NUMBER = 2;
     private volatile java.lang.Object srcType_;
     /**
-     * <code>string srcType = 2;</code>
+     * <code>string src_type = 2;</code>
      */
     public java.lang.String getSrcType() {
       java.lang.Object ref = srcType_;
@@ -7277,7 +7305,7 @@ public final class DMCluster {
       }
     }
     /**
-     * <code>string srcType = 2;</code>
+     * <code>string src_type = 2;</code>
      */
     public com.google.protobuf.ByteString
         getSrcTypeBytes() {
@@ -7293,10 +7321,10 @@ public final class DMCluster {
       }
     }
 
-    public static final int SRCACTOR_FIELD_NUMBER = 3;
+    public static final int SRC_ACTOR_FIELD_NUMBER = 3;
     private volatile java.lang.Object srcActor_;
     /**
-     * <code>string srcActor = 3;</code>
+     * <code>string src_actor = 3;</code>
      */
     public java.lang.String getSrcActor() {
       java.lang.Object ref = srcActor_;
@@ -7311,7 +7339,7 @@ public final class DMCluster {
       }
     }
     /**
-     * <code>string srcActor = 3;</code>
+     * <code>string src_actor = 3;</code>
      */
     public com.google.protobuf.ByteString
         getSrcActorBytes() {
@@ -7327,10 +7355,10 @@ public final class DMCluster {
       }
     }
 
-    public static final int DSTACTOR_FIELD_NUMBER = 4;
+    public static final int DST_ACTOR_FIELD_NUMBER = 4;
     private volatile java.lang.Object dstActor_;
     /**
-     * <code>string dstActor = 4;</code>
+     * <code>string dst_actor = 4;</code>
      */
     public java.lang.String getDstActor() {
       java.lang.Object ref = dstActor_;
@@ -7345,7 +7373,7 @@ public final class DMCluster {
       }
     }
     /**
-     * <code>string dstActor = 4;</code>
+     * <code>string dst_actor = 4;</code>
      */
     public com.google.protobuf.ByteString
         getDstActorBytes() {
@@ -7359,6 +7387,49 @@ public final class DMCluster {
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
+    }
+
+    public static final int DST_METHOD_FIELD_NUMBER = 5;
+    private volatile java.lang.Object dstMethod_;
+    /**
+     * <code>string dst_method = 5;</code>
+     */
+    public java.lang.String getDstMethod() {
+      java.lang.Object ref = dstMethod_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        dstMethod_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string dst_method = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getDstMethodBytes() {
+      java.lang.Object ref = dstMethod_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        dstMethod_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int SESSION_ID_FIELD_NUMBER = 6;
+    private int sessionId_;
+    /**
+     * <code>int32 session_id = 6;</code>
+     */
+    public int getSessionId() {
+      return sessionId_;
     }
 
     private byte memoizedIsInitialized = -1;
@@ -7385,6 +7456,12 @@ public final class DMCluster {
       if (!getDstActorBytes().isEmpty()) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 4, dstActor_);
       }
+      if (!getDstMethodBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 5, dstMethod_);
+      }
+      if (sessionId_ != 0) {
+        output.writeInt32(6, sessionId_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -7404,6 +7481,13 @@ public final class DMCluster {
       }
       if (!getDstActorBytes().isEmpty()) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(4, dstActor_);
+      }
+      if (!getDstMethodBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(5, dstMethod_);
+      }
+      if (sessionId_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(6, sessionId_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -7429,6 +7513,10 @@ public final class DMCluster {
           .equals(other.getSrcActor());
       result = result && getDstActor()
           .equals(other.getDstActor());
+      result = result && getDstMethod()
+          .equals(other.getDstMethod());
+      result = result && (getSessionId()
+          == other.getSessionId());
       result = result && unknownFields.equals(other.unknownFields);
       return result;
     }
@@ -7440,14 +7528,18 @@ public final class DMCluster {
       }
       int hash = 41;
       hash = (19 * hash) + getDescriptor().hashCode();
-      hash = (37 * hash) + SRCNODE_FIELD_NUMBER;
+      hash = (37 * hash) + SRC_NODE_FIELD_NUMBER;
       hash = (53 * hash) + getSrcNode().hashCode();
-      hash = (37 * hash) + SRCTYPE_FIELD_NUMBER;
+      hash = (37 * hash) + SRC_TYPE_FIELD_NUMBER;
       hash = (53 * hash) + getSrcType().hashCode();
-      hash = (37 * hash) + SRCACTOR_FIELD_NUMBER;
+      hash = (37 * hash) + SRC_ACTOR_FIELD_NUMBER;
       hash = (53 * hash) + getSrcActor().hashCode();
-      hash = (37 * hash) + DSTACTOR_FIELD_NUMBER;
+      hash = (37 * hash) + DST_ACTOR_FIELD_NUMBER;
       hash = (53 * hash) + getDstActor().hashCode();
+      hash = (37 * hash) + DST_METHOD_FIELD_NUMBER;
+      hash = (53 * hash) + getDstMethod().hashCode();
+      hash = (37 * hash) + SESSION_ID_FIELD_NUMBER;
+      hash = (53 * hash) + getSessionId();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -7585,6 +7677,10 @@ public final class DMCluster {
 
         dstActor_ = "";
 
+        dstMethod_ = "";
+
+        sessionId_ = 0;
+
         return this;
       }
 
@@ -7611,6 +7707,8 @@ public final class DMCluster {
         result.srcType_ = srcType_;
         result.srcActor_ = srcActor_;
         result.dstActor_ = dstActor_;
+        result.dstMethod_ = dstMethod_;
+        result.sessionId_ = sessionId_;
         onBuilt();
         return result;
       }
@@ -7668,6 +7766,13 @@ public final class DMCluster {
           dstActor_ = other.dstActor_;
           onChanged();
         }
+        if (!other.getDstMethod().isEmpty()) {
+          dstMethod_ = other.dstMethod_;
+          onChanged();
+        }
+        if (other.getSessionId() != 0) {
+          setSessionId(other.getSessionId());
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -7697,7 +7802,7 @@ public final class DMCluster {
 
       private java.lang.Object srcNode_ = "";
       /**
-       * <code>string srcNode = 1;</code>
+       * <code>string src_node = 1;</code>
        */
       public java.lang.String getSrcNode() {
         java.lang.Object ref = srcNode_;
@@ -7712,7 +7817,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string srcNode = 1;</code>
+       * <code>string src_node = 1;</code>
        */
       public com.google.protobuf.ByteString
           getSrcNodeBytes() {
@@ -7728,7 +7833,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string srcNode = 1;</code>
+       * <code>string src_node = 1;</code>
        */
       public Builder setSrcNode(
           java.lang.String value) {
@@ -7741,7 +7846,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string srcNode = 1;</code>
+       * <code>string src_node = 1;</code>
        */
       public Builder clearSrcNode() {
         
@@ -7750,7 +7855,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string srcNode = 1;</code>
+       * <code>string src_node = 1;</code>
        */
       public Builder setSrcNodeBytes(
           com.google.protobuf.ByteString value) {
@@ -7766,7 +7871,7 @@ public final class DMCluster {
 
       private java.lang.Object srcType_ = "";
       /**
-       * <code>string srcType = 2;</code>
+       * <code>string src_type = 2;</code>
        */
       public java.lang.String getSrcType() {
         java.lang.Object ref = srcType_;
@@ -7781,7 +7886,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string srcType = 2;</code>
+       * <code>string src_type = 2;</code>
        */
       public com.google.protobuf.ByteString
           getSrcTypeBytes() {
@@ -7797,7 +7902,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string srcType = 2;</code>
+       * <code>string src_type = 2;</code>
        */
       public Builder setSrcType(
           java.lang.String value) {
@@ -7810,7 +7915,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string srcType = 2;</code>
+       * <code>string src_type = 2;</code>
        */
       public Builder clearSrcType() {
         
@@ -7819,7 +7924,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string srcType = 2;</code>
+       * <code>string src_type = 2;</code>
        */
       public Builder setSrcTypeBytes(
           com.google.protobuf.ByteString value) {
@@ -7835,7 +7940,7 @@ public final class DMCluster {
 
       private java.lang.Object srcActor_ = "";
       /**
-       * <code>string srcActor = 3;</code>
+       * <code>string src_actor = 3;</code>
        */
       public java.lang.String getSrcActor() {
         java.lang.Object ref = srcActor_;
@@ -7850,7 +7955,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string srcActor = 3;</code>
+       * <code>string src_actor = 3;</code>
        */
       public com.google.protobuf.ByteString
           getSrcActorBytes() {
@@ -7866,7 +7971,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string srcActor = 3;</code>
+       * <code>string src_actor = 3;</code>
        */
       public Builder setSrcActor(
           java.lang.String value) {
@@ -7879,7 +7984,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string srcActor = 3;</code>
+       * <code>string src_actor = 3;</code>
        */
       public Builder clearSrcActor() {
         
@@ -7888,7 +7993,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string srcActor = 3;</code>
+       * <code>string src_actor = 3;</code>
        */
       public Builder setSrcActorBytes(
           com.google.protobuf.ByteString value) {
@@ -7904,7 +8009,7 @@ public final class DMCluster {
 
       private java.lang.Object dstActor_ = "";
       /**
-       * <code>string dstActor = 4;</code>
+       * <code>string dst_actor = 4;</code>
        */
       public java.lang.String getDstActor() {
         java.lang.Object ref = dstActor_;
@@ -7919,7 +8024,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string dstActor = 4;</code>
+       * <code>string dst_actor = 4;</code>
        */
       public com.google.protobuf.ByteString
           getDstActorBytes() {
@@ -7935,7 +8040,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string dstActor = 4;</code>
+       * <code>string dst_actor = 4;</code>
        */
       public Builder setDstActor(
           java.lang.String value) {
@@ -7948,7 +8053,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string dstActor = 4;</code>
+       * <code>string dst_actor = 4;</code>
        */
       public Builder clearDstActor() {
         
@@ -7957,7 +8062,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string dstActor = 4;</code>
+       * <code>string dst_actor = 4;</code>
        */
       public Builder setDstActorBytes(
           com.google.protobuf.ByteString value) {
@@ -7967,6 +8072,101 @@ public final class DMCluster {
   checkByteStringIsUtf8(value);
         
         dstActor_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object dstMethod_ = "";
+      /**
+       * <code>string dst_method = 5;</code>
+       */
+      public java.lang.String getDstMethod() {
+        java.lang.Object ref = dstMethod_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          dstMethod_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string dst_method = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getDstMethodBytes() {
+        java.lang.Object ref = dstMethod_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          dstMethod_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string dst_method = 5;</code>
+       */
+      public Builder setDstMethod(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        dstMethod_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string dst_method = 5;</code>
+       */
+      public Builder clearDstMethod() {
+        
+        dstMethod_ = getDefaultInstance().getDstMethod();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string dst_method = 5;</code>
+       */
+      public Builder setDstMethodBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        dstMethod_ = value;
+        onChanged();
+        return this;
+      }
+
+      private int sessionId_ ;
+      /**
+       * <code>int32 session_id = 6;</code>
+       */
+      public int getSessionId() {
+        return sessionId_;
+      }
+      /**
+       * <code>int32 session_id = 6;</code>
+       */
+      public Builder setSessionId(int value) {
+        
+        sessionId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int32 session_id = 6;</code>
+       */
+      public Builder clearSessionId() {
+        
+        sessionId_ = 0;
         onChanged();
         return this;
       }
@@ -8078,10 +8278,11 @@ public final class DMCluster {
       "\n\014NewNodeLogin\022\024\n\014cluster_name\030\001 \001(\t\022\021\n\t" +
       "unique_id\030\002 \001(\t\022\021\n\tnode_name\030\003 \001(\t\022\021\n\tno" +
       "de_type\030\004 \001(\t\022\014\n\004salt\030\005 \001(\t\022\014\n\004sign\030\006 \001(" +
-      "\t\"S\n\013UserMsgHead\022\017\n\007srcNode\030\001 \001(\t\022\017\n\007src" +
-      "Type\030\002 \001(\t\022\020\n\010srcActor\030\003 \001(\t\022\020\n\010dstActor" +
-      "\030\004 \001(\tB\036\n\021fun.lib.actor.msgB\tDMClusterb\006" +
-      "proto3"
+      "\t\"\177\n\013UserMsgHead\022\020\n\010src_node\030\001 \001(\t\022\020\n\010sr" +
+      "c_type\030\002 \001(\t\022\021\n\tsrc_actor\030\003 \001(\t\022\021\n\tdst_a" +
+      "ctor\030\004 \001(\t\022\022\n\ndst_method\030\005 \001(\t\022\022\n\nsessio" +
+      "n_id\030\006 \001(\005B\036\n\021fun.lib.actor.msgB\tDMClust" +
+      "erb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -8130,7 +8331,7 @@ public final class DMCluster {
     internal_static_UserMsgHead_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_UserMsgHead_descriptor,
-        new java.lang.String[] { "SrcNode", "SrcType", "SrcActor", "DstActor", });
+        new java.lang.String[] { "SrcNode", "SrcType", "SrcActor", "DstActor", "DstMethod", "SessionId", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

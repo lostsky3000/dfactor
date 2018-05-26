@@ -86,22 +86,26 @@ public final class DFClusterManager {
 		return exist;
 	}
 	
-	protected int sendToNode(String srcActor, String dstNode, String dstActor, int userCmd, String userData){
+	protected int sendToNode(String srcActor, String dstNode, String dstActor, String dstMethod,
+			int sessionId, int userCmd, String userData){
 		if(userData != null){
 			byte[] buf = userData.getBytes(CharsetUtil.UTF_8);
-			return _sendToNode(srcActor, dstNode, dstActor, userCmd, buf, 1);
+			return _sendToNode(srcActor, dstNode, dstActor, dstMethod, sessionId, userCmd, buf, 1);
 		}else{
-			return _sendToNode(srcActor, dstNode, dstActor, userCmd, null, 1);
+			return _sendToNode(srcActor, dstNode, dstActor, dstMethod, sessionId, userCmd, null, 1);
 		}
 	}
-	protected int sendToNode(String srcActor, String dstNode, String dstActor, int userCmd, byte[] userData){
-		return _sendToNode(srcActor, dstNode, dstActor, userCmd, userData, 0);
+	protected int sendToNode(String srcActor, String dstNode, String dstActor, String dstMethod, 
+				int sessionId, int userCmd, byte[] userData){
+		return _sendToNode(srcActor, dstNode, dstActor, dstMethod, sessionId, userCmd, userData, 0);
 	}
-	protected int sendToNode(String srcActor, String dstNode, String dstActor, int userCmd, ByteBuf userData){
-		return _sendToNodeByteBuf(srcActor, dstNode, dstActor, userCmd, userData, 0);
+	protected int sendToNode(String srcActor, String dstNode, String dstActor, String dstMethod,
+				int sessionId, int userCmd, ByteBuf userData){
+		return _sendToNodeByteBuf(srcActor, dstNode, dstActor, dstMethod, sessionId, userCmd, userData, 0);
 	}
 	
-	private int _sendToNode(String srcActor, String dstNode, String dstActor, int userCmd, byte[] userData, int userDataType){
+	private int _sendToNode(String srcActor, String dstNode, String dstActor, String dstMethod, 
+				int sessionId, int userCmd, byte[] userData, int userDataType){
 		DFNode node = null;
 		_lockNodeRead.lock();
 		try{
@@ -113,7 +117,11 @@ public final class DFClusterManager {
 			//
 			DMCluster.UserMsgHead.Builder bd = DMCluster.UserMsgHead.newBuilder();
 			bd.setSrcNode(_selfNodeName).setSrcType(_selfNodeType)
+			.setSessionId(sessionId)
 			.setSrcActor(srcActor).setDstActor(dstActor);
+			if(dstMethod != null){
+				bd.setDstMethod(dstMethod);
+			}
 			byte[] bufHead = bd.build().toByteArray();
 			int headLen = bufHead.length;
 			int dataLen = 0;
@@ -137,7 +145,8 @@ public final class DFClusterManager {
 		}
 		return 1;
 	}
-	private int _sendToNodeByteBuf(String srcActor, String dstNode, String dstActor, int userCmd, ByteBuf userData, int userDataType){
+	private int _sendToNodeByteBuf(String srcActor, String dstNode, String dstActor, String dstMethod, 
+				int sessionId, int userCmd, ByteBuf userData, int userDataType){
 		DFNode node = null;
 		_lockNodeRead.lock();
 		try{
@@ -149,7 +158,11 @@ public final class DFClusterManager {
 			//
 			DMCluster.UserMsgHead.Builder bd = DMCluster.UserMsgHead.newBuilder();
 			bd.setSrcNode(_selfNodeName).setSrcType(_selfNodeType)
+			.setSessionId(sessionId)
 			.setSrcActor(srcActor).setDstActor(dstActor);
+			if(dstMethod != null){
+				bd.setDstMethod(dstMethod);
+			}
 			byte[] bufHead = bd.build().toByteArray();
 			int headLen = bufHead.length;
 			int dataLen = 0;
@@ -169,10 +182,48 @@ public final class DFClusterManager {
 				buf.writeBytes(userData);
 			}
 			node.channel.write(buf);
+			//
+			if(userData != null){
+				userData.release();
+			}
 			return 0;
 		}
 		if(userData != null){
 			userData.release();
+		}
+		return 1;
+	}
+	
+	protected int sendToNodeInternal(String srcActor, String dstNode, String dstActor, int sessionId, int cmd){
+		DFNode node = null;
+		_lockNodeRead.lock();
+		try{
+			node = _mapNode.get(dstNode);
+		}finally{
+			_lockNodeRead.unlock();
+		}
+		if(node != null){
+			//
+			DMCluster.UserMsgHead.Builder bd = DMCluster.UserMsgHead.newBuilder();
+			bd.setSrcNode(_selfNodeName).setSrcType(_selfNodeType)
+			.setSessionId(sessionId)
+			.setSrcActor(srcActor).setDstActor(dstActor);
+			byte[] bufHead = bd.build().toByteArray();
+			int headLen = bufHead.length;
+			int dataLen = 0;
+			
+			//msgLen(2) + cmd(2) + headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
+			int msgLen = 2 + 2 + headLen + 4 + 1 + dataLen;
+			ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(2 + msgLen);  
+			buf.writeShort(msgLen);
+			buf.writeShort(cmd);
+			buf.writeShort(headLen);
+			buf.writeBytes(bufHead);
+			buf.writeInt(0);
+			buf.writeByte(0);
+			node.channel.write(buf);
+			//
+			return 0;
 		}
 		return 1;
 	}

@@ -23,6 +23,7 @@ import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.cb.CbTimeout;
+import fun.lib.actor.define.RpcError;
 import fun.lib.actor.msg.DMCluster;
 import fun.lib.actor.msg.DMCluster.AskOtherConn;
 import fun.lib.actor.msg.DMCluster.NewNodeAsk;
@@ -171,7 +172,7 @@ public final class DFClusterActor extends DFActor{
 				break;
 			}
 			if(cmd == DMCmd.NewNodeAsk){  //new node req
-				log.debug("udp recv newNodeReq, sender="+addrSender);
+				log.verb("udp recv newNodeReq, sender="+addrSender);
 				DMCluster.NewNodeAsk msg = (NewNodeAsk) _parseMsg(cmd, buf);
 				if(msg == null) break; //parse failed
 				if(!_checkSign(msg.getSign(), msg.getSalt())) break;  //check sign failed
@@ -179,7 +180,7 @@ public final class DFClusterActor extends DFActor{
 				if(host.equals(_selfLanIP) && msg.getPort() == _curTcpPort) break; //self
 				_checkSelfNodeName(msg, host);
 			}else if(cmd == DMCmd.NewNodeRsp){
-				log.debug("udp recv newNodeRsp, sender="+addrSender);
+				log.verb("udp recv newNodeRsp, sender="+addrSender);
 				if(!_hasInCluster){
 					DMCluster.NewNodeRsp msg = (NewNodeRsp) _parseMsg(cmd, buf);
 					if(!_checkSign(msg.getSign(), msg.getSalt())) break;  //check sign failed
@@ -191,7 +192,7 @@ public final class DFClusterActor extends DFActor{
 					}
 				}
 			}else if(DMCmd.NewNodeSucc == cmd){
-				log.debug("udp recv newNodeSucc, sender="+addrSender);
+				log.verb("udp recv newNodeSucc, sender="+addrSender);
 				if(!_hasInCluster) break;
 				DMCluster.NewNodeSucc msg = (NewNodeSucc) _parseMsg(cmd, buf);
 				if(!_checkSign(msg.getSign(), msg.getSalt())) break;  //check sign failed
@@ -199,7 +200,7 @@ public final class DFClusterActor extends DFActor{
 				if(host.equals(_selfLanIP) && msg.getPort() == _curTcpPort) break; //self
 				_checkNewNodeSuccNofity(msg);
 			}else if(DMCmd.AskOtherConn == cmd){
-				log.debug("udp recv askOtherConn, sender="+addrSender);
+				log.verb("udp recv askOtherConn, sender="+addrSender);
 				if(!_hasInCluster) break;
 				DMCluster.AskOtherConn msg =  (AskOtherConn) _parseMsg(cmd, buf);
 				if(!_checkSign(msg.getSign(), msg.getSalt())) break;  //check sign failed
@@ -251,13 +252,16 @@ public final class DFClusterActor extends DFActor{
 		ByteBuf buf = (ByteBuf) msg;
 		int cmd = buf.readShort();
 		NodeInfo node = _mapNodeChannel.get(channel.getChannelId());
-		log.debug("recvTcpMsg, cmd="+cmd);
+//		log.verb("recvTcpMsg, cmd="+cmd);
 		switch(cmd){
 		case DMCmd.NewNodeLogin:
 			_procNewNodeLogin(cmd, buf, node);
 			break;
 		case DMCmd.UserMsg:
 			_procUserMsg(cmd, buf, node);
+			break;
+		case DMCmd.RcpCallFail:
+			_procRpcCallFail(cmd, buf, node);
 			break;
 		default:
 			break;
@@ -278,7 +282,6 @@ public final class DFClusterActor extends DFActor{
 			return ;
 		}
 		//
-		String dstActor = head.getDstActor();
 		int userCmd = buf.readInt();
 		Object payload = null;
 		int userDataType = buf.readByte();
@@ -292,8 +295,35 @@ public final class DFClusterActor extends DFActor{
 			}
 		}
 		//send to actor
-		_mgrActor.send(id, dstActor, 0, DFActorDefine.SUBJECT_CLUSTER, userCmd, payload, true, 
-				head.getSrcNode(), head.getSrcActor(), head.getSrcType());
+		int ret = 0;
+		if(head.getSessionId() == 0){  //not call method
+			ret = _mgrActor.send(id, head.getDstActor(), 0, DFActorDefine.SUBJECT_CLUSTER, userCmd, payload, true, 
+					head.getSrcNode(), head.getSrcActor(), head.getSrcType(), null);
+		}else{  //call method
+			String dstMethod = head.getDstMethod();
+			dstMethod = (dstMethod==null||dstMethod.equals(""))?null:dstMethod;
+			ret = _mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_RPC, userCmd, payload, true, 
+					head.getSrcNode(), head.getSrcActor(), head.getSrcType(), dstMethod);
+			if(ret != 0 && dstMethod != null){  //send failed, notify src
+				DFClusterManager.get().sendToNodeInternal(this.name, head.getSrcNode(), 
+						head.getSrcActor(), head.getSessionId(), DMCmd.RcpCallFail);
+			}
+		}
+	}
+	
+	private void _procRpcCallFail(int cmd, ByteBuf buf, NodeInfo node){
+		//headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
+		int headLen = buf.readShort();
+		byte[] bufHead = new byte[headLen];
+		buf.readBytes(bufHead);
+		DMCluster.UserMsgHead head = null;
+		try {
+			head = DMCluster.UserMsgHead.parseFrom(bufHead);
+		} catch (InvalidProtocolBufferException e) {
+			e.printStackTrace();
+			return ;
+		}
+		_mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_RPC_FAIL, RpcError.REMOTE_FAILED, null, true, null, null);
 	}
 	
 	private void _procNewNodeLogin(int cmd, ByteBuf buf, NodeInfo node){

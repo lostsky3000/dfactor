@@ -1,15 +1,24 @@
 package fun.lib.actor.core;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.api.cb.CbCallHereBlock;
+import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.RpcFuture;
+import fun.lib.actor.define.RpcError;
 import fun.lib.actor.po.ActorProp;
 import io.netty.buffer.ByteBuf;
 
 public final class DFActorSystemWrap implements DFActorSystem{
+	
+	private static final int RPC_TIMEOUT = 60000;
+	
 	private final DFActorManager _mgr;
 	private final int id;
 	private final DFActorLog log;
@@ -61,13 +70,13 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return ret;
 	}
 	
-	
 	public final void exit(){
 		_mgr.removeActor(id);
 		log.verb("exit");
 	}
+	@Override
 	public final void timeout(int delay, int requestId){
-		_mgr.addTimeout(id, delay, requestId, null);
+		_mgr.addTimeout(id, delay, DFActorDefine.SUBJECT_TIMER, requestId, null);
 	}
 	@Override
 	public long getTimeStart() {
@@ -99,26 +108,124 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	public int callHereBlock(int shardId, int cmd, Object payload, CbCallHereBlock cb) {
 		return _mgr.callSysBlockActor(id, shardId, cmd, payload, cb); 
 	}
+	//
+	
+	@Override
+	public RpcFuture callMethod(int dstId, String dstMethod, int cmd, Object payload) {
+		RpcFuture f = null;
+		int sid = _createSessionId();
+		int ret = _mgr.send(id, dstId, sid, DFActorDefine.SUBJECT_RPC, cmd, payload, true, 
+				null, actor.name, false, null, dstMethod);
+		if(ret == 0){  //send succ
+			f = new RpcFutureWrap(true, sid, this);
+		}else{	//send failed, remove rpcCb
+			f = new RpcFutureWrap(false, sid, this);
+		}
+		return f;
+	}
+	@Override
+	public RpcFuture callMethod(String dstName, String dstMethod, int cmd, Object payload) {
+		RpcFuture f = null;
+		int sid = _createSessionId();
+		int ret = _mgr.send(id, dstName, sid, DFActorDefine.SUBJECT_RPC, cmd, payload, true, null, actor.name, null, dstMethod);
+		if(ret == 0){  //send succ
+			f = new RpcFutureWrap(true, sid, this);
+		}else{	//send failed, remove rpcCb
+			f = new RpcFutureWrap(false, sid, this);
+		}
+		return f;
+	}
+	
 	@Override
 	public void shutdown() {
 		DFActorManager.get().shutdown();
 	}
 	@Override
 	public int sendToCluster(String dstNode, String dstActor, int cmd, String payload) {
-		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, cmd, payload);
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
 	public int sendToCluster(String dstNode, String dstActor, int cmd, byte[] payload) {
-		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, cmd, payload);
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
 	public int sendToCluster(String dstNode, String dstActor, int cmd, ByteBuf payload) {
-		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, cmd, payload);
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
 	public boolean isNodeOnline(String nodeName) {
 		return DFClusterManager.get().isNodeOnline(nodeName);
 	}
+	//
+	@Override
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, String payload) {
+		RpcFuture f = null;
+		int sid = _createSessionId();
+		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
+		if(ret == 0){  //send succ
+			f = new RpcFutureWrap(true, sid, this);
+		}else{	//send failed, remove rpcCb
+			f = new RpcFutureWrap(false, sid, this);
+		}
+		return f;
+	}
+	@Override
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, byte[] payload) {
+		RpcFuture f = null;
+		int sid = _createSessionId();
+		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
+		if(ret == 0){  //send succ
+			f = new RpcFutureWrap(true, sid, this);
+		}else{	//send failed, remove rpcCb
+			f = new RpcFutureWrap(false, sid, this);
+		}
+		return f;
+	}
+	@Override
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, ByteBuf payload) {
+		RpcFuture f = null;
+		int sid = _createSessionId();
+		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
+		if(ret == 0){  //send succ
+			f = new RpcFutureWrap(true, sid, this);
+		}else{	//send failed, remove rpcCb
+			f = new RpcFutureWrap(false, sid, this);
+		}
+		return f;
+	}
 	
+	//
+	private HashMap<Integer, CbRpc> _mapRpcCb = null;
+	private int _rpcCbIdCount = 0;
+	
+	private int _createSessionId(){
+		int sid = ++_rpcCbIdCount;
+		if(_rpcCbIdCount >= Integer.MAX_VALUE){
+			_rpcCbIdCount = 0;
+		}
+		return sid;
+	}
+	
+	protected void addRpcCallback(CbRpc cb, int sessionId, int timeoutMilli){
+		if(_mapRpcCb == null){
+			_mapRpcCb = new HashMap<>();
+		}
+		_mapRpcCb.put(sessionId, cb);
+		_mgr.addTimeout(id, (int) (timeoutMilli/DFActor.TIMER_UNIT_MILLI), DFActorDefine.SUBJECT_RPC_FAIL, sessionId, null);
+	}
+	
+	protected CbRpc procRPCCb(int sessionId){
+		if(_mapRpcCb != null){
+			return _mapRpcCb.remove(sessionId);
+		}
+		return null;
+	}
 	
 }
+
+
+
+
+
+
+

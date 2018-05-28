@@ -2,6 +2,10 @@
 
 # 最新
 
+- 集群内广播功能 [示例](src/test/java/fun/lib/actor/example/ClusterBroadcast.java)
+
+- 集群间通信(包括rpc)多种序列化格式支持,String,Json,byte[],ByteBuf,自定义序列化对象  [示例](src/test/java/fun/lib/actor/example/ClusterParam.java)
+
 - 增加集群内结点间rpc调用 [示例](src/test/java/fun/lib/actor/example/RpcCluster.java)， 本地actor间rpc调用 [示例](src/test/java/fun/lib/actor/example/RpcLocal.java)
 
 - 集群功能上线，去中心化自动组网，集群内结点互相发现互相通信  [入门示例](src/test/java/fun/lib/actor/example/ClusterSimple.java)
@@ -160,6 +164,10 @@ net.doHttpServer(8080, new CbHttpServer() {
 [RpcLocal](src/test/java/fun/lib/actor/example/RpcLocal.java)  本地actor间rpc调用示例
 
 [RpcCluster](src/test/java/fun/lib/actor/example/RpcCluster.java)  集群内结点间rpc调用示例
+
+[ClusterParam](src/test/java/fun/lib/actor/example/ClusterParam.java)  集群间通信(包括rpc)支持多种消息格式的示例
+
+[ClusterBroadcast](src/test/java/fun/lib/actor/example/ClusterBroadcast.java)  集群内广播示例
 
 
 ## FAQ

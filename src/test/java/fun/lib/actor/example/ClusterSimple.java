@@ -16,7 +16,7 @@ import fun.lib.actor.po.DFActorManagerConfig;
 
 public final class ClusterSimple {
 	
-	private static int NODE_IDX = 1; // 0:以game-1身份启动    1:以game-2身份启动
+	private static int NODE_IDX = 0; // 0:以game-1身份启动    1:以game-2身份启动
 	private static final String[] ARR_NODE_NAME = {"game-1", "game-2"};
 	
 	

@@ -42,7 +42,7 @@ public final class RpcCluster {
 		@Override
 		public void onTimeout(int requestId) {
 			if(sys.isNodeOnline(ARR_NODE_NAME[1])){  //game-2 is online
-				RpcFuture future = sys.callClusterMethod(ARR_NODE_NAME[1], ARR_ACTOR_NAME[1]+1, "doMath", 168, "square"); 
+				RpcFuture future = sys.callClusterMethod(ARR_NODE_NAME[1], ARR_ACTOR_NAME[1], "doMath", 168, "square"); 
 				if(future.isSendSucc()){  //调用发送成功，可添加结果监听
 					future.addListener(new CbRpc() {
 						@Override

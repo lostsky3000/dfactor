@@ -158,7 +158,7 @@ public final class DFActorWrap {
 						if(msg.userHandler != null){ //has callback
 							((CbTimeout)msg.userHandler).onTimeout();
 						}else{
-							_actor.onTimeout(msg.cmd);
+							_actor.onTimeout(msg.sessionId);
 						}
 					}else if(msg.subject == DFActorDefine.SUBJECT_NET){
 						if(msg.cmd == DFActorDefine.NET_UDP_MESSAGE){ //udp msg

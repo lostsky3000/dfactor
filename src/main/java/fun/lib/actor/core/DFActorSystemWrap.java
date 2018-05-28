@@ -3,8 +3,12 @@ package fun.lib.actor.core;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import com.alibaba.fastjson.JSONObject;
+import com.google.protobuf.GeneratedMessageV3;
+
 import fun.lib.actor.api.DFActorLog;
 import fun.lib.actor.api.DFActorSystem;
+import fun.lib.actor.api.DFSerializable;
 import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHere;
@@ -153,8 +157,67 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
+	public int sendToCluster(String dstNode, String dstActor, int cmd, JSONObject payload) {
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
+	}
+	@Override
+	public int sendToCluster(String dstNode, String dstActor, int cmd, DFSerializable payload) {
+		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
+	}
+	//
+	@Override
+	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, String payload) {
+		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, JSONObject payload) {
+		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, byte[] payload) {
+		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, ByteBuf payload) {
+		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, DFSerializable payload) {
+		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
+	}
+	//sendToClusterAll
+	@Override
+	public int sendToClusterAll(String dstActor, int cmd, String payload) {
+		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterAll(String dstActor, int cmd, JSONObject payload) {
+		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterAll(String dstActor, int cmd, byte[] payload) {
+		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterAll(String dstActor, int cmd, ByteBuf payload) {
+		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
+	}
+	@Override
+	public int sendToClusterAll(String dstActor, int cmd, DFSerializable payload) {
+		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
+	}
+	
+	@Override
 	public boolean isNodeOnline(String nodeName) {
 		return DFClusterManager.get().isNodeOnline(nodeName);
+	}
+	@Override
+	public int getNodeNumByType(String nodeType) {
+		return DFClusterManager.get().getNodeNumByType(nodeType);
+	}
+	@Override
+	public int getAllNodeNum() {
+		return DFClusterManager.get().getAllNodeNum();
 	}
 	//
 	@Override
@@ -193,6 +256,31 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		}
 		return f;
 	}
+	@Override
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd,
+			DFSerializable payload) {
+		RpcFuture f = null;
+		int sid = _createSessionId();
+		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
+		if(ret == 0){  //send succ
+			f = new RpcFutureWrap(true, sid, this);
+		}else{	//send failed, remove rpcCb
+			f = new RpcFutureWrap(false, sid, this);
+		}
+		return f;
+	}
+	@Override
+	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, JSONObject payload) {
+		RpcFuture f = null;
+		int sid = _createSessionId();
+		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
+		if(ret == 0){  //send succ
+			f = new RpcFutureWrap(true, sid, this);
+		}else{	//send failed, remove rpcCb
+			f = new RpcFutureWrap(false, sid, this);
+		}
+		return f;
+	}
 	
 	//
 	private HashMap<Integer, CbRpc> _mapRpcCb = null;
@@ -220,6 +308,8 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		}
 		return null;
 	}
+	
+	
 	
 }
 

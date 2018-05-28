@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+
+import com.alibaba.fastjson.JSONObject;
 import com.funtag.util.cipher.DFCipherUtil;
 import com.funtag.util.net.DFIpUtil;
 import com.funtag.util.system.DFSysUtil;
@@ -18,12 +20,15 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 
+import fun.lib.actor.api.DFActorTcpDispatcher;
 import fun.lib.actor.api.DFActorUdpDispatcher;
+import fun.lib.actor.api.DFSerializable;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.define.RpcError;
+import fun.lib.actor.define.RpcParamType;
 import fun.lib.actor.msg.DMCluster;
 import fun.lib.actor.msg.DMCluster.AskOtherConn;
 import fun.lib.actor.msg.DMCluster.NewNodeAsk;
@@ -39,10 +44,11 @@ import fun.lib.actor.po.DFUdpServerCfg;
 import fun.lib.actor.po.IPRange;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.CharsetUtil;
 
-public final class DFClusterActor extends DFActor{
+public final class DFClusterActor extends DFActor implements DFActorTcpDispatcher{
 	
 	private static final int PORT_RANGE = 20;
 	private static final int MAX_PORT = 65536;
@@ -90,6 +96,7 @@ public final class DFClusterActor extends DFActor{
 			_selfNodeName = _cfgCluster.getNodeName();
 		}
 		DFClusterManager.get().setSelfNodeName(_selfNodeName, _cfgCluster.getNodeType());
+		log.info("curNodeName = "+_selfNodeName);
 		//
 		_tmStart = System.currentTimeMillis();
 		//start tcp listen
@@ -97,10 +104,11 @@ public final class DFClusterActor extends DFActor{
 		_tryTcpListen();
 	}
 	private void _tryTcpListen(){
+		
 		DFTcpServerCfg cfg = new DFTcpServerCfg(_curTcpPort, DFActorManager.get().getClusterIoGroup())
 			.setSoBackLog(1024)
 			.setTcpProtocol(DFActorDefine.TCP_DECODE_LENGTH);
-		net.doTcpServer(cfg);
+		net.doTcpServer(cfg, this);
 	}
 	@Override
 	public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
@@ -233,10 +241,11 @@ public final class DFClusterActor extends DFActor{
 	@Override
 	public void onTcpConnClose(int requestId, DFTcpChannel channel) {
 		NodeInfo node = _mapNodeChannel.remove(channel.getChannelId());
+		boolean needReconn = false;
 		if(requestId < 0){ //client 
 			log.debug("connClose as client");
 			node.channel = null;	
-			
+			needReconn = true;
 		}else if(requestId == _curTcpPort){ //server
 			log.debug("connClose as server");
 		}
@@ -244,6 +253,9 @@ public final class DFClusterActor extends DFActor{
 			_mapNode.remove(node.nodeName);
 			if(node.hasAuth){
 				DFClusterManager.get().removeNode(node.nodeName, log);
+			}
+			if(needReconn){ //reconn
+				_doConnOther(node.host, node.port, node.nodeName);
 			}
 		}
 	}
@@ -257,19 +269,30 @@ public final class DFClusterActor extends DFActor{
 		case DMCmd.NewNodeLogin:
 			_procNewNodeLogin(cmd, buf, node);
 			break;
-		case DMCmd.UserMsg:
-			_procUserMsg(cmd, buf, node);
-			break;
-		case DMCmd.RcpCallFail:
-			_procRpcCallFail(cmd, buf, node);
-			break;
 		default:
 			break;
 		}
 		return 0;
 	}
-	
-	private void _procUserMsg(int cmd, ByteBuf buf, NodeInfo node){
+	@Override
+	public int onQueryMsgActorId(int requestId, int channelId, InetSocketAddress addrRemote, Object msg) {
+		ByteBuf buf = (ByteBuf) msg;
+		buf.markReaderIndex();
+		int cmd = buf.readShort();
+		switch(cmd){
+		case DMCmd.UserMsg:
+			_procUserMsg(cmd, buf);
+			break;
+		case DMCmd.RpcFail:
+			_procRpcCallFail(cmd, buf);
+			break;
+		default:   
+			buf.resetReaderIndex();
+			return id;
+		}
+		return 0;
+	}
+	private void _procUserMsg(int cmd, ByteBuf buf){
 		//headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
 		int headLen = buf.readShort();
 		byte[] bufHead = new byte[headLen];
@@ -287,9 +310,29 @@ public final class DFClusterActor extends DFActor{
 		int userDataType = buf.readByte();
 		int leftLen = buf.readableBytes();
 		if(leftLen > 0){ //has payload
-			if(userDataType == 1){ //string
+			if(userDataType == RpcParamType.STRING || userDataType==RpcParamType.JSON){ //string or json
 				payload = buf.readCharSequence(leftLen, CharsetUtil.UTF_8);
-			}else{
+				if(userDataType == RpcParamType.JSON){ //json
+					payload = JSONObject.parse((String) payload);
+				}
+			}else if(userDataType == RpcParamType.BYTE_BUF){ //ByteBuf
+				ByteBuf bufParam = UnpooledByteBufAllocator.DEFAULT.heapBuffer(leftLen);
+				bufParam.writeBytes(buf);
+				payload = bufParam;
+			}else if(userDataType == RpcParamType.CUSTOM){
+				int clzLen = buf.readShort();
+				try {
+					String clzName = (String) buf.readCharSequence(clzLen, CharsetUtil.UTF_8);
+					Class<?> clz = Class.forName(clzName);
+					DFSerializable obj = (DFSerializable) clz.newInstance();
+					obj.onDeserialize(buf);
+					payload = obj;
+				} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			else{  //byteArray
 				payload = new byte[leftLen];
 				buf.readBytes((byte[])payload);
 			}
@@ -306,12 +349,11 @@ public final class DFClusterActor extends DFActor{
 					head.getSrcNode(), head.getSrcActor(), head.getSrcType(), dstMethod);
 			if(ret != 0 && dstMethod != null){  //send failed, notify src
 				DFClusterManager.get().sendToNodeInternal(this.name, head.getSrcNode(), 
-						head.getSrcActor(), head.getSessionId(), DMCmd.RcpCallFail);
+						head.getSrcActor(), head.getSessionId(), DMCmd.RpcFail);
 			}
 		}
 	}
-	
-	private void _procRpcCallFail(int cmd, ByteBuf buf, NodeInfo node){
+	private void _procRpcCallFail(int cmd, ByteBuf buf){
 		//headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
 		int headLen = buf.readShort();
 		byte[] bufHead = new byte[headLen];
@@ -592,9 +634,11 @@ public final class DFClusterActor extends DFActor{
 	}
 	
 	private void _checkNewNodeSuccNofity(NewNodeSucc msg){
-		String idReq = msg.getHost()+":"+msg.getPort();
+//		String idReq = msg.getHost()+":"+msg.getPort();
+		String idReq = msg.getNodeName();
 		//_idAddrSelf
-		if(idReq.compareTo(_idAddrSelf) < 1){  //conn act
+//		if(idReq.compareTo(_idAddrSelf) < 1){  //conn act
+		if(idReq.compareTo(_selfNodeName) < 1){  //conn act
 			_doConnOther(msg.getHost(), msg.getPort(), msg.getNodeName());
 		}else{ //conn deact, ask other to conn
 			DMCluster.AskOtherConn.Builder bd = DMCluster.AskOtherConn.newBuilder();
@@ -623,20 +667,28 @@ public final class DFClusterActor extends DFActor{
 			//
 			DFTcpClientCfg cfg = new DFTcpClientCfg(host, port)
 					.setConnTimeout(5000).setTcpProtocol(DFActorDefine.TCP_DECODE_LENGTH);
-			DFActorManager.get().doTcpConnectViaCluster(cfg, id, node.connReqId);
+			DFActorManager.get().doTcpConnectViaCluster(cfg, id, this, node.connReqId);
 			
 		} while (false);
 	}
 	@Override
 	public void onTcpClientConnResult(int requestId, boolean isSucc, String errMsg) {
-		NodeInfo node = _mapNodeCli.get(requestId);
+		final NodeInfo node = _mapNodeCli.get(requestId);
 		if(isSucc){
-//			log.info("conn succ, node="+node);
+			log.debug("conn succ, node="+node);
 		}else{
 			log.error("conn failed, node="+node);
 			if(node != null){
 				_mapNode.remove(node.nodeName);
 				_mapNodeCli.remove(requestId);
+				//reconn
+				log.debug("will reconn "+node.nodeName+": "+node.host+":"+node.port);
+				timer.timeout(5000, new CbTimeout() {
+					@Override
+					public void onTimeout() {
+						_doConnOther(node.host, node.port, node.nodeName);
+					}
+				});
 			}
 		}
 	}
@@ -731,6 +783,17 @@ public final class DFClusterActor extends DFActor{
 	private void _doShutdown(){
 		sys.shutdown();
 	}
+	@Override
+	public int onConnActiveUnsafe(int requestId, int channelId, InetSocketAddress addrRemote) {
+		// TODO Auto-generated method stub
+		return id;
+	}
+	@Override
+	public int onConnInactiveUnsafe(int requestId, int channelId, InetSocketAddress addrRemote) {
+		// TODO Auto-generated method stub
+		return id;
+	}
+	
 	
 }
 

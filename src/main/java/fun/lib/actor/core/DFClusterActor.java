@@ -26,6 +26,7 @@ import fun.lib.actor.api.DFSerializable;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
 import fun.lib.actor.api.cb.CbActorReq;
+import fun.lib.actor.api.cb.CbNode;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.define.RpcError;
 import fun.lib.actor.define.RpcParamType;
@@ -38,6 +39,7 @@ import fun.lib.actor.msg.DMCluster.NewNodeSucc;
 import fun.lib.actor.msg.DMCmd;
 import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFActorClusterConfig;
+import fun.lib.actor.po.DFNode;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
@@ -253,6 +255,7 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 			_mapNode.remove(node.nodeName);
 			if(node.hasAuth){
 				DFClusterManager.get().removeNode(node.nodeName, log);
+				_checkNodeRemoveCb(node);
 			}
 			if(needReconn){ //reconn
 				_doConnOther(node.host, node.port, node.nodeName);
@@ -383,9 +386,13 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 			//
 			node.nodeName = msg.getNodeName();
 			node.nodeType = msg.getNodeType();
+			node.host = msg.getHost();
 			node.hasAuth = true;
 			//
 			DFClusterManager.get().addNode(node.nodeName, node.nodeType, node.channel, log);
+			
+			_checkNodeAddCb(node);
+			
 			bRet = true;
 		}while(false);
 		if(!bRet && node.channel != null){
@@ -698,7 +705,7 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 		String salt = _createSalt();
 		bd.setSalt(salt).setSign(_createSign(salt))
 		.setClusterName(_cfgCluster.getClusterName())
-		.setUniqueId(_uniqueId)
+		.setUniqueId(_uniqueId).setHost(_selfLanIP)
 		.setNodeName(_selfNodeName).setNodeType(_cfgCluster.getNodeType());
 		_doSendTcp(DMCmd.NewNodeLogin, bd.build().toByteArray(), node.channel);
 	}
@@ -793,8 +800,108 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 		// TODO Auto-generated method stub
 		return id;
 	}
+	//
+	@Override
+	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+		if(CMD_REG_NODE_LISTENER == cmd){
+			RegNodeReq req = (RegNodeReq) payload;
+			if(_setNodeCb.contains(req.cb)){ //cb has used
+				return 0;
+			}
+			_setNodeCb.add(req.cb);
+			if(RegNodeReq.NODE_NAME == req.type){  //listen by nodeName
+				_addNodeCbByName(req.value, req);
+				Iterator<DFNode> it = _mapNodeUser.values().iterator();  //notify exist node
+				while(it.hasNext()){
+					DFNode n = it.next();
+					if(n.name.equals(req.value)){
+						_mgrActor.send(id, req.srcId, 0, DFActorDefine.SUBJECT_NODE_EVENT, 0, n, true, null, req.cb, true);
+					}
+				}
+			}else if(RegNodeReq.NODE_TYPE == req.type){ //listen by nodeType
+				_addNodeCbByType(req.value, req);
+				Iterator<DFNode> it = _mapNodeUser.values().iterator();  //notify exist node
+				while(it.hasNext()){
+					DFNode n = it.next();
+					if(n.type.equals(req.value)){
+						_mgrActor.send(id, req.srcId, 0, DFActorDefine.SUBJECT_NODE_EVENT, 0, n, true, null, req.cb, true);
+					}
+				}
+			}else{ //listen all
+				_addNodeCbAll(req);
+				Iterator<DFNode> it = _mapNodeUser.values().iterator();  //notify exist node
+				while(it.hasNext()){
+					DFNode n = it.next();
+					_mgrActor.send(id, req.srcId, 0, DFActorDefine.SUBJECT_NODE_EVENT, 0, n, true, null, req.cb, true);
+				}
+			}
+		}
+		return 0;
+	}
+	private void _addNodeCbAll(RegNodeReq req){
+		_cbLsAll.addCb(req);
+	}
+	private void _addNodeCbByType(String nodeType, RegNodeReq req){
+		NodeCbList cbList = _mapCbType.get(nodeType);
+		if(cbList == null){
+			cbList = new NodeCbList();
+			_mapCbType.put(nodeType, cbList);
+		}
+		cbList.addCb(req);
+	}
+	private void _addNodeCbByName(String nodeName, RegNodeReq req){
+		NodeCbList cbList = _mapCbName.get(nodeName);
+		if(cbList == null){
+			cbList = new NodeCbList();
+			_mapCbName.put(nodeName, cbList);
+		}
+		cbList.addCb(req);
+	}
+	private void _checkNodeAddCb(NodeInfo node){
+		DFNode dfNode = new DFNode(node.nodeName, node.nodeType, node.host);
+		_mapNodeUser.put(node.nodeName, dfNode);
+		//
+		NodeCbList cbLs = _mapCbName.get(node.nodeName);
+		if(cbLs != null) _nofityNodeChange(false, cbLs, dfNode);	//reg by name
+		cbLs = _mapCbType.get(node.nodeType);
+		if(cbLs != null) _nofityNodeChange(false, cbLs, dfNode);	//reg by type
+		if(!_cbLsAll.lsCb.isEmpty()) _nofityNodeChange(false, _cbLsAll, dfNode);	//all
+	}
+	private void _checkNodeRemoveCb(NodeInfo node){
+		DFNode dfNode = _mapNodeUser.remove(node.nodeName);
+		//
+		if(dfNode != null){
+			NodeCbList cbLs = _mapCbName.get(node.nodeName);
+			if(cbLs != null) _nofityNodeChange(true, cbLs, dfNode);	//reg by name
+			cbLs = _mapCbType.get(node.nodeType);
+			if(cbLs != null) _nofityNodeChange(true, cbLs, dfNode);	//reg by type
+			if(!_cbLsAll.lsCb.isEmpty()) _nofityNodeChange(true, _cbLsAll, dfNode);	//all
+		}
+		
+	}
+	private void _nofityNodeChange(boolean isRemove, NodeCbList cbLs, DFNode node){
+		Iterator<RegNodeReq> it = cbLs.lsCb.iterator();
+		while(it.hasNext()){
+			RegNodeReq req = it.next();
+			_mgrActor.send(id, req.srcId, 0, DFActorDefine.SUBJECT_NODE_EVENT, isRemove?1:0, node, true, null, req.cb, true);
+		}
+	}
 	
+	private HashMap<String, DFNode> _mapNodeUser = new HashMap<>();
+	private HashSet<CbNode> _setNodeCb = new HashSet<>();
+	private HashMap<String, NodeCbList> _mapCbName = new HashMap<>();
+	private HashMap<String, NodeCbList> _mapCbType = new HashMap<>();
+	private NodeCbList _cbLsAll = new NodeCbList();
+	private class NodeCbList{
+		private LinkedList<RegNodeReq> lsCb = new LinkedList<>();
+		private void addCb(RegNodeReq req){
+			lsCb.offer(req);
+		}
+	}
 	
+	public static final int CMD_REG_NODE_LISTENER = -1001;
+	
+	protected static final String NAME = "DFClusterActor";
 }
 
 

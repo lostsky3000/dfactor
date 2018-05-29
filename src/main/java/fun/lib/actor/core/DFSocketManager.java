@@ -26,7 +26,7 @@ import fun.lib.actor.po.DFActorEvent;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import fun.lib.actor.po.DFUdpServerCfg;
-import fun.lib.actor.po.SslConfig;
+import fun.lib.actor.po.DFSSLConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -817,11 +817,11 @@ public final class DFSocketManager {
 		private final DFTcpEncoder _encoder;
 		private final Object _userHandler;
 		private final boolean _isServer;
-		private final SslConfig _sslCfg;
+		private final DFSSLConfig _sslCfg;
 		private final Object _reqData;
 		private TcpHandlerInit(boolean isServer, int decodeType, int maxLen, int actorId, int requestId, String wsSfx, 
 				Object dispatcher, DFTcpDecoder decoder, DFTcpEncoder encoder,
-				Object userHandler, SslConfig sslCfg, Object reqData) {
+				Object userHandler, DFSSLConfig sslCfg, Object reqData) {
 			_isServer = isServer;
 			_decodeType = decodeType;
 			_maxLen = maxLen;

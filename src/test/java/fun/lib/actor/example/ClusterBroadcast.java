@@ -18,7 +18,7 @@ import fun.lib.actor.po.DFActorManagerConfig;
 
 public final class ClusterBroadcast {
 	
-	private static int NODE_IDX = 0; // 
+	private static int NODE_IDX = 0; // 0~3
 	private static final String[] ARR_NODE_NAME = {"game-1", "game-2", "game-3", "chat-1"};
 	private static final String[] ARR_NODE_TYPE = {"game", "game", "game", "chat"};
 	

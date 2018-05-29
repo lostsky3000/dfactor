@@ -22,7 +22,7 @@ public final class DFTcpClientCfg {
 	private volatile DFTcpEncoder encoder = null;
 	//
 	private volatile Object userHandler = null;
-	private volatile SslConfig sslCfg = null;
+	private volatile DFSSLConfig sslCfg = null;
 	
 	private volatile Object reqData = null;
 	/**
@@ -132,11 +132,11 @@ public final class DFTcpClientCfg {
 		return this;
 	}
 
-	public SslConfig getSslCfg() {
+	public DFSSLConfig getSslCfg() {
 		return sslCfg;
 	}
 
-	public DFTcpClientCfg setSslCfg(SslConfig sslCfg) {
+	public DFTcpClientCfg setSslCfg(DFSSLConfig sslCfg) {
 		this.sslCfg = sslCfg;
 		return this;
 	}

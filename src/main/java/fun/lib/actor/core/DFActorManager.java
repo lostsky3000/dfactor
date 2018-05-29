@@ -769,7 +769,7 @@ public final class DFActorManager {
 					mapParam.put("entry", propEntry);
 					mapParam.put("cluster", clusterCfg);
 					//
-					createActor("DFClusterActor", DFClusterActor.class, mapParam, 0, 
+					createActor(DFClusterActor.NAME, DFClusterActor.class, mapParam, 0, 
 							DFActorDefine.CONSUME_ALL, true, false);
 				}
 			}

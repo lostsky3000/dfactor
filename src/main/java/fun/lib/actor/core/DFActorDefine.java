@@ -19,6 +19,7 @@ public final class DFActorDefine {
 	public static final int SUBJECT_CLUSTER = 6;
 	public static final int SUBJECT_RPC = 7;
 	public static final int SUBJECT_RPC_FAIL = 8;
+	public static final int SUBJECT_NODE_EVENT = 9;
 	
 	//
 	protected static final int NET_TCP_LISTEN_RESULT = 1;

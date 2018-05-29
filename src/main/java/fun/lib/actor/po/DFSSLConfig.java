@@ -1,6 +1,6 @@
 package fun.lib.actor.po;
 
-public final class SslConfig {
+public final class DFSSLConfig {
 	/**
 	 * 证书文件路径
 	 */
@@ -10,7 +10,7 @@ public final class SslConfig {
 	 */
 	private String pemPath;
 	
-	private SslConfig() {
+	private DFSSLConfig() {
 	}
 	
 	/**
@@ -18,7 +18,7 @@ public final class SslConfig {
 	 * @param path
 	 * @return
 	 */
-	public SslConfig certPath(String path){
+	public DFSSLConfig certPath(String path){
 		certPath = path;
 		return this;
 	}
@@ -27,7 +27,7 @@ public final class SslConfig {
 	 * @param path
 	 * @return
 	 */
-	public SslConfig pemPath(String path){
+	public DFSSLConfig pemPath(String path){
 		pemPath = path;
 		return this;
 	}
@@ -47,7 +47,7 @@ public final class SslConfig {
 	}
 	
 	//
-	public static SslConfig newCfg(){
-		return new SslConfig();
+	public static DFSSLConfig newCfg(){
+		return new DFSSLConfig();
 	}
 }

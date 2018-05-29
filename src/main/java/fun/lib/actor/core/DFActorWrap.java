@@ -21,12 +21,14 @@ import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.api.cb.RpcContext;
 import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.cb.CbHttpServer;
+import fun.lib.actor.api.cb.CbNode;
 import fun.lib.actor.api.cb.CbRpc;
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.define.DFActorErrorCode;
 import fun.lib.actor.po.DFActorEvent;
+import fun.lib.actor.po.DFNode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
@@ -160,7 +162,10 @@ public final class DFActorWrap {
 						}else{
 							_actor.onTimeout(msg.sessionId);
 						}
-					}else if(msg.subject == DFActorDefine.SUBJECT_NET){
+					}else if(DFActorDefine.SUBJECT_USER == msg.subject){
+						_procUserMsg(msg);
+					}
+					else if(msg.subject == DFActorDefine.SUBJECT_NET){
 						if(msg.cmd == DFActorDefine.NET_UDP_MESSAGE){ //udp msg
 							final int ret = _actor.onUdpServerRecvMsg(msg.sessionId, (DFUdpChannel) msg.context, (DatagramPacket) msg.payload);
 							if(ret != DFActorDefine.MSG_MANUAL_RELEASE){ //auto release
@@ -268,54 +273,21 @@ public final class DFActorWrap {
 						if(cb != null){
 							cb.onFailed(msg.cmd);
 						}
+					}else if(DFActorDefine.SUBJECT_NODE_EVENT == msg.subject){
+						if(msg.userHandler != null){  //has callback
+							CbNode cb = (CbNode) msg.userHandler;
+							if(msg.cmd == 1){  //node remove
+								cb.onNodeRemove((DFNode) msg.payload);
+							}else{
+								cb.onNodeAdd((DFNode) msg.payload);
+							}
+						}
 					}
 					else if(msg.subject == DFActorDefine.SUBJECT_START){
 						_actor.onStart(msg.payload);
 					}
 					else{
-						_actor._lastSrcId = msg.srcId;
-						boolean noCb = true;
-						CbActorReq queryCb = null;
-						Object userHandler = msg.userHandler;
-						if(userHandler != null){ //callback
-							if(userHandler instanceof CbCallHere){
-								CbCallHere tmpCb = (CbCallHere) userHandler;
-								if(msg.isCb){
-									tmpCb.onCallback(msg.cmd, msg.payload);
-								}else{
-									_actor._hasCalledback = false;
-									_actor._lastUserHandler = userHandler;
-									tmpCb.inOtherActor(msg.cmd, msg.payload, _actor);
-									_actor._hasCalledback = true;
-									_actor._lastUserHandler = null;
-								}
-								noCb = false;
-							}else if(userHandler instanceof CbCallHereBlock){
-								CbCallHereBlock tmpCb = (CbCallHereBlock) userHandler;
-								if(msg.isCb){
-									tmpCb.onCallback(msg.cmd, msg.payload);
-								}else{
-									_actor._hasCalledback = false;
-									_actor._lastUserHandler = userHandler;
-									tmpCb.inBlockActor(msg.cmd, msg.payload, _actor);
-									_actor._hasCalledback = true;
-									_actor._lastUserHandler = null;
-								}
-								noCb = false;
-							}
-							else{
-								if(msg.isCb){ //callback
-									CbActorRsp cb = (CbActorRsp) userHandler;
-									cb.onCallback(msg.cmd, msg.payload);
-									noCb = false;
-								}else{ //query, has callback func
-									queryCb = new DFMsgBackWrap(msg.srcId, userHandler);
-								}
-							}
-						}
-						if(noCb){
-							_actor.onMessage(msg.srcId, msg.cmd, msg.payload, queryCb); //msg.sessionId, msg.subject, 
-						}
+						_procUserMsg(msg);
 					}
 				}catch(Throwable e){  //catch logic exception
 					e.printStackTrace();
@@ -348,6 +320,53 @@ public final class DFActorWrap {
 		}
 		return 2;
 	}
+	
+	private void _procUserMsg(DFActorMessage msg){
+		_actor._lastSrcId = msg.srcId;
+		boolean noCb = true;
+		CbActorReq queryCb = null;
+		Object userHandler = msg.userHandler;
+		if(userHandler != null){ //callback
+			if(userHandler instanceof CbCallHere){
+				CbCallHere tmpCb = (CbCallHere) userHandler;
+				if(msg.isCb){
+					tmpCb.onCallback(msg.cmd, msg.payload);
+				}else{
+					_actor._hasCalledback = false;
+					_actor._lastUserHandler = userHandler;
+					tmpCb.inOtherActor(msg.cmd, msg.payload, _actor);
+					_actor._hasCalledback = true;
+					_actor._lastUserHandler = null;
+				}
+				noCb = false;
+			}else if(userHandler instanceof CbCallHereBlock){
+				CbCallHereBlock tmpCb = (CbCallHereBlock) userHandler;
+				if(msg.isCb){
+					tmpCb.onCallback(msg.cmd, msg.payload);
+				}else{
+					_actor._hasCalledback = false;
+					_actor._lastUserHandler = userHandler;
+					tmpCb.inBlockActor(msg.cmd, msg.payload, _actor);
+					_actor._hasCalledback = true;
+					_actor._lastUserHandler = null;
+				}
+				noCb = false;
+			}
+			else{
+				if(msg.isCb){ //callback
+					CbActorRsp cb = (CbActorRsp) userHandler;
+					cb.onCallback(msg.cmd, msg.payload);
+					noCb = false;
+				}else{ //query, has callback func
+					queryCb = new DFMsgBackWrap(msg.srcId, userHandler);
+				}
+			}
+		}
+		if(noCb){
+			_actor.onMessage(msg.srcId, msg.cmd, msg.payload, queryCb); //msg.sessionId, msg.subject, 
+		}
+	}
+	
 	protected void markRemoved(){
 		_bRemoved = true;
 	}

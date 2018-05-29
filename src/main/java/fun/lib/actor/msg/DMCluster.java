@@ -5891,27 +5891,37 @@ public final class DMCluster {
         getNodeTypeBytes();
 
     /**
+     * <code>string host = 5;</code>
+     */
+    java.lang.String getHost();
+    /**
+     * <code>string host = 5;</code>
+     */
+    com.google.protobuf.ByteString
+        getHostBytes();
+
+    /**
      * <pre>
      * </pre>
      *
-     * <code>string salt = 5;</code>
+     * <code>string salt = 6;</code>
      */
     java.lang.String getSalt();
     /**
      * <pre>
      * </pre>
      *
-     * <code>string salt = 5;</code>
+     * <code>string salt = 6;</code>
      */
     com.google.protobuf.ByteString
         getSaltBytes();
 
     /**
-     * <code>string sign = 6;</code>
+     * <code>string sign = 7;</code>
      */
     java.lang.String getSign();
     /**
-     * <code>string sign = 6;</code>
+     * <code>string sign = 7;</code>
      */
     com.google.protobuf.ByteString
         getSignBytes();
@@ -5933,6 +5943,7 @@ public final class DMCluster {
       uniqueId_ = "";
       nodeName_ = "";
       nodeType_ = "";
+      host_ = "";
       salt_ = "";
       sign_ = "";
     }
@@ -5995,10 +6006,16 @@ public final class DMCluster {
             case 42: {
               java.lang.String s = input.readStringRequireUtf8();
 
-              salt_ = s;
+              host_ = s;
               break;
             }
             case 50: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              salt_ = s;
+              break;
+            }
+            case 58: {
               java.lang.String s = input.readStringRequireUtf8();
 
               sign_ = s;
@@ -6164,13 +6181,47 @@ public final class DMCluster {
       }
     }
 
-    public static final int SALT_FIELD_NUMBER = 5;
+    public static final int HOST_FIELD_NUMBER = 5;
+    private volatile java.lang.Object host_;
+    /**
+     * <code>string host = 5;</code>
+     */
+    public java.lang.String getHost() {
+      java.lang.Object ref = host_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        host_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string host = 5;</code>
+     */
+    public com.google.protobuf.ByteString
+        getHostBytes() {
+      java.lang.Object ref = host_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        host_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int SALT_FIELD_NUMBER = 6;
     private volatile java.lang.Object salt_;
     /**
      * <pre>
      * </pre>
      *
-     * <code>string salt = 5;</code>
+     * <code>string salt = 6;</code>
      */
     public java.lang.String getSalt() {
       java.lang.Object ref = salt_;
@@ -6188,7 +6239,7 @@ public final class DMCluster {
      * <pre>
      * </pre>
      *
-     * <code>string salt = 5;</code>
+     * <code>string salt = 6;</code>
      */
     public com.google.protobuf.ByteString
         getSaltBytes() {
@@ -6204,10 +6255,10 @@ public final class DMCluster {
       }
     }
 
-    public static final int SIGN_FIELD_NUMBER = 6;
+    public static final int SIGN_FIELD_NUMBER = 7;
     private volatile java.lang.Object sign_;
     /**
-     * <code>string sign = 6;</code>
+     * <code>string sign = 7;</code>
      */
     public java.lang.String getSign() {
       java.lang.Object ref = sign_;
@@ -6222,7 +6273,7 @@ public final class DMCluster {
       }
     }
     /**
-     * <code>string sign = 6;</code>
+     * <code>string sign = 7;</code>
      */
     public com.google.protobuf.ByteString
         getSignBytes() {
@@ -6262,11 +6313,14 @@ public final class DMCluster {
       if (!getNodeTypeBytes().isEmpty()) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 4, nodeType_);
       }
+      if (!getHostBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 5, host_);
+      }
       if (!getSaltBytes().isEmpty()) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 5, salt_);
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 6, salt_);
       }
       if (!getSignBytes().isEmpty()) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 6, sign_);
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 7, sign_);
       }
       unknownFields.writeTo(output);
     }
@@ -6288,11 +6342,14 @@ public final class DMCluster {
       if (!getNodeTypeBytes().isEmpty()) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(4, nodeType_);
       }
+      if (!getHostBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(5, host_);
+      }
       if (!getSaltBytes().isEmpty()) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(5, salt_);
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(6, salt_);
       }
       if (!getSignBytes().isEmpty()) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(6, sign_);
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(7, sign_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -6318,6 +6375,8 @@ public final class DMCluster {
           .equals(other.getNodeName());
       result = result && getNodeType()
           .equals(other.getNodeType());
+      result = result && getHost()
+          .equals(other.getHost());
       result = result && getSalt()
           .equals(other.getSalt());
       result = result && getSign()
@@ -6341,6 +6400,8 @@ public final class DMCluster {
       hash = (53 * hash) + getNodeName().hashCode();
       hash = (37 * hash) + NODE_TYPE_FIELD_NUMBER;
       hash = (53 * hash) + getNodeType().hashCode();
+      hash = (37 * hash) + HOST_FIELD_NUMBER;
+      hash = (53 * hash) + getHost().hashCode();
       hash = (37 * hash) + SALT_FIELD_NUMBER;
       hash = (53 * hash) + getSalt().hashCode();
       hash = (37 * hash) + SIGN_FIELD_NUMBER;
@@ -6482,6 +6543,8 @@ public final class DMCluster {
 
         nodeType_ = "";
 
+        host_ = "";
+
         salt_ = "";
 
         sign_ = "";
@@ -6512,6 +6575,7 @@ public final class DMCluster {
         result.uniqueId_ = uniqueId_;
         result.nodeName_ = nodeName_;
         result.nodeType_ = nodeType_;
+        result.host_ = host_;
         result.salt_ = salt_;
         result.sign_ = sign_;
         onBuilt();
@@ -6569,6 +6633,10 @@ public final class DMCluster {
         }
         if (!other.getNodeType().isEmpty()) {
           nodeType_ = other.nodeType_;
+          onChanged();
+        }
+        if (!other.getHost().isEmpty()) {
+          host_ = other.host_;
           onChanged();
         }
         if (!other.getSalt().isEmpty()) {
@@ -6882,12 +6950,81 @@ public final class DMCluster {
         return this;
       }
 
+      private java.lang.Object host_ = "";
+      /**
+       * <code>string host = 5;</code>
+       */
+      public java.lang.String getHost() {
+        java.lang.Object ref = host_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          host_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string host = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getHostBytes() {
+        java.lang.Object ref = host_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          host_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string host = 5;</code>
+       */
+      public Builder setHost(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        host_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string host = 5;</code>
+       */
+      public Builder clearHost() {
+        
+        host_ = getDefaultInstance().getHost();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string host = 5;</code>
+       */
+      public Builder setHostBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        host_ = value;
+        onChanged();
+        return this;
+      }
+
       private java.lang.Object salt_ = "";
       /**
        * <pre>
        * </pre>
        *
-       * <code>string salt = 5;</code>
+       * <code>string salt = 6;</code>
        */
       public java.lang.String getSalt() {
         java.lang.Object ref = salt_;
@@ -6905,7 +7042,7 @@ public final class DMCluster {
        * <pre>
        * </pre>
        *
-       * <code>string salt = 5;</code>
+       * <code>string salt = 6;</code>
        */
       public com.google.protobuf.ByteString
           getSaltBytes() {
@@ -6924,7 +7061,7 @@ public final class DMCluster {
        * <pre>
        * </pre>
        *
-       * <code>string salt = 5;</code>
+       * <code>string salt = 6;</code>
        */
       public Builder setSalt(
           java.lang.String value) {
@@ -6940,7 +7077,7 @@ public final class DMCluster {
        * <pre>
        * </pre>
        *
-       * <code>string salt = 5;</code>
+       * <code>string salt = 6;</code>
        */
       public Builder clearSalt() {
         
@@ -6952,7 +7089,7 @@ public final class DMCluster {
        * <pre>
        * </pre>
        *
-       * <code>string salt = 5;</code>
+       * <code>string salt = 6;</code>
        */
       public Builder setSaltBytes(
           com.google.protobuf.ByteString value) {
@@ -6968,7 +7105,7 @@ public final class DMCluster {
 
       private java.lang.Object sign_ = "";
       /**
-       * <code>string sign = 6;</code>
+       * <code>string sign = 7;</code>
        */
       public java.lang.String getSign() {
         java.lang.Object ref = sign_;
@@ -6983,7 +7120,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string sign = 6;</code>
+       * <code>string sign = 7;</code>
        */
       public com.google.protobuf.ByteString
           getSignBytes() {
@@ -6999,7 +7136,7 @@ public final class DMCluster {
         }
       }
       /**
-       * <code>string sign = 6;</code>
+       * <code>string sign = 7;</code>
        */
       public Builder setSign(
           java.lang.String value) {
@@ -7012,7 +7149,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string sign = 6;</code>
+       * <code>string sign = 7;</code>
        */
       public Builder clearSign() {
         
@@ -7021,7 +7158,7 @@ public final class DMCluster {
         return this;
       }
       /**
-       * <code>string sign = 6;</code>
+       * <code>string sign = 7;</code>
        */
       public Builder setSignBytes(
           com.google.protobuf.ByteString value) {
@@ -8274,15 +8411,15 @@ public final class DMCluster {
       "\030\t \001(\t\"\225\001\n\014AskOtherConn\022\024\n\014cluster_name\030" +
       "\001 \001(\t\022\021\n\tunique_id\030\002 \001(\t\022\021\n\tnode_name\030\003 " +
       "\001(\t\022\021\n\tnode_type\030\004 \001(\t\022\014\n\004host\030\005 \001(\t\022\014\n\004" +
-      "port\030\006 \001(\005\022\014\n\004salt\030\007 \001(\t\022\014\n\004sign\030\010 \001(\t\"y" +
-      "\n\014NewNodeLogin\022\024\n\014cluster_name\030\001 \001(\t\022\021\n\t" +
-      "unique_id\030\002 \001(\t\022\021\n\tnode_name\030\003 \001(\t\022\021\n\tno" +
-      "de_type\030\004 \001(\t\022\014\n\004salt\030\005 \001(\t\022\014\n\004sign\030\006 \001(" +
-      "\t\"\177\n\013UserMsgHead\022\020\n\010src_node\030\001 \001(\t\022\020\n\010sr" +
-      "c_type\030\002 \001(\t\022\021\n\tsrc_actor\030\003 \001(\t\022\021\n\tdst_a" +
-      "ctor\030\004 \001(\t\022\022\n\ndst_method\030\005 \001(\t\022\022\n\nsessio" +
-      "n_id\030\006 \001(\005B\036\n\021fun.lib.actor.msgB\tDMClust" +
-      "erb\006proto3"
+      "port\030\006 \001(\005\022\014\n\004salt\030\007 \001(\t\022\014\n\004sign\030\010 \001(\t\"\207" +
+      "\001\n\014NewNodeLogin\022\024\n\014cluster_name\030\001 \001(\t\022\021\n" +
+      "\tunique_id\030\002 \001(\t\022\021\n\tnode_name\030\003 \001(\t\022\021\n\tn" +
+      "ode_type\030\004 \001(\t\022\014\n\004host\030\005 \001(\t\022\014\n\004salt\030\006 \001" +
+      "(\t\022\014\n\004sign\030\007 \001(\t\"\177\n\013UserMsgHead\022\020\n\010src_n" +
+      "ode\030\001 \001(\t\022\020\n\010src_type\030\002 \001(\t\022\021\n\tsrc_actor" +
+      "\030\003 \001(\t\022\021\n\tdst_actor\030\004 \001(\t\022\022\n\ndst_method\030" +
+      "\005 \001(\t\022\022\n\nsession_id\030\006 \001(\005B\036\n\021fun.lib.act" +
+      "or.msgB\tDMClusterb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -8325,7 +8462,7 @@ public final class DMCluster {
     internal_static_NewNodeLogin_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_NewNodeLogin_descriptor,
-        new java.lang.String[] { "ClusterName", "UniqueId", "NodeName", "NodeType", "Salt", "Sign", });
+        new java.lang.String[] { "ClusterName", "UniqueId", "NodeName", "NodeType", "Host", "Salt", "Sign", });
     internal_static_UserMsgHead_descriptor =
       getDescriptor().getMessageTypes().get(5);
     internal_static_UserMsgHead_fieldAccessorTable = new

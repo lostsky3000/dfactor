@@ -2,6 +2,8 @@
 
 # 最新
 
+- 监听集群内结点事件api  [示例](src/test/java/fun/lib/actor/example/ClusterNodeEvent.java)
+
 - 集群内广播功能 [示例](src/test/java/fun/lib/actor/example/ClusterBroadcast.java)
 
 - 集群间通信(包括rpc)多种序列化格式支持,String,Json,byte[],ByteBuf,自定义序列化对象  [示例](src/test/java/fun/lib/actor/example/ClusterParam.java)
@@ -168,6 +170,8 @@ net.doHttpServer(8080, new CbHttpServer() {
 [ClusterParam](src/test/java/fun/lib/actor/example/ClusterParam.java)  集群间通信(包括rpc)支持多种消息格式的示例
 
 [ClusterBroadcast](src/test/java/fun/lib/actor/example/ClusterBroadcast.java)  集群内广播示例
+
+[ClusterNodeEvent](src/test/java/fun/lib/actor/example/ClusterNodeEvent.java)  监听集群内结点事件示例
 
 
 ## FAQ

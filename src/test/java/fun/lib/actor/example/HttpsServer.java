@@ -5,7 +5,7 @@ import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorDefine;
 import fun.lib.actor.core.DFActorManager;
 import fun.lib.actor.po.DFTcpServerCfg;
-import fun.lib.actor.po.SslConfig;
+import fun.lib.actor.po.DFSSLConfig;
 /**
  * HttpsServer示例
  * @author lostsky
@@ -28,7 +28,7 @@ public final class HttpsServer {
 			String pemPath = "/var/dfactor/private.pem";
 			
 			net.doHttpServer(DFTcpServerCfg.newCfg(443)
-								.setSslConfig(SslConfig.newCfg()
+								.setSslConfig(DFSSLConfig.newCfg()
 												.certPath(certPath)
 												.pemPath(pemPath)), 
 							new CbHttpServer() {

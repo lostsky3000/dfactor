@@ -13,6 +13,7 @@ import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.api.cb.CbCallHereBlock;
+import fun.lib.actor.api.cb.CbNode;
 import fun.lib.actor.api.cb.CbRpc;
 import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.define.RpcError;
@@ -307,6 +308,24 @@ public final class DFActorSystemWrap implements DFActorSystem{
 			return _mapRpcCb.remove(sessionId);
 		}
 		return null;
+	}
+	@Override
+	public int listenNodeAll(CbNode callback) {
+		RegNodeReq req = new RegNodeReq(RegNodeReq.ALL, null, id, callback);
+		return _mgr.send(id, DFClusterActor.NAME, 0, DFActorDefine.SUBJECT_USER, 
+				DFClusterActor.CMD_REG_NODE_LISTENER, req, true, null, null);
+	}
+	@Override
+	public int listenNodeByType(String nodeType, CbNode callback) {
+		RegNodeReq req = new RegNodeReq(RegNodeReq.NODE_TYPE, nodeType, id, callback);
+		return _mgr.send(id, DFClusterActor.NAME, 0, DFActorDefine.SUBJECT_USER, 
+				DFClusterActor.CMD_REG_NODE_LISTENER, req, true, null, null);
+	}
+	@Override
+	public int listenNodeByName(String nodeName, CbNode callback) {
+		RegNodeReq req = new RegNodeReq(RegNodeReq.NODE_NAME, nodeName, id, callback);
+		return _mgr.send(id, DFClusterActor.NAME, 0, DFActorDefine.SUBJECT_USER, 
+				DFClusterActor.CMD_REG_NODE_LISTENER, req, true, null, null);
 	}
 	
 	

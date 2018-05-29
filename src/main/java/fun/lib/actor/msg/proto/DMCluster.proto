@@ -63,9 +63,10 @@ message NewNodeLogin{
 	string unique_id = 2;
 	string node_name = 3;
 	string node_type = 4;
+	string host = 5;
 	//
-	string salt = 5;
-	string sign = 6;
+	string salt = 6;
+	string sign = 7;
 }
 
 

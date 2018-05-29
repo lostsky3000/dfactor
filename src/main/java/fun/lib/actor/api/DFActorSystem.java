@@ -6,6 +6,7 @@ import com.google.protobuf.GeneratedMessageV3;
 import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHereBlock;
+import fun.lib.actor.api.cb.CbNode;
 import fun.lib.actor.api.cb.CbRpc;
 import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.api.cb.CbCallHere;
@@ -348,6 +349,27 @@ public interface DFActorSystem {
 	 * @return
 	 */
 	public int getAllNodeNum();
+	
+	/**
+	 * 监听所有结点事件
+	 * @param callback 回调
+	 * @return
+	 */
+	public int listenNodeAll(CbNode callback);
+	/**
+	 * 监听指定类型结点事件
+	 * @param nodeType 结点类型
+	 * @param callback 回调
+	 * @return
+	 */
+	public int listenNodeByType(String nodeType, CbNode callback);
+	/**
+	 * 监听指定名字结点事件
+	 * @param nodeName 结点名字
+	 * @param callback 回调
+	 * @return
+	 */
+	public int listenNodeByName(String nodeName, CbNode callback);
 	
 	/**
 	 * 结束当前actor

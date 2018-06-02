@@ -76,7 +76,7 @@ public class DFActor implements CallHereContext{
 	 * @param cmd 消息码
 	 * @param payload 消息体
 	 * @param cb 发送方是否有回调，非null则直接调用回调
-	 * @return
+	 * @return 0
 	 */
 	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb){return MSG_AUTO_RELEASE;};
 	
@@ -87,7 +87,7 @@ public class DFActor implements CallHereContext{
 	 * @param srcActor 发送actor
 	 * @param cmd 消息码
 	 * @param payload 消息体
-	 * @return
+	 * @return 0
 	 */
 	public int onClusterMessage(String srcType, String srcNode, String srcActor, int cmd, Object payload){return MSG_AUTO_RELEASE;};
 	

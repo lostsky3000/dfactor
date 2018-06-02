@@ -8,14 +8,14 @@ public interface DFActorDb {
 	/**
 	 * 初始化db连接池
 	 * @param cfg db连接池牌配置
-	 * @return >0 有效的连接池id   <=0 创建连接池失败
+	 * @return 大于0 有效的连接池id   小于等于0 创建连接池失败
 	 */
 	public int initPool(DFDbCfg cfg);
 	
 	/**
 	 * 获取一个db连接
 	 * @param id 连接池id
-	 * @return
+	 * @return 连接
 	 */
 	public Connection getConn(int id);
 	/**

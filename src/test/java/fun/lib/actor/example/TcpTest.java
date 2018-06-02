@@ -63,9 +63,8 @@ public class TcpTest {
 			final int msgLen = msg.readableBytes();
 			log.info("recv cli msg, len="+msgLen);
 			//构造返回的消息
-			final ByteBuf bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen+2);
+			final ByteBuf bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen);
 			//拷贝收到的消息数据
-			bufOut.writeShort(msgLen); //消息长度
 			bufOut.writeBytes(msg);
 			//向客户端返回
 			channel.write(bufOut);
@@ -128,19 +127,8 @@ public class TcpTest {
 		@Override
 		public void onTimeout(int requestId) {
 			if(svrChannel != null){ //已连接到服务器
-				//构造发送的数据
-				final String str = "hello server, "+System.currentTimeMillis();
-				try {
-					byte[] arrByte = str.getBytes("utf-8");
-					final ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(arrByte.length+2);
-					buf.writeShort(arrByte.length);  //消息长度
-					buf.writeBytes(arrByte);
-					//向服务端发送
-					svrChannel.write(buf);
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				//发送数据
+				svrChannel.write("hello server, "+System.currentTimeMillis());
 			}
 			//启动下一个定时器
 			timer.timeout(1000, requestId);

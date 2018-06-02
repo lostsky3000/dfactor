@@ -364,10 +364,9 @@ public final class DFClusterManager {
 			if(userData != null){
 				dataLen = userData.length;
 			}
-			//msgLen(2) + cmd(2) + headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
-			int msgLen = 2 + 2 + headLen + 4 + 1 + dataLen;
-			ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(2 + msgLen);  
-			buf.writeShort(msgLen);
+			//cmd(2) + headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
+			int msgLen = 2 + headLen + 4 + 1 + dataLen;
+			ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen);
 			buf.writeShort(DMCmd.UserMsg);
 			buf.writeShort(headLen);
 			buf.writeBytes(bufHead);
@@ -413,10 +412,9 @@ public final class DFClusterManager {
 					dataLen += 2 + clzLen;
 				}
 			}
-			//msgLen(2) + cmd(2) + headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
-			int msgLen = 2 + 2 + headLen + 4 + 1 + dataLen;
-			ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(2 + msgLen);  
-			buf.writeShort(msgLen);
+			//cmd(2) + headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
+			int msgLen = 2 + headLen + 4 + 1 + dataLen;
+			ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen);
 			buf.writeShort(DMCmd.UserMsg);
 			buf.writeShort(headLen);
 			buf.writeBytes(bufHead);
@@ -460,10 +458,9 @@ public final class DFClusterManager {
 			int headLen = bufHead.length;
 			int dataLen = 0;
 			
-			//msgLen(2) + cmd(2) + headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
-			int msgLen = 2 + 2 + headLen + 4 + 1 + dataLen;
-			ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(2 + msgLen);  
-			buf.writeShort(msgLen);
+			//cmd(2) + headLen(2) + head(N) + userCmd(4) + userDataType(1) +  userData(N)
+			int msgLen = 2 + headLen + 4 + 1 + dataLen;
+			ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(msgLen);
 			buf.writeShort(cmd);
 			buf.writeShort(headLen);
 			buf.writeBytes(bufHead);

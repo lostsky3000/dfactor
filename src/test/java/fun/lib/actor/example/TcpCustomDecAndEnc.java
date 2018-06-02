@@ -90,8 +90,7 @@ public class TcpCustomDecAndEnc {
 			ByteBuf bufOut = null;
 			try {
 				byte[] bufRaw = ((String)msgRaw).getBytes("utf-8");
-				bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(bufRaw.length+2); //分配内存
-				bufOut.writeShort(bufRaw.length); //消息长度
+				bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(bufRaw.length); //分配内存
 				bufOut.writeBytes(bufRaw); //写入数据
 			} catch (UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block
@@ -153,8 +152,7 @@ public class TcpCustomDecAndEnc {
 				final String str = "hello server, "+System.currentTimeMillis();
 				try {
 					byte[] arrByte = str.getBytes("utf-8");
-					final ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(arrByte.length+2);
-					buf.writeShort(arrByte.length); //消息长度
+					final ByteBuf buf = PooledByteBufAllocator.DEFAULT.ioBuffer(arrByte.length);
 					buf.writeBytes(arrByte);
 					//向服务端发送
 					svrChannel.write(buf);

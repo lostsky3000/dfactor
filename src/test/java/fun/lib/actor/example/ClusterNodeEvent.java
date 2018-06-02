@@ -17,7 +17,7 @@ import fun.lib.actor.po.DFNode;
 
 public final class ClusterNodeEvent {
 	
-	private static int IDX_NODE = 0;  //0~3
+	private static int IDX_NODE = 3;  //0~3
 	private static final String[] ARR_NODE_NAME = {"game-1", "game-2", "db-1", "chat-1"};
 	private static final String[] ARR_NODE_TYPE = {"game", "game", "db", "chat"};
 	

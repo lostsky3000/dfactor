@@ -2,11 +2,7 @@ package fun.lib.actor.api;
 
 import java.net.InetSocketAddress;
 
-/**
- * tcp事件分发器
- * @author lostsky
- *
- */
+
 public interface DFActorTcpDispatcher {
 	/**
 	 * 创建连接通知(io线程中回调)
@@ -29,7 +25,7 @@ public interface DFActorTcpDispatcher {
 	 * @param requestId 创建连接时的唯一标识
 	 * @param channelId 会话id
 	 * @param addrRemote 远程连接地址
-	 * @param msg
+	 * @param msg 消息
 	 * @return 接收消息的actorId, 0则不分发
 	 */
 	public int onQueryMsgActorId(int requestId, int channelId, InetSocketAddress addrRemote, Object msg);

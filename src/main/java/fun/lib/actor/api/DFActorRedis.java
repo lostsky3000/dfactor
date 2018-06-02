@@ -7,14 +7,14 @@ public interface DFActorRedis {
 	/**
 	 * 初始化redis连接池
 	 * @param cfg redis连接池牌配置
-	 * @return >0 有效的连接池id   <=0 创建连接池失败
+	 * @return 大于 有效的连接池id   小于等于 创建连接池失败
 	 */
 	public int initPool(DFRedisCfg cfg);
 	
 	/**
 	 * 获取一个redis连接
 	 * @param id 连接池id
-	 * @return
+	 * @return 连接
 	 */
 	public Jedis getConn(int id);
 	

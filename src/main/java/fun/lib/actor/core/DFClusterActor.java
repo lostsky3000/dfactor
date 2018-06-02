@@ -760,8 +760,7 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 	}
 	private void _doSendTcp(int cmd, byte[]buf, DFTcpChannel channel){
 		int dataLen = buf.length;
-		ByteBuf bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(2 + 2 + dataLen);
-		bufOut.writeShort(2 + dataLen);
+		ByteBuf bufOut = PooledByteBufAllocator.DEFAULT.ioBuffer(2 + dataLen);
 		bufOut.writeShort(cmd);
 		bufOut.writeBytes(buf);
 		channel.write(bufOut);

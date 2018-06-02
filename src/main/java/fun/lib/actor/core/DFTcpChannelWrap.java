@@ -6,6 +6,8 @@ import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFTcpEncoder;
 import fun.lib.actor.api.http.DFHttpCliReq;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -14,6 +16,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.util.CharsetUtil;
 
 public final class DFTcpChannelWrap implements DFTcpChannel{
 
@@ -90,11 +93,35 @@ public final class DFTcpChannelWrap implements DFTcpChannel{
 					||_tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
 				){ //底层为二进制buff
 			if(_encoder != null){ //有编码器
-				Object msgOut = _encoder.onEncode(msg);
-				_channel.writeAndFlush(msgOut);
-			}else{  //无编码器
-				_channel.writeAndFlush(msg);
+				msg = _encoder.onEncode(msg);	
 			}
+			if(msg instanceof JSONObject){
+				msg = ((JSONObject)msg).toJSONString();
+			}
+			if(msg instanceof String){
+				byte[] bytes = ((String)msg).getBytes(CharsetUtil.UTF_8);
+				int len = bytes.length;
+				msg = PooledByteBufAllocator.DEFAULT.ioBuffer(len);
+				((ByteBuf)msg).writeBytes(bytes);
+				if(_tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH){
+					ByteBuf bufHead = PooledByteBufAllocator.DEFAULT.ioBuffer(2);
+					bufHead.writeShort(len);
+					ByteBuf bufPayload = (ByteBuf) msg;
+					msg = PooledByteBufAllocator.DEFAULT.compositeBuffer();
+					((CompositeByteBuf)msg).addComponents(true, bufHead, bufPayload);
+				}
+			}else if( msg instanceof ByteBuf ){
+				if(_tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH){
+					ByteBuf bufHead = PooledByteBufAllocator.DEFAULT.ioBuffer(2);
+					int len = ((ByteBuf)msg).readableBytes();
+					bufHead.writeShort( len );
+					ByteBuf bufPayload = (ByteBuf) msg;
+//					_channel.write(bufHead);
+					msg = PooledByteBufAllocator.DEFAULT.compositeBuffer();
+					((CompositeByteBuf)msg).addComponents(true, bufHead, bufPayload);
+				}
+			}
+			_channel.writeAndFlush(msg);
 		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){
 			if(msg instanceof DFHttpSvrRspWrap){
 				DFHttpSvrRspWrap rsp = (DFHttpSvrRspWrap) msg;

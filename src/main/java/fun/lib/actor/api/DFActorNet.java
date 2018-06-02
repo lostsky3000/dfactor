@@ -80,15 +80,15 @@ public interface DFActorNet {
 	 * 建立tcp连接
 	 * @param cfg 连接参数
 	 * @param requestId 该连接的标识
-	 * @return
+	 * @return 0
 	 */
 	public int doTcpConnect(final DFTcpClientCfg cfg, final int requestId);
 	/**
 	 * 建立tcp连接
 	 * @param cfg 连接参数
 	 * @param requestId 该连接的标识
-	 * @param notify 网络消息及事件分发器
-	 * @return
+	 * @param dispatcher 分发器
+	 * @return 0
 	 */
 	public int doTcpConnect(final DFTcpClientCfg cfg, final int requestId, final DFActorTcpDispatcher dispatcher);
 	//udp

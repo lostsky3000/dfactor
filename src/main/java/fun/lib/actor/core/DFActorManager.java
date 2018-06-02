@@ -183,7 +183,7 @@ public final class DFActorManager {
 	/**
 	 * 启动dfactor
 	 * @param cfg 启动配置
-	 * @param 入口actor配置
+	 * @param prop 入口actor配置
 	 * @return 创建成功or失败
 	 */
 	public boolean start(DFActorManagerConfig cfg, ActorProp prop){
@@ -292,7 +292,7 @@ public final class DFActorManager {
 	 * @param dirJar 外部jar文件所在目录
 	 * @param entryActorFullName 启动actor全路径名
 	 * @param params 启动actor参数
-	 * @return
+	 * @return 是否成功
 	 */
 	public boolean startAsDaemon(DFActorManagerConfig cfg, String dirJar, String entryActorFullName, Object params){
 		boolean bRet = false;

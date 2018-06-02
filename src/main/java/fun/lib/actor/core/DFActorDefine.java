@@ -7,8 +7,8 @@ public final class DFActorDefine {
 	public static final int CONSUME_AUTO = 0;
 	public static final int CONSUME_SINGLE = 1;
 //	public static final int CONSUME_QUARTER = 2;
-	public static final int CONSUME_HALF = 3;
-	public static final int CONSUME_ALL = 4;
+	public static final int CONSUME_HALF = 2;
+	public static final int CONSUME_ALL = 3;
 		
 	//
 	public static final int SUBJECT_START = 1;

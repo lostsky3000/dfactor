@@ -20,12 +20,12 @@ public interface DFActorTimer {
 	
 	/**
 	 * 获取计时器启动时间，单位毫秒
-	 * @return
+	 * @return 时间
 	 */
 	public long getTimeStart();
 	/**
 	 * 获取计时器当前时间，单位毫秒
-	 * @return
+	 * @return 时间
 	 */
 	public long getTimeNow();
 }

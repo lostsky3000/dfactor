@@ -11,19 +11,19 @@ public interface RpcContext {
 	
 	/**
 	 * 是否来自集群内其它结点调用
-	 * @return
+	 * @return 是/否
 	 */
 	public boolean isRemote();
 	
 	/**
 	 * 获取调用方结点名字(集群内远程调用时有值)
-	 * @return
+	 * @return 名字
 	 */
 	public String getSrcNode();
 	
 	/**
 	 * 调用方actor名字
-	 * @return
+	 * @return 名字
 	 */
 	public String getSrcActor();
 }

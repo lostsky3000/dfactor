@@ -12,6 +12,10 @@
 
 - 集群功能上线，去中心化自动组网，集群内结点互相发现互相通信  [入门示例](src/test/java/fun/lib/actor/example/ClusterSimple.java)
 
+## 开发中
+
+- js脚本开发支持
+
 
 # dfactor
 
@@ -176,9 +180,7 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 ## FAQ
 
-## 开发中
 
-- 集群功能，服务注册自动发现，远程方法调用
 
 ## 后续计划
 

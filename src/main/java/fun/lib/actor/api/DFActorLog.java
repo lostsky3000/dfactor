@@ -2,11 +2,11 @@ package fun.lib.actor.api;
 
 public interface DFActorLog {
 
-	public void verb(final String msg);
-	public void debug(final String msg);
-	public void info(final String msg);
-	public void warn(final String msg);
-	public void error(final String msg);
-	public void fatal(final String msg);
+	public void verb(Object msg);
+	public void debug(Object msg);
+	public void info(Object msg);
+	public void warn(Object msg);
+	public void error(Object msg);
+	public void fatal(Object msg);
 	
 }

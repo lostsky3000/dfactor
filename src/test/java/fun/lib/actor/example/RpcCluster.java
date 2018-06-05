@@ -1,6 +1,6 @@
 package fun.lib.actor.example;
 
-import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.RpcContext;
 import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.core.DFActor;
@@ -16,7 +16,7 @@ import fun.lib.actor.po.DFActorManagerConfig;
  *
  */
 public final class RpcCluster {
-	private static int NODE_IDX = 1; // 0:以game-1身份启动    1:以game-2身份启动
+	private static int NODE_IDX = 0; // 0:以game-1身份启动    1:以game-2身份启动
 	private static final String[] ARR_NODE_NAME = {"game-1", "game-2"};
 	private static final String[] ARR_ACTOR_NAME = {"AskActor", "AnswerActor"};
 	
@@ -42,11 +42,11 @@ public final class RpcCluster {
 		@Override
 		public void onTimeout(int requestId) {
 			if(sys.isNodeOnline(ARR_NODE_NAME[1])){  //game-2 is online
-				RpcFuture future = sys.callClusterMethod(ARR_NODE_NAME[1], ARR_ACTOR_NAME[1], "doMath", 168, "square"); 
+				RpcFuture future = sys.rpcNode(ARR_NODE_NAME[1], ARR_ACTOR_NAME[1], "doMath", 168, "square"); 
 				if(future.isSendSucc()){  //调用发送成功，可添加结果监听
-					future.addListener(new CbRpc() {
+					future.addListener(new Cb() {
 						@Override
-						public int onResponse(int cmd, Object payload) {
+						public int onCallback(int cmd, Object payload) {
 							log.info("rpcResponse: "+payload);
 							return 0;
 						}
@@ -67,11 +67,11 @@ public final class RpcCluster {
 			super(id, name, isBlockActor);
 		}
 		
-		//被调用方法需满足如下参数列表: public (int,Object,RpcContext)
-		public void doMath(int cmd, Object payload, RpcContext ctx){
-			log.info("recv ask, cmd="+cmd+", payload="+payload+", srcNode="+ctx.getSrcNode()+", srcActor="+ctx.getSrcActor());
+		//被调用方法需满足如下参数列表: public (int,Object)
+		public void doMath(int cmd, Object payload){
+			log.info("recv ask, cmd="+cmd+", payload="+payload+", srcNode="+sys.getCurSrcNode()+", srcActor="+sys.getCurSrcActor());
 			//响应请求
-			ctx.response(0, "result: square("+cmd+")="+ cmd*cmd);
+			sys.ret(0, "result: square("+cmd+")="+ cmd*cmd);
 		}
 	}
 

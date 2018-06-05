@@ -1,6 +1,6 @@
 package fun.lib.actor.example;
 
-import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.RpcContext;
 import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.core.DFActor;
@@ -34,11 +34,11 @@ public final class RpcLocal {
 		}
 		@Override
 		public void onTimeout(int requestId) {
-			RpcFuture future = sys.callMethod(answerId, "doMath", 168, "square");
+			RpcFuture future = sys.rpc(answerId, "doMath", 168, "square");
 			if(future.isSendSucc()){ //发送消息成功  可选择添加回调
-				future.addListener(new CbRpc() {
+				future.addListener(new Cb() {
 					@Override
-					public int onResponse(int cmd, Object payload) {
+					public int onCallback(int cmd, Object payload) {
 						log.info("recv answer: "+ payload);
 						return 0;
 					}
@@ -57,11 +57,12 @@ public final class RpcLocal {
 		public AnswerActor(Integer id, String name, Boolean isBlockActor) {
 			super(id, name, isBlockActor);
 		}
-		//被调用方法需满足如下参数列表: public (int,Object,RpcContext)
-		public void doMath(int cmd, Object payload, RpcContext ctx){
+		//被调用方法需满足如下参数列表: public (int,Object)
+		public void doMath(int cmd, Object payload){
 			log.info("recv ask: cmd="+cmd+", payload="+payload);
 			//响应请求
-			ctx.response(0, "square("+cmd+")="+cmd*cmd+", now="+System.currentTimeMillis());
+			sys.ret(0, "square("+cmd+")="+cmd*cmd+", now="+System.currentTimeMillis());
+//			ctx.response(0, "square("+cmd+")="+cmd*cmd+", now="+System.currentTimeMillis());
 		}
 	}
 }

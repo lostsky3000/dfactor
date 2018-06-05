@@ -117,6 +117,8 @@ public final class DFActorManagerJs{
 	private ActorProp _propActorEntry = null;
 	private String _entryActor = null;
 	private String _entryActorName = null;
+	private String _customDir = null;
+	private String _protoDir = null;
 	
 	public boolean start(String runDir){
 		boolean bRet = false;
@@ -131,20 +133,23 @@ public final class DFActorManagerJs{
 				printError("cfgDir not exist: "+dirCfg.getAbsolutePath());
 				break;
 			}
-			if(!_checkProtobuf(dirRun)){
-				printError("parse proto failed");
-				break;
-			}
 			if(!_initEngine()){
 				printError("initJsEngine failed");
 				break;
 			}
 			print("initJsEngine succ");
-			if(!_initCfg(dirCfg) || _cfgMgr==null || _propActorEntry==null){
+			if(!_initCfg(dirCfg, dirRun) || _cfgMgr==null || _propActorEntry==null){
 				printError("initCfg failed");
 				break;
 			}
 			print("initCfg succ");
+			if(_protoDir != null){ //has protobuf define
+				if(!_checkProtobuf(dirRun)){
+					printError("parse proto failed");
+					break;
+				}
+			}
+			
 			//init js
 			if(!_initScript(dirRun)){
 				printError("initScript failed");
@@ -170,7 +175,7 @@ public final class DFActorManagerJs{
 				printError("init sys script failed");
 				break;
 			}
-			File dirCustom = new File(dirRun.getAbsolutePath() + File.separator + "custom");
+			File dirCustom = new File(dirRun.getAbsolutePath() + File.separator + _customDir);
 			if(!dirCustom.exists() || !dirCustom.isDirectory()){
 				printError("invalid custom dir: "+dirCustom.getAbsolutePath());
 				break;
@@ -316,14 +321,26 @@ public final class DFActorManagerJs{
 		} while (false);
 		return bRet;
 	}
-	private boolean _initCfg(File dirCfg){
+	private boolean _initCfg(File dirCfg, File dirRun){
 		boolean bRet = false;
 		do {
 			try{
 				Properties propBase = new Properties();
 				propBase.load(new FileReader(dirCfg.getAbsolutePath()+File.separator+"dfactor.conf"));
 				_cfgMgr = new DFActorManagerConfig();
-				
+				//
+				_customDir = propBase.getProperty("custom_dir");
+				if(_customDir == null){
+					printError("no custom dir conf found!");break;
+				}
+				_customDir = _customDir.trim();
+				//
+				_protoDir = propBase.getProperty("proto_dir");
+				if(_protoDir != null){
+					_protoDir = _protoDir.trim();
+					if(_protoDir.equals("")) _protoDir = null;
+				}
+				//
 				_entryActor = propBase.getProperty("entry_actor");
 				if(_entryActor != null){
 					_entryActor = _entryActor.trim();
@@ -511,7 +528,7 @@ public final class DFActorManagerJs{
 	private boolean _checkProtobuf(File dirRun){
 		boolean bRet = false;
 		do {
-			File dirProto = new File(dirRun.getAbsolutePath() + File.separator + "proto");
+			File dirProto = new File(dirRun.getAbsolutePath() + File.separator + _protoDir);
 			LinkedList<File> lsFile = new LinkedList<>();
 			if(dirProto.exists() && dirProto.isDirectory()){  //遍历proto
 				_iteratorProto(dirProto, lsFile);

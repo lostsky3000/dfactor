@@ -22,7 +22,7 @@ import fun.lib.actor.api.cb.RpcContext;
 import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.cb.CbHttpServer;
 import fun.lib.actor.api.cb.CbNode;
-import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpSvrReq;
@@ -164,10 +164,12 @@ public final class DFActorWrap {
 						}
 					}else if(DFActorDefine.SUBJECT_USER == msg.subject){
 						_procUserMsg(msg);
+					}else if(DFActorDefine.SUBJECT_SCRIPT == msg.subject){
+						_actor.onScriptMessage(msg);
 					}
 					else if(msg.subject == DFActorDefine.SUBJECT_NET){
 						if(msg.cmd == DFActorDefine.NET_UDP_MESSAGE){ //udp msg
-							final int ret = _actor.onUdpServerRecvMsg(msg.sessionId, (DFUdpChannel) msg.context, (DatagramPacket) msg.payload);
+							int ret = _actor.onUdpServerRecvMsg(msg.sessionId, (DFUdpChannel) msg.context, (DatagramPacket) msg.payload);
 							if(ret != DFActorDefine.MSG_MANUAL_RELEASE){ //auto release
 								ReferenceCountUtil.release(msg.payload);
 							}
@@ -255,21 +257,16 @@ public final class DFActorWrap {
 								method = _mapMethod.get(msg.method);
 							}
 							if(method == null){
-								method = _actor.getClass().getMethod(msg.method, int.class, Object.class, RpcContext.class);
+								method = _actor.getClass().getMethod(msg.method, int.class, Object.class);
 								method.setAccessible(true);
 								_mapMethod.put(msg.method, method);
 							}
-							method.invoke(_actor, msg.cmd, msg.payload, 
-									new DFRpcContext((String)msg.context, (String)msg.userHandler, msg.sessionId));
-						}else{   //reponse
-							CbRpc cb = _wrapSys.procRPCCb(msg.sessionId);
-							if(cb != null){
-								cb.onResponse(msg.cmd, msg.payload);
-							}
-							cb = null;
+							_actor._hasRet = false;
+							_actor._lastRpcCtx = new DFRpcContext((String)msg.context, (String)msg.userHandler, msg.sessionId);
+							method.invoke(_actor, msg.cmd, msg.payload);
 						}
-					}else if(msg.subject == DFActorDefine.SUBJECT_RPC_FAIL){
-						CbRpc cb =_wrapSys.procRPCCb(msg.sessionId);
+					}else if(msg.subject == DFActorDefine.SUBJECT_CB_FAILED){
+						Cb cb =_wrapSys.procCb(msg.sessionId);
 						if(cb != null){
 							cb.onFailed(msg.cmd);
 						}
@@ -323,47 +320,53 @@ public final class DFActorWrap {
 	
 	private void _procUserMsg(DFActorMessage msg){
 		_actor._lastSrcId = msg.srcId;
+		_actor._lastSessionId = msg.sessionId;
+		_actor._hasRet = false;
 		boolean noCb = true;
-		CbActorReq queryCb = null;
-		Object userHandler = msg.userHandler;
-		if(userHandler != null){ //callback
-			if(userHandler instanceof CbCallHere){
-				CbCallHere tmpCb = (CbCallHere) userHandler;
-				if(msg.isCb){
-					tmpCb.onCallback(msg.cmd, msg.payload);
-				}else{
-					_actor._hasCalledback = false;
-					_actor._lastUserHandler = userHandler;
-					tmpCb.inOtherActor(msg.cmd, msg.payload, _actor);
-					_actor._hasCalledback = true;
-					_actor._lastUserHandler = null;
-				}
+		if(msg.sessionId > 0){  //req && rsp
+			if(msg.isCb){
 				noCb = false;
-			}else if(userHandler instanceof CbCallHereBlock){
-				CbCallHereBlock tmpCb = (CbCallHereBlock) userHandler;
-				if(msg.isCb){
-					tmpCb.onCallback(msg.cmd, msg.payload);
-				}else{
-					_actor._hasCalledback = false;
-					_actor._lastUserHandler = userHandler;
-					tmpCb.inBlockActor(msg.cmd, msg.payload, _actor);
-					_actor._hasCalledback = true;
-					_actor._lastUserHandler = null;
-				}
-				noCb = false;
-			}
-			else{
-				if(msg.isCb){ //callback
-					CbActorRsp cb = (CbActorRsp) userHandler;
+				DFActorSystemWrap sysWrap = (DFActorSystemWrap) _actor.sys;
+				Cb cb = sysWrap.procCb(msg.sessionId);
+				if(cb != null){
+					_actor._hasRet = true;
 					cb.onCallback(msg.cmd, msg.payload);
+				}
+			}
+		}else{  //callHere 
+			Object userHandler = msg.userHandler;
+			if(userHandler != null){ //callback
+				if(userHandler instanceof CbCallHere){
 					noCb = false;
-				}else{ //query, has callback func
-					queryCb = new DFMsgBackWrap(msg.srcId, userHandler);
+					CbCallHere tmpCb = (CbCallHere) userHandler;
+					if(msg.isCb){
+						_actor._hasRet = true;
+						tmpCb.onCallback(msg.cmd, msg.payload);
+					}else{
+						_actor._hasCalledback = false;
+						_actor._lastUserHandler = userHandler;
+						tmpCb.inOtherActor(msg.cmd, msg.payload, _actor);
+						_actor._hasCalledback = true;
+						_actor._lastUserHandler = null;
+					}
+				}else if(userHandler instanceof CbCallHereBlock){
+					noCb = false;
+					CbCallHereBlock tmpCb = (CbCallHereBlock) userHandler;
+					if(msg.isCb){
+						_actor._hasRet = true;
+						tmpCb.onCallback(msg.cmd, msg.payload);
+					}else{
+						_actor._hasCalledback = false;
+						_actor._lastUserHandler = userHandler;
+						tmpCb.inBlockActor(msg.cmd, msg.payload, _actor);
+						_actor._hasCalledback = true;
+						_actor._lastUserHandler = null;
+					}
 				}
 			}
 		}
 		if(noCb){
-			_actor.onMessage(msg.srcId, msg.cmd, msg.payload, queryCb); //msg.sessionId, msg.subject, 
+			_actor.onMessage(msg.cmd, msg.payload, msg.srcId); //msg.sessionId, msg.subject, 
 		}
 	}
 	
@@ -455,7 +458,8 @@ public final class DFActorWrap {
 			}
 			_hasRsp = true;
 			if(_srcNode == null){  //local 
-				_actorMgr.send(_actorId, _srcActor, _sid, DFActorDefine.SUBJECT_RPC, cmd, payload, true, null, null);
+//				_actorMgr.send(_actorId, _srcActor, _sid, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
+				_actorMgr.send(_actorId, _srcActor, _sid, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, null, null, true);
 			}else{  //remote
 				if(payload instanceof String){
 					DFClusterManager.get().sendToNode(_actor.name, _srcNode, _srcActor, null, _sid, cmd, (String) payload);

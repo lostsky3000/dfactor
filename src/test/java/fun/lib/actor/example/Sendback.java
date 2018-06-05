@@ -29,12 +29,12 @@ public final class Sendback {
 		@Override
 		public void onTimeout(int requestId) {
 			//send req to backActor
-			sys.send(backId, 1001, new String("reqData"));
+			sys.to(backId, 1001, new String("reqData"));
 			//continue timeout
 			timer.timeout(1000, 1);
 		}	
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+		public int onMessage(int cmd, Object payload, int srcId) {
 			log.info("recv back msg, cmd="+cmd);
 			return MSG_AUTO_RELEASE;
 		}
@@ -47,11 +47,11 @@ public final class Sendback {
 	//
 	private static class BackActor extends DFActor{
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+		public int onMessage(int cmd, Object payload, int srcId) {
 			log.info("recv req msg, cmd="+cmd+", data="+payload);
 			//sendback
-			sys.sendback(1002, null);
-			return MSG_AUTO_RELEASE;
+			sys.ret(1002, null);
+			return 0;
 		}
 		public BackActor(Integer id, String name, Boolean isBlockActor) {
 			super(id, name, isBlockActor);

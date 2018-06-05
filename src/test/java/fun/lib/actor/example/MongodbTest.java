@@ -4,6 +4,7 @@ import com.mongodb.client.MongoDatabase;
 
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
@@ -34,15 +35,21 @@ public final class MongodbTest {
 			int poolId = mongo.initPool(cfg);
 			//create dbActor to do dbStuff
 			final int dbActor = sys.createActor(DbActor.class, poolId);
+			
 			//timeout
 			CbTimeout cb = new CbTimeout() {
 				@Override
 				public void onTimeout() {
 					//send db stuff to dbActor
-					sys.call(dbActor, 0, null, new CbActorRsp() {
+					sys.call(dbActor, 0, null, new Cb() {
 						@Override
 						public int onCallback(int cmd, Object payload) {
 							log.info(payload.toString());
+							return 0;
+						}
+						@Override
+						public int onFailed(int code) {
+							log.error("call failed: "+code);
 							return 0;
 						}
 					});
@@ -66,9 +73,9 @@ public final class MongodbTest {
 			poolId = (int) param;
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+		public int onMessage(int cmd, Object payload, int srcId) {
 			MongoDatabase db = mongo.getDatabase(poolId, "db_test");
-			cb.callback(0, "recv mongodb rsp, dbName="+db.getName());
+			sys.ret(0, "recv mongodb rsp, dbName="+db.getName());
 			return 0;
 		}
 	}

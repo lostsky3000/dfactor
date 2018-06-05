@@ -345,14 +345,21 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 		if(head.getSessionId() == 0){  //not call method
 			ret = _mgrActor.send(id, head.getDstActor(), 0, DFActorDefine.SUBJECT_CLUSTER, userCmd, payload, true, 
 					head.getSrcNode(), head.getSrcActor(), head.getSrcType(), null);
-		}else{  //call method
+		}else{  //req <-> rsp
 			String dstMethod = head.getDstMethod();
 			dstMethod = (dstMethod==null||dstMethod.equals(""))?null:dstMethod;
-			ret = _mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_RPC, userCmd, payload, true, 
-					head.getSrcNode(), head.getSrcActor(), head.getSrcType(), dstMethod);
-			if(ret != 0 && dstMethod != null){  //send failed, notify src
-				DFClusterManager.get().sendToNodeInternal(this.name, head.getSrcNode(), 
-						head.getSrcActor(), head.getSessionId(), DMCmd.RpcFail);
+			if(dstMethod == null){   //response
+//				ret = _mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_USER, userCmd, payload, true, 
+//						null, null, null, null);
+				ret = _mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_USER, 
+						userCmd, payload, true, null, null, null, null, true);
+			}else{  //req
+				ret = _mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_RPC, userCmd, payload, true, 
+						head.getSrcNode(), head.getSrcActor(), head.getSrcType(), dstMethod);
+				if(ret != 0 && dstMethod != null){  //send failed, notify src
+					DFClusterManager.get().sendToNodeInternal(this.name, head.getSrcNode(), 
+							head.getSrcActor(), head.getSessionId(), DMCmd.RpcFail);
+				}
 			}
 		}
 	}
@@ -368,7 +375,7 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 			e.printStackTrace();
 			return ;
 		}
-		_mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_RPC_FAIL, RpcError.REMOTE_FAILED, null, true, null, null);
+		_mgrActor.send(id, head.getDstActor(), head.getSessionId(), DFActorDefine.SUBJECT_CB_FAILED, RpcError.REMOTE_FAILED, null, true, null, null);
 	}
 	
 	private void _procNewNodeLogin(int cmd, ByteBuf buf, NodeInfo node){
@@ -801,7 +808,7 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 	}
 	//
 	@Override
-	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+	public int onMessage(int cmd, Object payload, int srcId) {
 		if(CMD_REG_NODE_LISTENER == cmd){
 			RegNodeReq req = (RegNodeReq) payload;
 			if(_setNodeCb.contains(req.cb)){ //cb has used

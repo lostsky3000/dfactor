@@ -635,14 +635,19 @@ public final class DFActorManager {
 	}
 	protected int send(int srcId, String dstName, int requestId, 
 			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler){
-		return send(srcId, dstName, requestId, subject, cmd, payload, addTail, context, userHandler, null, null);
+		return send(srcId, dstName, requestId, subject, cmd, payload, addTail, context, userHandler, null, null, false);
 	}
 	protected int send(int srcId, String dstName, int requestId, 
 			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler, 
 			Object payload2, String method){
+		return send(srcId, dstName, requestId, subject, cmd, payload, addTail, context, userHandler, payload2, method, false);
+	}
+	protected int send(int srcId, String dstName, int requestId, 
+			int subject, int cmd, Object payload, boolean addTail, Object context, Object userHandler, 
+			Object payload2, String method, boolean isCb){
 		DFActorWrap wrap = _cmapActorName.get(dstName);
 		if(wrap != null){
-			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, false, payload2, method) == 0){ //add to global queue
+			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb, payload2, method) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
 					_queueGlobalClusterActor.offer(wrap);
 					_doGlobalClusterQueueNotify();
@@ -657,6 +662,14 @@ public final class DFActorManager {
 			return 0;
 		}
 		return 1;
+	}
+	
+	protected int getActorIdByName(String name){
+		DFActorWrap wrap = _cmapActorName.get(name);
+		if(wrap != null){
+			return wrap.getActorId();
+		}
+		return 0;
 	}
 	
 	protected int callSysBlockActor(int srcId, int shardId, int cmd, Object payload, Object userHandler){

@@ -6,9 +6,11 @@ public interface IScriptAPI {
 
 	//sys function
 	public int newActor(Object template, Object name, Object param, Object initCfg);
-	public int send(Object dst, int cmd, Object payload);
+	public int to(Object dst, int cmd, Object payload);
 	public int ret(int cmd, Object payload);
-	public void timeout(int delay, int requestId);
+	public void timeout(int delay, Object requestId);
+	public int rpc(Object dstActor, String dstMethod, int cmd, Object payload, Object cb);
+	
 	//buf function
 	public IScriptBuffer newBuf(int capacity);
 	//proto function
@@ -19,11 +21,19 @@ public interface IScriptAPI {
 	public boolean lockWrite(Object var, Object func);
 	public boolean lockRead(Object var, Object func);
 	//tcp function
-	public boolean doTcpServer(Object cfg, Object func);
-	public boolean doTcpConnect(Object cfg, Object func);
+	public boolean tcpSvr(Object cfg, Object func);
+	public boolean tcpCli(Object cfg, Object func);
 	public boolean tcpSend(Integer channelId, Object msg);
+	public void tcpChange(Integer channelId, Object msgHandler, Object statusHandler);
 	
-	public String bufToString(Object buf);
+	//http function
+	public void httpSvr(Object cfg, Object cb);
+	
+	//string <-> buf
+	public String bufToStr(Object buf);
+	public IScriptBuffer strToBuf(String src);
+	
+	public void exit();
 	
 	//log function
 	public void logV(Object msg);

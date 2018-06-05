@@ -123,9 +123,7 @@ net.doHttpServer(8080, new CbHttpServer() {
 
 [Shutdown](src/test/java/fun/lib/actor/example/Shutdown.java)  关闭dfactor示例
 
-[Sendback](src/test/java/fun/lib/actor/example/Sendback.java)  actor通信api sendback使用示例
-
-[Callback](src/test/java/fun/lib/actor/example/Callback.java)  actor通信 异步回调使用示例
+[ActorConn](src/test/java/fun/lib/actor/example/ActorConn.java) actor间通信示例
 
 [TomAndJerry](src/test/java/fun/lib/actor/example/TomAndJerry.java)  多actor通信示例(猫捉老鼠游戏)
 

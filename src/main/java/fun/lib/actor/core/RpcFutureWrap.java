@@ -1,11 +1,11 @@
 package fun.lib.actor.core;
 
-import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.RpcFuture;
 
 public final class RpcFutureWrap implements RpcFuture{
 
-	private CbRpc cb = null;
+	private Cb cb = null;
 	private final boolean sendSucc;
 	private final int sessionId;
 	
@@ -18,10 +18,10 @@ public final class RpcFutureWrap implements RpcFuture{
 	}
 	
 	@Override
-	public boolean addListener(CbRpc cb, int timeoutMilli) {
+	public boolean addListener(Cb cb, int timeoutMilli) {
 		if(sendSucc){
 			this.cb = cb;
-			sysWrap.addRpcCallback(cb, sessionId, timeoutMilli);
+			sysWrap.addCallback(cb, sessionId, timeoutMilli);
 			return true;
 		}
 		return false;

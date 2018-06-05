@@ -1,6 +1,6 @@
 package fun.lib.actor.api.cb;
 
-public interface CbRpc {
+public interface Cb {
 
 	/**
 	 * rpc回调方法
@@ -8,7 +8,7 @@ public interface CbRpc {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int onResponse(int cmd, Object payload);
+	public int onCallback(int cmd, Object payload);
 	
 	/**
 	 * rpc调用失败的通知

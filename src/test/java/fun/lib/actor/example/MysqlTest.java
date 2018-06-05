@@ -6,6 +6,7 @@ import java.sql.Statement;
 
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
@@ -44,10 +45,15 @@ public final class MysqlTest {
 				@Override
 				public void onTimeout() {
 					//send db task to ioActor
-					sys.call(ioActor, 0, null, new CbActorRsp() {
+					sys.call(ioActor, 0, null, new Cb() {
 						@Override
 						public int onCallback(int cmd, Object payload) {
 							log.info(payload.toString());
+							return 0;
+						}
+						@Override
+						public int onFailed(int code) {
+							log.error("call failed: "+code);
 							return 0;
 						}
 					});
@@ -71,7 +77,7 @@ public final class MysqlTest {
 			poolId = (int) param;
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+		public int onMessage(int cmd, Object payload, int srcId) {
 			//do db stuff
 			String rsp = null;
 			Connection conn = db.getConn(poolId);
@@ -89,7 +95,7 @@ public final class MysqlTest {
 				db.closeConn(conn);
 			}
 			//callback logicActor
-			cb.callback(0, rsp);
+			sys.ret(0, rsp);
 			return 0;
 		}
 	}

@@ -197,7 +197,9 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	private boolean contentIsString(String contentType){
 		if(contentType != null && 
 				(contentType.equals(DFHttpContentType.JSON)
-						|| contentType.equals(DFHttpContentType.XML))){
+				|| contentType.equals(DFHttpContentType.XML)
+				|| contentType.equals(DFHttpContentType.TEXT_PLAIN)
+				)){
 			return true;
 		}
 		return false;

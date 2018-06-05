@@ -1,5 +1,6 @@
 package fun.lib.actor.core;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +15,9 @@ import com.google.protobuf.GeneratedMessageV3.Builder;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.cb.CbActorReq;
+import fun.lib.actor.api.cb.CbHttpServer;
+import fun.lib.actor.api.http.DFHttpDispatcher;
+import fun.lib.actor.api.http.DFHttpSvrReq;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import io.netty.buffer.ByteBuf;
@@ -35,6 +39,8 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	private boolean _regOnMessage = true;
 	private boolean _regOnTimeout = true;
 	private boolean _regOnSchedule = true;
+	private boolean _regOnTcpConnClose = true;
+	private boolean _regOnTcpMsg = true;
 	//
 	private int _lastSrcId = 0;
 	@Override
@@ -48,9 +54,11 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		}
 		//
 		if(!_checkFunction("onStart")) _regOnStart = false;
-		if(!_checkFunction("onMessage")) _regOnMessage = false;
+		if(!_checkFunction("onMsg")) _regOnMessage = false;
 		if(!_checkFunction("onTimeout")) _regOnTimeout = false;
-		if(!_checkFunction("onSchedule")) _regOnSchedule = false;
+		if(!_checkFunction("onTick")) _regOnSchedule = false;
+		if(!_checkFunction("onTcpMsg")) _regOnTcpMsg = false;
+		if(!_checkFunction("onTcpClose")) _regOnTcpConnClose = false;
 		//set df
 		ScriptObjectMirror mirFnApi = (ScriptObjectMirror) mapParam.get("fnApi");
 		ScriptObjectMirror mirApi = null;
@@ -66,12 +74,42 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		mapParam.clear(); mapParam = null;
 	}
 	
+	private Object _curUserHandler = null;
+	private int _curReqId = 0;
 	@Override
-	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+	public int onMessage(int cmd, Object payload, int srcId) {
 		if(_regOnMessage){
 			_lastSrcId = srcId;
-			_js.callMember("onMessage", cmd, payload, srcId);
+			_curUserHandler = null;
+			_curReqId = 0;
+			_js.callMember("onMsg", cmd, payload, srcId);
 		}
+		return 0;
+	}
+	@Override
+	protected int onScriptMessage(DFActorMessage msg) {
+		int reqId = msg.sessionId;
+		try{
+			if(reqId == 1){  //rpc
+				if(msg.isCb){  //callback
+					ScriptObjectMirror cb = (ScriptObjectMirror) msg.userHandler;
+					if(cb != null && cb.isFunction()){
+						cb.call(0, _js, msg.cmd, msg.payload);
+					}
+				}else{ //req
+					String method = msg.method;
+					if(_js.hasMember(method)){
+						_lastSrcId = msg.srcId;
+						_curUserHandler = msg.userHandler;
+						_curReqId = reqId;
+						_js.callMember(method, msg.cmd, msg.payload);
+					}
+				}
+			}
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		
 		return 0;
 	}
 	@Override
@@ -83,7 +121,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	@Override
 	public void onSchedule(long dltMilli) {
 		if(_regOnSchedule){
-			_js.callMember("onSchedule", dltMilli);
+			_js.callMember("onTick", dltMilli);
 		}
 	}
 	
@@ -132,24 +170,30 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	}
 	@Override
 	public void onTcpConnClose(int requestId, DFTcpChannel channel) {	
+		if(_mapChJsFunc == null) _mapChJsFunc = new HashMap<>();
 		int chId = channel.getChannelId();
 		JsTcpChannel chWrap = _mapChJsFunc.remove(chId);
 		if(chWrap != null){ //notify js
 			_jsEvent.type = "close";
 			chWrap.cbFunc.call(0, _js, _jsEvent, chId);
+		}else if(_regOnTcpConnClose){  //没有指定回调，检测是否有默认回调
+			_js.callMember("onTcpClose", chId);
 		}
 	}
 	@Override
 	public int onTcpRecvMsg(int requestId, DFTcpChannel channel, Object msg) {
+		if(_mapChJsFunc == null) _mapChJsFunc = new HashMap<>();
 		int chId = channel.getChannelId();
 		JsTcpChannel chWrap = _mapChJsFunc.get(chId);
+		Object msgOut = msg;
+		if(msg instanceof ByteBuf){
+			msgOut = DFJsBuffer.newBuffer((ByteBuf)msg);
+		}
 		if(chWrap != null){ //notify js
 			_jsEvent.type = "msg";
-			Object msgOut = msg;
-			if(msg instanceof ByteBuf){
-				msgOut = DFJsBuffer.newBuffer((ByteBuf)msg);
-			}
 			chWrap.cbFunc.call(0, _js, _jsEvent, chId, msgOut);
+		}else if(_regOnTcpMsg){ //没有指定回调，检测是否有默认回调
+			_js.callMember("onTcpMsg", chId, msgOut);
 		}
 		return 0;
 	}
@@ -158,7 +202,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	private HashMap<Integer, ScriptObjectMirror> _mapTcpSvrJsFunc = null;
 	private HashMap<Integer, JsTcpChannel> _mapChJsFunc = null;
 	@Override
-	public boolean doTcpServer(Object cfg, Object func) {
+	public boolean tcpSvr(Object cfg, Object func) {
 		boolean bRet = false;
 		do {
 			try{
@@ -207,7 +251,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		return reqId;
 	}
 	@Override
-	public boolean doTcpConnect(Object cfg, Object func) {
+	public boolean tcpCli(Object cfg, Object func) {
 		boolean bRet = false;
 		do {
 			try{
@@ -292,9 +336,8 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	public IScriptBuffer protoToBuf(Builder<?> builder) {
 		try{
 			byte[] bytes = builder.build().toByteArray();
-			int len = bytes.length;
-			ByteBuf buf = UnpooledByteBufAllocator.DEFAULT.heapBuffer(len);
-			buf.writeBytes(bytes, 0, len);
+			ByteBuf buf = UnpooledByteBufAllocator.DEFAULT.heapBuffer(bytes.length);
+			buf.writeBytes(bytes);
 			IScriptBuffer bufOut = DFJsBuffer.newBuffer(buf);
 			return bufOut;
 		}catch(Throwable e){
@@ -399,16 +442,26 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		return _mgrActorJs.createActor(template, name, param, initCfg);
 	}
 	@Override
-	public int send(Object dst, int cmd, Object payload) {
+	public int to(Object dst, int cmd, Object payload) {
 		return _mgrActorJs.send(this.id, dst, cmd, payload);
 	}
 	@Override
 	public int ret(int cmd, Object payload) {
-		return _mgrActorJs.send(this.id, _lastSrcId, cmd, payload);
+		if(_curReqId == 1){  //rpc
+			if(_curUserHandler != null){ //has callback
+				DFActorManager mgr = DFActorManager.get();
+				return mgr.send(id, _lastSrcId, 1, DFActorDefine.SUBJECT_SCRIPT, cmd, payload, true, null, _curUserHandler, true);
+			}
+		}else{
+			return _mgrActorJs.send(this.id, _lastSrcId, cmd, payload);
+		}
+		return 0;
 	}
 	@Override
-	public void timeout(int delay, int requestId) {
-		timer.timeout(delay, requestId);
+	public void timeout(int delay, Object requestId) {
+		if(requestId == null || ScriptObjectMirror.isUndefined(requestId)) timer.timeout(delay, 0);
+		else  timer.timeout(delay, (Integer)requestId);
+		
 	}
 	@Override
 	public void logV(Object msg) {
@@ -454,9 +507,29 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		}
 		return false;
 	}
+	@Override
+	public void tcpChange(Integer channelId, Object msgHandler, Object statusHandler) {
+		if(_mapChJsFunc != null){
+			JsTcpChannel ch = _mapChJsFunc.get(channelId);
+			if(ch != null){ //online
+				if(msgHandler != null){
+					int actorId = 0;
+					if(msgHandler instanceof Integer) actorId = (Integer)msgHandler;
+					else if(msgHandler instanceof String) actorId = DFActorManager.get().getActorIdByName((String)msgHandler);
+					if(actorId > 0) ch.channel.setMessageActor(actorId);
+				}
+				if(statusHandler != null){
+					int actorId = 0;
+					if(statusHandler instanceof Integer) actorId = (Integer)statusHandler;
+					else if(statusHandler instanceof String) actorId = DFActorManager.get().getActorIdByName((String)statusHandler);
+					if(actorId > 0) ch.channel.setStatusActor(actorId);
+				}
+			}
+		}
+	}
 
 	@Override
-	public String bufToString(Object buf) {
+	public String bufToStr(Object buf) {
 		if(buf instanceof IScriptBuffer){
 			ByteBuf b = ((DFJsBuffer)buf).getBuf();
 			return (String) b.readCharSequence(b.readableBytes(), CharsetUtil.UTF_8);
@@ -468,6 +541,110 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		}
 		return null;
 	}
+
+	@Override
+	public IScriptBuffer strToBuf(String src) {
+		try{
+			byte[] bytes = src.getBytes(CharsetUtil.UTF_8);
+			ByteBuf buf = UnpooledByteBufAllocator.DEFAULT.heapBuffer(bytes.length);
+			buf.writeBytes(bytes);
+			return DFJsBuffer.newBuffer(buf);
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@Override
+	public void exit() {
+		this.exit();
+	}
+
+	@Override
+	public int rpc(Object dstActor, String dstMethod, int cmd, Object payload, Object cb) {
+		DFActorManager mgr = DFActorManager.get();
+		try{
+			if(cb != null && ScriptObjectMirror.isUndefined(cb)){
+				cb = null;
+			}
+			int ret = 0;
+			if(dstActor instanceof String){
+				ret = mgr.send(id, (String)dstActor, 1, DFActorDefine.SUBJECT_SCRIPT, 
+						cmd, payload, true, null, cb, null, dstMethod, false);
+			}else{
+				int dstId = 0;
+				if(dstActor instanceof Double){
+					dstId = ((Double)dstActor).intValue();
+				}else{
+					dstId = (Integer)dstActor;
+				}
+				ret = mgr.send(id, dstId, 1, DFActorDefine.SUBJECT_SCRIPT, cmd, payload, true, null, cb, false, null, dstMethod);
+			}
+			return ret;
+		}catch(Throwable e){
+			e.printStackTrace(); 
+			return 1;
+		}
+	}
+	@Override
+	public void httpSvr(Object cfg, Object cb) {
+		try{
+			ScriptObjectMirror mirCfg = (ScriptObjectMirror) cfg;
+			int port = (Integer)mirCfg.get("port");
+			ScriptObjectMirror mirCb = null;
+			if(cb != null && !ScriptObjectMirror.isUndefined(cb)){
+				mirCb = (ScriptObjectMirror) cb;
+				if(!mirCb.isFunction()){
+					mirCb = null;
+				}
+			}
+			DFTcpServerCfg cfgSvr = null;
+			if(mirCfg.containsKey("worker") && mirCfg.containsKey("boss")){
+				cfgSvr = new DFTcpServerCfg(port, (Integer)(mirCfg.get("worker")), (Integer)(mirCfg.get("boss")));
+			}else{
+				cfgSvr = new DFTcpServerCfg(port);
+			}
+			cfgSvr.setTcpProtocol(DFActorDefine.TCP_DECODE_HTTP);
+			final DFJsEvent jsEvent = new DFJsEvent(null, false, null);
+			final ScriptObjectMirror jsCb = mirCb;
+			net.doHttpServer(cfgSvr, new CbHttpServer() {
+				@Override
+				public void onListenResult(boolean isSucc, String errMsg) {
+					if(jsCb != null){
+						jsEvent.type = "ret";
+						if(isSucc){  //listen succ
+							jsEvent.succ = true;
+						}else{
+							jsEvent.succ = false;
+							jsEvent.err = errMsg;
+						}
+						jsCb.call(0, _js, jsEvent);
+					}
+				}
+				@Override
+				public int onHttpRequest(Object msg) {
+					if(jsCb != null){
+						DFHttpSvrReq req = (DFHttpSvrReq) msg;
+						
+						DFJsHttpSvrReq reqWrap = new DFJsHttpSvrReq(req);
+						jsEvent.type = "req";
+						jsCb.call(0, _js, jsEvent, reqWrap);
+					}
+					return 0;
+				}
+			}, new DFHttpDispatcher() {
+				@Override
+				public int onQueryMsgActorId(int port, InetSocketAddress addrRemote, Object msg) {
+					// TODO Auto-generated method stub
+					return id;
+				}
+			});
+			
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+	}
+	
 
 	
 }

@@ -16,30 +16,30 @@ public final class DFActorLogWrap implements DFActorLog{
 	}
 	
 	@Override
-	public void verb(String msg) {
+	public void verb(Object msg) {
 		_log(DFLogFactory.LEVEL_VERB, msg);
 	}
 	@Override
-	public void debug(String msg) {
+	public void debug(Object msg) {
 		_log(DFLogFactory.LEVEL_DEBUG, msg);
 	}
 	@Override
-	public void info(String msg) {
+	public void info(Object msg) {
 		_log(DFLogFactory.LEVEL_INFO, msg);
 	}
 	@Override
-	public void warn(String msg) {
+	public void warn(Object msg) {
 		_log(DFLogFactory.LEVEL_WARN, msg);
 	}
 	@Override
-	public void error(String msg) {
+	public void error(Object msg) {
 		_log(DFLogFactory.LEVEL_ERROR, msg);
 	}
 	@Override
-	public void fatal(String msg) {
+	public void fatal(Object msg) {
 		_log(DFLogFactory.LEVEL_FATAL, msg);
 	}
-	private final void _log(int level, String msg){
+	private final void _log(int level, Object msg){
 		mgr.send(id, DFActorDefine.ACTOR_ID_LOG, 0, 0, 0, 
 				new ActorLogData(level, msg, name), true, null, null, false);
 	}

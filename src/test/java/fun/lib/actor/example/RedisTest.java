@@ -2,6 +2,7 @@ package fun.lib.actor.example;
 
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.cb.CbActorRsp;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.CbTimeout;
 import fun.lib.actor.core.DFActor;
 import fun.lib.actor.core.DFActorManager;
@@ -39,12 +40,16 @@ public final class RedisTest {
 				@Override
 				public void onTimeout() {
 					//send redis task to ioActor
-					sys.call(ioActor, 0, null, new CbActorRsp() {
+					sys.call(ioActor, 0, null, new Cb() {
 						@Override
 						public int onCallback(int cmd, Object payload) {
-							//recv redis task from ioActor
 							log.info(payload.toString());
-							return MSG_AUTO_RELEASE;
+							return 0;
+						}
+						@Override
+						public int onFailed(int code) {
+							log.error("call failed: "+code);
+							return 0;
 						}
 					});
 					timer.timeout(1000, this);
@@ -66,14 +71,14 @@ public final class RedisTest {
 			poolId = (int) param;
 		}
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+		public int onMessage(int cmd, Object payload, int srcId) {
 			//do redis stuff
 			Jedis j = null;
 			try{
 				j = redis.getConn(poolId);
 				if(j != null){
 					String rsp = j.ping();
-					cb.callback(cmd, "recv pong from redis: "+rsp);
+					sys.ret(cmd, "recv pong from redis: "+rsp);
 				}
 			}finally{
 				redis.closeConn(j);

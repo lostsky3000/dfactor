@@ -7,7 +7,7 @@ import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHereBlock;
 import fun.lib.actor.api.cb.CbNode;
-import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.core.DFActor;
@@ -52,6 +52,66 @@ public interface DFActorSystem {
 	public int createActor(ActorProp prop);
 	
 	/**
+	 * 向指定id的actor发消息
+	 * @param dstId 目标actor id
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return 0为发送成功  否则错误码
+	 */
+	public int to(int dstId, int cmd, Object payload);
+	/**
+	 * 向指定name的actor发消息
+	 * @param dstName 目标actor 名称
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return 0为发送成功  否则错误码
+	 */
+	public int to(String dstName, int cmd, Object payload);
+	/**
+	 * 回复本次请求
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return 0
+	 */
+	public int ret(int cmd, Object payload);
+	/**
+	 * 向指定id的actor发消息，带有回调
+	 * @param dstId 目标actorId
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @param cb 回调
+	 * @return 0成功  非0失败
+	 */
+	public int call(int dstId, int cmd, Object payload, Cb cb);
+	/**
+	 * 向指定name的actor发消息，带有回调
+	 * @param dstName 目标actorName
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @param cb 回调
+	 * @return 0成功  非0失败
+	 */
+	public int call(String dstName, int cmd, Object payload, Cb cb);
+	/**
+	 * 调用本地actor的指定方法
+	 * @param dstId 目标actorId
+	 * @param dstMethod 方法名
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return future
+	 */
+	public RpcFuture rpc(int dstId, String dstMethod, int cmd, Object payload);
+	/**
+	 * 调用本地actor的指定方法
+	 * @param dstName 目标actor名字
+	 * @param dstMethod 方法名
+	 * @param cmd 消息码
+	 * @param payload 消息体
+	 * @return future
+	 */
+	public RpcFuture rpc(String dstName, String dstMethod, int cmd, Object payload);
+	
+	/**
 	 * 调用其它actor，由其它actor的调用线程回调cb中的方法
 	 * @param dstId 目标actorId
 	 * @param cmd 消息码
@@ -80,49 +140,6 @@ public interface DFActorSystem {
 	 */
 	public int callHereBlock(int shardId, int cmd, Object payload, CbCallHereBlock cb);
 	
-	/**
-	 * 向指定id的actor发消息，带有回调
-	 * @param dstId 目标actorId
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @param cb 回调
-	 * @return 0成功  非0失败
-	 */
-	public int call(int dstId, int cmd, Object payload, CbActorRsp cb);
-	
-	/**
-	 * 向指定name的actor发消息，带有回调
-	 * @param dstName 目标actorName
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @param cb 回调
-	 * @return 0成功  非0失败
-	 */
-	public int call(String dstName, int cmd, Object payload, CbActorRsp cb);
-	
-	/**
-	 * 回复当前消息来源actor
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return 0
-	 */
-	public int sendback(int cmd, Object payload);
-	/**
-	 * 向指定id的actor发消息
-	 * @param dstId 目标actor id
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return 0为发送成功  否则错误码
-	 */
-	public int send(int dstId, int cmd, Object payload);
-	/**
-	 * 向指定name的actor发消息
-	 * @param dstName 目标actor 名称
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return 0为发送成功  否则错误码
-	 */
-	public int send(String dstName, int cmd, Object payload);
 	//
 	/**
 	 * 向集群指定结点的actor发送消息
@@ -132,7 +149,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToCluster(String dstNode, String dstActor, int cmd, String payload);
+	public int toNode(String dstNode, String dstActor, int cmd, String payload);
 	/**
 	 * 向集群指定结点的actor发送消息
 	 * @param dstNode 结点名字
@@ -141,7 +158,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToCluster(String dstNode, String dstActor, int cmd, byte[] payload);
+	public int toNode(String dstNode, String dstActor, int cmd, byte[] payload);
 	/**
 	 * 向集群指定结点的actor发送消息
 	 * @param dstNode 结点名字
@@ -150,7 +167,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToCluster(String dstNode, String dstActor, int cmd, ByteBuf payload);
+	public int toNode(String dstNode, String dstActor, int cmd, ByteBuf payload);
 	/**
 	 * 向集群指定结点的actor发送消息
 	 * @param dstNode 结点名字
@@ -159,7 +176,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToCluster(String dstNode, String dstActor, int cmd, JSONObject payload);
+	public int toNode(String dstNode, String dstActor, int cmd, JSONObject payload);
 	/**
 	 * 向集群指定结点的actor发送消息
 	 * @param dstNode 结点名字
@@ -168,7 +185,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToCluster(String dstNode, String dstActor, int cmd, DFSerializable payload);
+	public int toNode(String dstNode, String dstActor, int cmd, DFSerializable payload);
 	
 	//sendToClusterByType
 	/**
@@ -179,7 +196,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, String payload);
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, String payload);
 	/**
 	 * 向集群指定类型结点的actor发送消息
 	 * @param dstNodeType 目标结点类型
@@ -188,7 +205,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, JSONObject payload);
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, JSONObject payload);
 	/**
 	 * 向集群指定类型结点的actor发送消息
 	 * @param dstNodeType 目标结点类型
@@ -197,7 +214,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, byte[] payload);
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, byte[] payload);
 	/**
 	 * 向集群指定类型结点的actor发送消息
 	 * @param dstNodeType 目标结点类型
@@ -206,7 +223,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, ByteBuf payload);
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, ByteBuf payload);
 	/**
 	 * 向集群指定类型结点的actor发送消息
 	 * @param dstNodeType 目标结点类型
@@ -215,7 +232,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, DFSerializable payload);
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, DFSerializable payload);
 	
 	//sendToClusterAll
 	/**
@@ -225,7 +242,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterAll(String dstActor, int cmd, String payload);
+	public int toAllNode(String dstActor, int cmd, String payload);
 	/**
 	 * 向集群所有结点的actor发送消息
 	 * @param dstActor 目标actor名字
@@ -233,7 +250,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterAll(String dstActor, int cmd, JSONObject payload);
+	public int toAllNode(String dstActor, int cmd, JSONObject payload);
 	/**
 	 * 向集群所有结点的actor发送消息
 	 * @param dstActor 目标actor名字
@@ -241,7 +258,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterAll(String dstActor, int cmd, byte[] payload);
+	public int toAllNode(String dstActor, int cmd, byte[] payload);
 	/**
 	 * 向集群所有结点的actor发送消息
 	 * @param dstActor 目标actor名字
@@ -249,7 +266,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterAll(String dstActor, int cmd, ByteBuf payload);
+	public int toAllNode(String dstActor, int cmd, ByteBuf payload);
 	/**
 	 * 向集群所有结点的actor发送消息
 	 * @param dstActor 目标actor名字
@@ -257,7 +274,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return 0
 	 */
-	public int sendToClusterAll(String dstActor, int cmd, DFSerializable payload);
+	public int toAllNode(String dstActor, int cmd, DFSerializable payload);
 	
 	//
 	/**
@@ -269,7 +286,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return future
 	 */
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, String payload);
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, String payload);
 	/**
 	 * 调用集群指定结点，指定actor，指定方法
 	 * @param dstNode 结点名字
@@ -279,7 +296,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return future
 	 */
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, byte[] payload);
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, byte[] payload);
 	/**
 	 * 调用集群指定结点，指定actor，指定方法
 	 * @param dstNode 结点名字
@@ -289,7 +306,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return future
 	 */
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, ByteBuf payload);
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, ByteBuf payload);
 	/**
 	 * 调用集群指定结点，指定actor，指定方法
 	 * @param dstNode 结点名字
@@ -299,7 +316,7 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return future
 	 */
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, DFSerializable payload);
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, DFSerializable payload);
 	/**
 	 * 调用集群指定结点，指定actor，指定方法
 	 * @param dstNode 结点名字
@@ -309,26 +326,9 @@ public interface DFActorSystem {
 	 * @param payload 消息体
 	 * @return future
 	 */
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, JSONObject payload);
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, JSONObject payload);
 	
-	/**
-	 * 调用本地actor的指定方法
-	 * @param dstId 目标actorId
-	 * @param dstMethod 方法名
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return future
-	 */
-	public RpcFuture callMethod(int dstId, String dstMethod, int cmd, Object payload);
-	/**
-	 * 调用本地actor的指定方法
-	 * @param dstName 目标actor名字
-	 * @param dstMethod 方法名
-	 * @param cmd 消息码
-	 * @param payload 消息体
-	 * @return future
-	 */
-	public RpcFuture callMethod(String dstName, String dstMethod, int cmd, Object payload);
+	
 	
 	
 	/**
@@ -349,6 +349,17 @@ public interface DFActorSystem {
 	 * @return 数量
 	 */
 	public int getAllNodeNum();
+	
+	/**
+	 * 获取发送当前消息的node名字(只在处理集群内结点消息时有值)
+	 * @return
+	 */
+	public String getCurSrcNode();
+	/**
+	 * 获取发送当前消息的actor名字(只在处理集群内结点消息时有值)
+	 * @return
+	 */
+	public String getCurSrcActor();
 	
 	/**
 	 * 监听所有结点事件

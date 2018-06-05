@@ -60,7 +60,7 @@ public final class ClusterSimple {
 				String selfNode = ARR_NODE_NAME[NODE_IDX];
 				String dstNode = ARR_NODE_NAME[(NODE_IDX+1)%2];
 				if(sys.isNodeOnline(dstNode)){   //game-2已经加入集群，发送消息
-					sys.sendToCluster(dstNode, "EntryActor", NODE_IDX, "ask from "+selfNode+", tm="+System.currentTimeMillis());
+					sys.toNode(dstNode, "EntryActor", NODE_IDX, "ask from "+selfNode+", tm="+System.currentTimeMillis());
 				}
 				timer.timeout(1000, 10001);
 			}
@@ -69,7 +69,7 @@ public final class ClusterSimple {
 		public int onClusterMessage(String srcType, String srcNode, String srcActor, int cmd, Object payload) {
 			log.info("onClusterMessage, from="+srcNode+", cmd="+cmd+", payload="+payload);
 			if(NODE_IDX == 1){  //game-2收到game-1消息，回复
-				sys.sendToCluster(srcNode, srcActor, 1, "answer from game-2, tm="+System.currentTimeMillis());
+				sys.toNode(srcNode, srcActor, 1, "answer from game-2, tm="+System.currentTimeMillis());
 			}
 			return 0;
 		}

@@ -69,7 +69,7 @@ public final class TreeTask {
 					_arrNodeId[i] = sys.createActor(TaskActor.class, new TaskCfg(nextDepth, this.id, root));
 				}
 			}else{ //到达最底层，向上通知节点创建完毕
-				sys.send(_cfg.parent, CMD_LEAF_START, 1);
+				sys.to(_cfg.parent, CMD_LEAF_START, 1);
 			}
 		}
 		//
@@ -80,7 +80,7 @@ public final class TreeTask {
 		private int _childrenCount = 0;
 		//
 		@Override
-		public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb) {
+		public int onMessage(int cmd, Object payload, int srcId) {
 			if(cmd == CMD_LEAF_START){
 				_childrenCount += (int) payload;
 				if(++_leafDoneCount >= LEAF_NUM){
@@ -89,7 +89,7 @@ public final class TreeTask {
 						//开始新的任务
 						_reqNewTask();
 					}else{ //非根节点，继续向上报告节点创建完成
-						sys.send(_cfg.parent, CMD_LEAF_START, _childrenCount+1);
+						sys.to(_cfg.parent, CMD_LEAF_START, _childrenCount+1);
 					}
 				}
 			}else if(cmd == CMD_REQ){ //收到父节点任务请求，向子节点转发
@@ -98,16 +98,16 @@ public final class TreeTask {
 					_leafDoneCount = 0;
 					int len = _arrNodeId.length;
 					for(int i=0; i<len; ++i){
-						sys.send(_arrNodeId[i], cmd, payload);
+						sys.to(_arrNodeId[i], cmd, payload);
 					}
 				}else{ //到达底部，向上返回结果
-					sys.send(_cfg.parent, CMD_RSP, payload);
+					sys.to(_cfg.parent, CMD_RSP, payload);
 				}
 			}else if(cmd == CMD_RSP){  //收到子节点任务响应
 				_doTask();  //模拟逻辑处理消耗cpu
 				if(++_leafDoneCount >= LEAF_NUM){  //所有直属子节点都返回了结果
 					if(_cfg.depth > 1){ //当前不是根节点，继续向上返回结果
-						sys.send(_cfg.parent, CMD_RSP, payload);
+						sys.to(_cfg.parent, CMD_RSP, payload);
 					}else{ //已到达根节点，统计耗时
 						_tmTaskEnd = System.currentTimeMillis();
 						log.info("all task done, tmCost="+(_tmTaskEnd - _tmTaskBegin)+"ms");
@@ -128,7 +128,7 @@ public final class TreeTask {
 			log.info("start new task...");
 			int len = _arrNodeId.length;
 			for(int i=0; i<len; ++i){   //向直属子节点派发任务
-				sys.send(_arrNodeId[i], CMD_REQ, 1);
+				sys.to(_arrNodeId[i], CMD_REQ, 1);
 			}
 		}
 		

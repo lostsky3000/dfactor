@@ -61,24 +61,24 @@ public final class ClusterParam {
 				if(RpcParamType.CUSTOM == type){ //自定义消息类型，需实现DFSerializable.java接口
 					ClusterCustomMsg msg = new ClusterCustomMsg()
 							.setId(1001).setAge(25).setName("lostsky3000");
-					sys.callClusterMethod(dstNode, dstActor, "doMath", type, msg); 
+					sys.rpcNode(dstNode, dstActor, "doMath", type, msg); 
 					log.info("doSend, cmd="+type+", type=custom");
 				}else if(RpcParamType.STRING == type){ //String类型
-					sys.callClusterMethod(dstNode, dstActor, "doMath", type, "lostsky3000"); 
+					sys.rpcNode(dstNode, dstActor, "doMath", type, "lostsky3000"); 
 					log.info("doSend, cmd="+type+", type=string");
 				}else if(RpcParamType.JSON == type){ //Json类型
 					JSONObject msg = new JSONObject();
 					msg.put("id", 1001); msg.put("age", 25); msg.put("name", "lostsky3000");
-					sys.callClusterMethod(dstNode, dstActor, "doMath", type, msg); 
+					sys.rpcNode(dstNode, dstActor, "doMath", type, msg); 
 					log.info("doSend, cmd="+type+", type=json");
 				}else if(RpcParamType.BYTE_BUF == type){ //ByteBuf类型
 					ByteBuf msg = UnpooledByteBufAllocator.DEFAULT.heapBuffer(16);
 					msg.writeCharSequence("lostsky3000", CharsetUtil.UTF_8);
-					sys.callClusterMethod(dstNode, dstActor, "doMath", type, msg); 
+					sys.rpcNode(dstNode, dstActor, "doMath", type, msg); 
 					log.info("doSend, cmd="+type+", type=byteBuf");
 				}else if(RpcParamType.BYTE_ARR == type){ //byte[]类型
 					byte[] msg = "lostsky3000".getBytes(CharsetUtil.UTF_8);
-					sys.callClusterMethod(dstNode, dstActor, "doMath", type, msg); 
+					sys.rpcNode(dstNode, dstActor, "doMath", type, msg); 
 					log.info("doSend, cmd="+type+", type=byteArray");
 				}
 			}

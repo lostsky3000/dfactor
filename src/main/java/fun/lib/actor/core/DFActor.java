@@ -14,6 +14,7 @@ import fun.lib.actor.api.cb.CallHereContext;
 import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHere;
+import fun.lib.actor.api.cb.RpcContext;
 import io.netty.channel.socket.DatagramPacket;
 
 public class DFActor implements CallHereContext{
@@ -32,8 +33,11 @@ public class DFActor implements CallHereContext{
 	protected final boolean isBlockActor;
 	//
 	protected int _lastSrcId = 0;
+	protected int _lastSessionId = 0;
 	protected boolean _hasCalledback = false;
 	protected Object _lastUserHandler = null;
+	protected RpcContext _lastRpcCtx = null;
+	protected boolean _hasRet = false;
 	
 	
 	public DFActor(Integer id, String name, Boolean isBlockActor) {
@@ -72,13 +76,12 @@ public class DFActor implements CallHereContext{
 	//event
 	/**
 	 * 接收其它actor发过来的消息
-	 * @param srcId 发送者actor的id
 	 * @param cmd 消息码
 	 * @param payload 消息体
-	 * @param cb 发送方是否有回调，非null则直接调用回调
+	 * @param srcId 发送者actor的id
 	 * @return 0
 	 */
-	public int onMessage(int srcId, int cmd, Object payload, CbActorReq cb){return MSG_AUTO_RELEASE;};
+	public int onMessage(int cmd, Object payload, int srcId){return MSG_AUTO_RELEASE;};
 	
 	/**
 	 * 接收集群内结点发过来的消息
@@ -91,6 +94,7 @@ public class DFActor implements CallHereContext{
 	 */
 	public int onClusterMessage(String srcType, String srcNode, String srcActor, int cmd, Object payload){return MSG_AUTO_RELEASE;};
 	
+	protected int onScriptMessage(DFActorMessage msg){return MSG_AUTO_RELEASE;};
 //	/**
 //	 * 接收其它actor发过来的消息
 //	 * @param srcId 发送者actor的id

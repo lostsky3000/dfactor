@@ -14,7 +14,7 @@ import fun.lib.actor.api.cb.CbActorRspAsync;
 import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.api.cb.CbCallHereBlock;
 import fun.lib.actor.api.cb.CbNode;
-import fun.lib.actor.api.cb.CbRpc;
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.define.RpcError;
 import fun.lib.actor.po.ActorProp;
@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 public final class DFActorSystemWrap implements DFActorSystem{
 	
 	private static final int RPC_TIMEOUT = 60000;
+	private static final int CB_TIMEOUT = 60000;
 	
 	private final DFActorManager _mgr;
 	private final int id;
@@ -61,17 +62,56 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	
 	//
 	@Override
-	public int send(int dstId, int cmd, Object payload) {
+	public int to(int dstId, int cmd, Object payload) {
 		return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
 	}
 	@Override
-	public int send(String dstName, int cmd, Object payload) {
+	public int to(String dstName, int cmd, Object payload) {
 		return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null);
 	}
 	@Override
-	public int sendback(int cmd, Object payload) {
-		int ret = _mgr.send(id, actor._lastSrcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
+	public int ret(int cmd, Object payload) {
+		if(actor._hasRet){
+			return -1;
+		}
+		actor._hasRet = true;
+		if(actor._lastRpcCtx != null){
+			actor._lastRpcCtx.response(cmd, payload);
+			actor._lastRpcCtx = null;
+			cmd = 0;
+		}else{
+			if(actor._lastSessionId > 0){  //has callback
+				cmd = _mgr.send(id, actor._lastSrcId, actor._lastSessionId, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, true);
+			}else{
+				cmd = _mgr.send(id, actor._lastSrcId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
+			}
+		}
 		actor._lastSrcId = 0;
+		actor._lastSessionId = 0;
+		return cmd;
+	}
+	@Override
+	public int call(int dstId, int cmd, Object payload, Cb cb) {
+		if(cb == null){
+			return 1;
+		}
+		int sid = _createCbId();
+		int ret = _mgr.send(id, dstId, sid, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, false);
+		if(ret == 0){  //send succ
+			addCallback(cb, sid, CB_TIMEOUT);
+		}
+		return ret;
+	}
+	@Override
+	public int call(String dstName, int cmd, Object payload, Cb cb) {
+		if(cb == null){
+			return 1;
+		}
+		int sid = _createCbId();
+		int ret = _mgr.send(id, dstName, sid, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, null, null, null, false);
+		if(ret == 0){  //send succ
+			addCallback(cb, sid, CB_TIMEOUT);
+		}
 		return ret;
 	}
 	
@@ -93,14 +133,7 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return _mgr.getTimerNowNano();
 	}
 	//
-	@Override
-	public int call(int dstId, int cmd, Object payload, CbActorRsp cb) {
-		return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb, false);
-	}
-	@Override
-	public int call(String dstName, int cmd, Object payload, CbActorRsp cb) {
-		return _mgr.send(id, dstName, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb);
-	}
+	
 	@Override
 	public int callHere(int dstId, int cmd, Object payload, CbCallHere cb) {
 		return _mgr.send(id, dstId, 0, DFActorDefine.SUBJECT_USER, cmd, payload, true, null, cb, false);
@@ -116,9 +149,9 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	//
 	
 	@Override
-	public RpcFuture callMethod(int dstId, String dstMethod, int cmd, Object payload) {
+	public RpcFuture rpc(int dstId, String dstMethod, int cmd, Object payload) {
 		RpcFuture f = null;
-		int sid = _createSessionId();
+		int sid = _createCbId();
 		int ret = _mgr.send(id, dstId, sid, DFActorDefine.SUBJECT_RPC, cmd, payload, true, 
 				null, actor.name, false, null, dstMethod);
 		if(ret == 0){  //send succ
@@ -129,9 +162,9 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return f;
 	}
 	@Override
-	public RpcFuture callMethod(String dstName, String dstMethod, int cmd, Object payload) {
+	public RpcFuture rpc(String dstName, String dstMethod, int cmd, Object payload) {
 		RpcFuture f = null;
-		int sid = _createSessionId();
+		int sid = _createCbId();
 		int ret = _mgr.send(id, dstName, sid, DFActorDefine.SUBJECT_RPC, cmd, payload, true, null, actor.name, null, dstMethod);
 		if(ret == 0){  //send succ
 			f = new RpcFutureWrap(true, sid, this);
@@ -146,65 +179,65 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		DFActorManager.get().shutdown();
 	}
 	@Override
-	public int sendToCluster(String dstNode, String dstActor, int cmd, String payload) {
+	public int toNode(String dstNode, String dstActor, int cmd, String payload) {
 		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
-	public int sendToCluster(String dstNode, String dstActor, int cmd, byte[] payload) {
+	public int toNode(String dstNode, String dstActor, int cmd, byte[] payload) {
 		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
-	public int sendToCluster(String dstNode, String dstActor, int cmd, ByteBuf payload) {
+	public int toNode(String dstNode, String dstActor, int cmd, ByteBuf payload) {
 		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
-	public int sendToCluster(String dstNode, String dstActor, int cmd, JSONObject payload) {
+	public int toNode(String dstNode, String dstActor, int cmd, JSONObject payload) {
 		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	@Override
-	public int sendToCluster(String dstNode, String dstActor, int cmd, DFSerializable payload) {
+	public int toNode(String dstNode, String dstActor, int cmd, DFSerializable payload) {
 		return DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, null, 0, cmd, payload);
 	}
 	//
 	@Override
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, String payload) {
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, String payload) {
 		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, JSONObject payload) {
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, JSONObject payload) {
 		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, byte[] payload) {
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, byte[] payload) {
 		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, ByteBuf payload) {
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, ByteBuf payload) {
 		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterByType(String dstNodeType, String dstActor, int cmd, DFSerializable payload) {
+	public int toNodeByType(String dstNodeType, String dstActor, int cmd, DFSerializable payload) {
 		return DFClusterManager.get().broadcast(actor.name, dstNodeType, dstActor, cmd, payload);
 	}
 	//sendToClusterAll
 	@Override
-	public int sendToClusterAll(String dstActor, int cmd, String payload) {
+	public int toAllNode(String dstActor, int cmd, String payload) {
 		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterAll(String dstActor, int cmd, JSONObject payload) {
+	public int toAllNode(String dstActor, int cmd, JSONObject payload) {
 		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterAll(String dstActor, int cmd, byte[] payload) {
+	public int toAllNode(String dstActor, int cmd, byte[] payload) {
 		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterAll(String dstActor, int cmd, ByteBuf payload) {
+	public int toAllNode(String dstActor, int cmd, ByteBuf payload) {
 		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
 	}
 	@Override
-	public int sendToClusterAll(String dstActor, int cmd, DFSerializable payload) {
+	public int toAllNode(String dstActor, int cmd, DFSerializable payload) {
 		return DFClusterManager.get().broadcast(actor.name, null, dstActor, cmd, payload);
 	}
 	
@@ -222,9 +255,9 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	}
 	//
 	@Override
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, String payload) {
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, String payload) {
 		RpcFuture f = null;
-		int sid = _createSessionId();
+		int sid = _createCbId();
 		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
 		if(ret == 0){  //send succ
 			f = new RpcFutureWrap(true, sid, this);
@@ -234,9 +267,9 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return f;
 	}
 	@Override
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, byte[] payload) {
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, byte[] payload) {
 		RpcFuture f = null;
-		int sid = _createSessionId();
+		int sid = _createCbId();
 		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
 		if(ret == 0){  //send succ
 			f = new RpcFutureWrap(true, sid, this);
@@ -246,9 +279,9 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return f;
 	}
 	@Override
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, ByteBuf payload) {
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, ByteBuf payload) {
 		RpcFuture f = null;
-		int sid = _createSessionId();
+		int sid = _createCbId();
 		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
 		if(ret == 0){  //send succ
 			f = new RpcFutureWrap(true, sid, this);
@@ -258,10 +291,10 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return f;
 	}
 	@Override
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd,
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd,
 			DFSerializable payload) {
 		RpcFuture f = null;
-		int sid = _createSessionId();
+		int sid = _createCbId();
 		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
 		if(ret == 0){  //send succ
 			f = new RpcFutureWrap(true, sid, this);
@@ -271,9 +304,9 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return f;
 	}
 	@Override
-	public RpcFuture callClusterMethod(String dstNode, String dstActor, String dstMethod, int cmd, JSONObject payload) {
+	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, JSONObject payload) {
 		RpcFuture f = null;
-		int sid = _createSessionId();
+		int sid = _createCbId();
 		int ret = DFClusterManager.get().sendToNode(actor.name, dstNode, dstActor, dstMethod, sid, cmd, payload);
 		if(ret == 0){  //send succ
 			f = new RpcFutureWrap(true, sid, this);
@@ -284,31 +317,29 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	}
 	
 	//
-	private HashMap<Integer, CbRpc> _mapRpcCb = null;
-	private int _rpcCbIdCount = 0;
-	
-	private int _createSessionId(){
-		int sid = ++_rpcCbIdCount;
-		if(_rpcCbIdCount >= Integer.MAX_VALUE){
-			_rpcCbIdCount = 0;
+	private HashMap<Integer, Cb> _mapCb = null;
+	private int _cbIdCount = 0;
+	private int _createCbId(){
+		int sid = ++_cbIdCount;
+		if(_cbIdCount >= Integer.MAX_VALUE){
+			_cbIdCount = 0;
 		}
 		return sid;
 	}
-	
-	protected void addRpcCallback(CbRpc cb, int sessionId, int timeoutMilli){
-		if(_mapRpcCb == null){
-			_mapRpcCb = new HashMap<>();
+	protected void addCallback(Cb cb, int sessionId, int timeoutMilli){
+		if(_mapCb == null){
+			_mapCb = new HashMap<>();
 		}
-		_mapRpcCb.put(sessionId, cb);
-		_mgr.addTimeout(id, (int) (timeoutMilli/DFActor.TIMER_UNIT_MILLI), DFActorDefine.SUBJECT_RPC_FAIL, sessionId, null);
+		_mapCb.put(sessionId, cb);
+		_mgr.addTimeout(id, (int) (timeoutMilli/DFActor.TIMER_UNIT_MILLI), DFActorDefine.SUBJECT_CB_FAILED, sessionId, null);
 	}
-	
-	protected CbRpc procRPCCb(int sessionId){
-		if(_mapRpcCb != null){
-			return _mapRpcCb.remove(sessionId);
+	protected Cb procCb(int sessionId){
+		if(_mapCb != null){
+			return _mapCb.remove(sessionId);
 		}
 		return null;
 	}
+	
 	@Override
 	public int listenNodeAll(CbNode callback) {
 		RegNodeReq req = new RegNodeReq(RegNodeReq.ALL, null, id, callback);
@@ -327,7 +358,20 @@ public final class DFActorSystemWrap implements DFActorSystem{
 		return _mgr.send(id, DFClusterActor.NAME, 0, DFActorDefine.SUBJECT_USER, 
 				DFClusterActor.CMD_REG_NODE_LISTENER, req, true, null, null);
 	}
-	
+	@Override
+	public String getCurSrcNode() {
+		if(actor._lastRpcCtx != null){
+			return actor._lastRpcCtx.getSrcNode();
+		}
+		return null;
+	}
+	@Override
+	public String getCurSrcActor() {
+		if(actor._lastRpcCtx != null){
+			return actor._lastRpcCtx.getSrcActor();
+		}
+		return null;
+	}
 	
 	
 }

@@ -57,12 +57,12 @@ public final class ClusterBroadcast {
 				if(++reqCount%2 == 0){ //向"game"类型结点广播
 					int nodeNum = sys.getNodeNumByType("game");
 					if(nodeNum > 0){
-						sys.sendToClusterByType("game", "EntryActor", NODE_IDX, "reqByType from "+ARR_NODE_NAME[NODE_IDX]);
+						sys.toNodeByType("game", "EntryActor", NODE_IDX, "reqByType from "+ARR_NODE_NAME[NODE_IDX]);
 					}
 				}else{ //向全部结点广播
 					int nodeNum = sys.getAllNodeNum();
 					if(nodeNum > 0){
-						sys.sendToClusterAll("EntryActor", NODE_IDX, "reqForAll from "+ARR_NODE_NAME[NODE_IDX]);
+						sys.toAllNode("EntryActor", NODE_IDX, "reqForAll from "+ARR_NODE_NAME[NODE_IDX]);
 					}
 				}
 				timer.timeout(2000, 0);

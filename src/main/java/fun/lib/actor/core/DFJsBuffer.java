@@ -30,7 +30,7 @@ public final class DFJsBuffer implements IScriptBuffer{
 	}
 
 	@Override
-	public int readableBytes() {
+	public int leftRead() {
 		return buf.readableBytes();
 	}
 	@Override
@@ -58,7 +58,7 @@ public final class DFJsBuffer implements IScriptBuffer{
 		return false;
 	}
 	@Override
-	public boolean writeString(String src, int len) {
+	public boolean writeStr(String src, int len) {
 		byte[] bufStr = src.getBytes(CharsetUtil.UTF_8);
 		int lenStr = bufStr.length;
 		buf.writeBytes(bufStr, 0, Math.min(lenStr, buf.writableBytes()));
@@ -88,7 +88,7 @@ public final class DFJsBuffer implements IScriptBuffer{
 		return buf.readByte();
 	}
 	@Override
-	public String readString(int len) {
+	public String readStr(int len) {
 		return (String) buf.readCharSequence(len, CharsetUtil.UTF_8);
 	}
 

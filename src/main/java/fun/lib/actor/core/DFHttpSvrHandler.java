@@ -120,7 +120,7 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	            	final String contentType = headers.get(DFHttpHeader.CONTENT_TYPE);
 	            	final int contentLen = (int) HttpUtil.getContentLength(req);
 	            	//data
-	            	if(contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
+	            	if(contentType != null && contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
 	            		dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, 
 	            						contentType==null?DFHttpContentType.UNKNOWN:contentType, contentLen, null);
 	            		HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(req);

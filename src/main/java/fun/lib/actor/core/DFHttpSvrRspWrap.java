@@ -33,11 +33,11 @@ public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 	
 	protected DFHttpSvrRspWrap(DFTcpChannel channel, String strData){
 		this(channel, 200, strData);
-		setContentType(DFHttpContentType.TEXT_PLAIN);  //default is text
+		contentType(DFHttpContentType.TEXT_PLAIN);  //default is text
 	}
 	protected DFHttpSvrRspWrap(String strData){
 		this(null, 200, strData);
-		setContentType(DFHttpContentType.TEXT_PLAIN);  //default is text
+		contentType(DFHttpContentType.TEXT_PLAIN);  //default is text
 	}
 	protected DFHttpSvrRspWrap(DFTcpChannel channel, JSONObject json){
 		this(channel, 200, json);
@@ -47,11 +47,11 @@ public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 	}
 	protected DFHttpSvrRspWrap(DFTcpChannel channel, int statusCode, JSONObject json){
 		this(channel, statusCode, json.toJSONString());
-		setContentType(DFHttpContentType.JSON);
+		contentType(DFHttpContentType.JSON);
 	}
 	protected DFHttpSvrRspWrap(int statusCode, JSONObject json){
 		this(null, statusCode, json.toJSONString());
-		setContentType(DFHttpContentType.JSON);
+		contentType(DFHttpContentType.JSON);
 	}
 	protected DFHttpSvrRspWrap(DFTcpChannel channel, int statusCode, String strData){
 		this.channel = channel;
@@ -70,23 +70,23 @@ public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 	protected DFHttpSvrRspWrap(DFTcpChannel channel, int statusCode, ByteBuf buf){
 		this.channel = channel;
 		response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode), buf);
-		setContentType(DFHttpContentType.OCTET_STREAM);
+		contentType(DFHttpContentType.OCTET_STREAM);
 	}
 	
 	//
 	@Override
-	public DFHttpSvrRsp putHeader(String key, String val){
+	public DFHttpSvrRsp header(String key, String val){
 		response.headers().set(key, val);
 		return this;
 	}
 	@Override
-	public DFHttpSvrRsp setContentType(String contentType){
-		putHeader(HttpHeaderNames.CONTENT_TYPE.toString(), contentType);
+	public DFHttpSvrRsp contentType(String contentType){
+		header(HttpHeaderNames.CONTENT_TYPE.toString(), contentType);
 		return this;
 	}
 	@Override
-	public DFHttpSvrRsp setUserAgent(String userAgent){
-		putHeader(HttpHeaderNames.USER_AGENT.toString(), userAgent);
+	public DFHttpSvrRsp userAgent(String userAgent){
+		header(HttpHeaderNames.USER_AGENT.toString(), userAgent);
 		return this;
 	}
 	@Override

@@ -12,6 +12,7 @@ public final class DFHttpCliRspWrap implements DFHttpCliRsp{
 	private final int statusCode;
 	private final HttpHeaders headers;
 	private final ByteBuf dataBuf;
+	private final IScriptBuffer dataBufScript;
 	private final String dataStr;
 	private final String contentType;
 	private final int contentLen;
@@ -26,8 +27,10 @@ public final class DFHttpCliRspWrap implements DFHttpCliRsp{
 		this.contentLen = contentLen;
 		if(this.dataBuf != null){
 			isBinary = true;
+			dataBufScript = DFJsBuffer.newBuffer(this.dataBuf);
 		}else{
 			isBinary = false;
+			dataBufScript = null;
 		}
 	}
 	
@@ -47,6 +50,16 @@ public final class DFHttpCliRspWrap implements DFHttpCliRsp{
 	public String getContentStr(){
 		return dataStr;
 	}
+	
+	@Override
+	public Object getContent() {
+		if(!isBinary){ //string
+			return dataStr;
+		}else{ //buf
+			return dataBufScript;
+		}
+	}
+	
 	@Override
 	public String getContentType(){
 		return contentType;
@@ -59,14 +72,14 @@ public final class DFHttpCliRspWrap implements DFHttpCliRsp{
 		return null;
 	}
 	@Override
-	public String getHeader(String name){
+	public String header(String name){
 		if(headers != null){
 			return headers.get(name);
 		}
 		return null;
 	}
 	@Override
-	public int getStatusCode() {
+	public int getStatus() {
 		return statusCode;
 	}
 	@Override
@@ -74,6 +87,11 @@ public final class DFHttpCliRspWrap implements DFHttpCliRsp{
 		if(dataBuf != null){
 			dataBuf.release(dataBuf.refCnt());
 		}
+	}
+
+	@Override
+	public boolean isIsStr() {
+		return !isBinary;
 	}
 
 }

@@ -9,11 +9,7 @@ import fun.lib.actor.api.DFActorSystem;
 import fun.lib.actor.api.DFActorTimer;
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.DFUdpChannel;
-import fun.lib.actor.api.cb.CbActorRsp;
 import fun.lib.actor.api.cb.CallHereContext;
-import fun.lib.actor.api.cb.CbActorReq;
-import fun.lib.actor.api.cb.CbActorRspAsync;
-import fun.lib.actor.api.cb.CbCallHere;
 import fun.lib.actor.api.cb.RpcContext;
 import io.netty.channel.socket.DatagramPacket;
 
@@ -38,7 +34,7 @@ public class DFActor implements CallHereContext{
 	protected Object _lastUserHandler = null;
 	protected RpcContext _lastRpcCtx = null;
 	protected boolean _hasRet = false;
-	
+	protected boolean isScriptActor = false;
 	
 	public DFActor(Integer id, String name, Boolean isBlockActor) {
 		this.id = id;
@@ -94,16 +90,7 @@ public class DFActor implements CallHereContext{
 	 */
 	public int onClusterMessage(String srcType, String srcNode, String srcActor, int cmd, Object payload){return MSG_AUTO_RELEASE;};
 	
-	protected int onScriptMessage(DFActorMessage msg){return MSG_AUTO_RELEASE;};
-//	/**
-//	 * 接收其它actor发过来的消息
-//	 * @param srcId 发送者actor的id
-//	 * @param cmd 消息码
-//	 * @param payload 消息体
-//	 * @return
-//	 */
-//	@Deprecated
-//	public int onMessage(int srcId, int cmd, Object payload){return DFActorDefine.MSG_AUTO_RELEASE;}
+	
 	/**
 	 * actor创建时调用一次
 	 * @param param 创建actor的调用者传入的参数

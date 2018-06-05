@@ -36,6 +36,7 @@ import com.funtag.util.proto.DFProtoUtil;
 import com.funtag.util.system.DFSysUtil;
 import com.google.protobuf.GeneratedMessageV3;
 
+import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFActorClusterConfig;
 import fun.lib.actor.po.DFActorManagerConfig;

@@ -164,8 +164,6 @@ public final class DFActorWrap {
 						}
 					}else if(DFActorDefine.SUBJECT_USER == msg.subject){
 						_procUserMsg(msg);
-					}else if(DFActorDefine.SUBJECT_SCRIPT == msg.subject){
-						_actor.onScriptMessage(msg);
 					}
 					else if(msg.subject == DFActorDefine.SUBJECT_NET){
 						if(msg.cmd == DFActorDefine.NET_UDP_MESSAGE){ //udp msg
@@ -250,20 +248,21 @@ public final class DFActorWrap {
 						_actor.onClusterMessage((String)msg.payload2, (String)msg.context, (String)msg.userHandler, msg.cmd, msg.payload);
 					}else if(msg.subject == DFActorDefine.SUBJECT_RPC){
 						if(msg.method != null){   //call method
-							Method method = null;
-							if(_mapMethod == null){
-								_mapMethod = new HashMap<>();
-							}else{
-								method = _mapMethod.get(msg.method);
-							}
-							if(method == null){
-								method = _actor.getClass().getMethod(msg.method, int.class, Object.class);
-								method.setAccessible(true);
-								_mapMethod.put(msg.method, method);
-							}
 							_actor._hasRet = false;
 							_actor._lastRpcCtx = new DFRpcContext((String)msg.context, (String)msg.userHandler, msg.sessionId);
-							method.invoke(_actor, msg.cmd, msg.payload);
+							if(_actor.isScriptActor){  //script actor
+								((DFJsActor)_actor).onRpcCall(msg.method, msg.cmd, msg.payload);
+							}else{
+								Method method = null;
+								if(_mapMethod == null){ _mapMethod = new HashMap<>();
+								}else{ method = _mapMethod.get(msg.method); }
+								if(method == null){
+									method = _actor.getClass().getMethod(msg.method, int.class, Object.class);
+									method.setAccessible(true);
+									_mapMethod.put(msg.method, method);
+								}
+								method.invoke(_actor, msg.cmd, msg.payload);
+							}
 						}
 					}else if(msg.subject == DFActorDefine.SUBJECT_CB_FAILED){
 						Cb cb =_wrapSys.procCb(msg.sessionId);

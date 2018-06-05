@@ -2,11 +2,14 @@ package fun.lib.actor.core;
 
 import com.google.protobuf.GeneratedMessageV3.Builder;
 
+import fun.lib.actor.api.http.DFHttpCliReq;
+
 public interface IScriptAPI {
 
 	//sys function
 	public int newActor(Object template, Object name, Object param, Object initCfg);
 	public int to(Object dst, int cmd, Object payload);
+	public int call(Object dst, int cmd, Object payload, Object cb);
 	public int ret(int cmd, Object payload);
 	public void timeout(int delay, Object requestId);
 	public int rpc(Object dstActor, String dstMethod, int cmd, Object payload, Object cb);
@@ -28,6 +31,8 @@ public interface IScriptAPI {
 	
 	//http function
 	public void httpSvr(Object cfg, Object cb);
+	public void httpCli(Object cfg, Object cb);
+	public DFHttpCliReq newHttpReq();
 	
 	//string <-> buf
 	public String bufToStr(Object buf);

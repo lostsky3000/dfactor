@@ -29,12 +29,12 @@ public final class HttpClient {
 						public int onHttpResponse(Object msg, boolean isSucc, String errMsg) {
 							DFHttpCliRsp rsp = (DFHttpCliRsp) msg;
 							if(isSucc){
-								log.info("recv rsp, status="+rsp.getStatusCode() 
+								log.info("recv rsp, status="+rsp.getStatus() 
 									+", contentType="+rsp.getContentType()+", isBinary="+rsp.isBinary()); 
 							}else{
 								log.info("conn http server failed, err="+errMsg);
 							}
-							return MSG_AUTO_RELEASE;
+							return 0;
 						}
 					});
 		}

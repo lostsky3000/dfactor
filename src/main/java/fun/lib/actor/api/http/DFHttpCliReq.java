@@ -1,7 +1,5 @@
 package fun.lib.actor.api.http;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.HttpHeaderNames;
 
 public interface DFHttpCliReq {
 
@@ -11,11 +9,13 @@ public interface DFHttpCliReq {
 	
 	public DFHttpCliReq method(String method);
 	
-	public DFHttpCliReq addHeader(String name, String val);
+	public DFHttpCliReq header(String name, String val);
 	
-	public DFHttpCliReq setReqData(String data);
+	public DFHttpCliReq content(Object data);
 	
-	public DFHttpCliReq setReqData(ByteBuf data);
+	public DFHttpCliReq contentType(String contentType);
+	
+	public DFHttpCliReq form(Boolean isForm);
 	
 	public DFHttpCliReq useDefaultHeader(boolean use);
 }

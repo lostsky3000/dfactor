@@ -146,8 +146,6 @@ public final class DFActorSystemWrap implements DFActorSystem{
 	public int callHereBlock(int shardId, int cmd, Object payload, CbCallHereBlock cb) {
 		return _mgr.callSysBlockActor(id, shardId, cmd, payload, cb); 
 	}
-	//
-	
 	@Override
 	public RpcFuture rpc(int dstId, String dstMethod, int cmd, Object payload) {
 		RpcFuture f = null;

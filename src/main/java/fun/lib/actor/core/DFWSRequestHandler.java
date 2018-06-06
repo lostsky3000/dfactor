@@ -72,7 +72,7 @@ public class DFWSRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 			ByteBuf buf = Unpooled.copiedBuffer(rsp.status().toString(), CharsetUtil.UTF_8);
 			rsp.content().writeBytes(buf);
 			buf.release();
-			 HttpUtil.setContentLength(rsp, rsp.content().readableBytes());
+			HttpUtil.setContentLength(rsp, rsp.content().readableBytes());
 		}
 		// Send the response and close the connection if necessary.
 		ChannelFuture f = ctx.channel().writeAndFlush(rsp);

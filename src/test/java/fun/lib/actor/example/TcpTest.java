@@ -40,7 +40,7 @@ public class TcpTest {
 			
 			log.info("onStart, ready to listen on port "+serverPort);
 			//启动端口监听
-			net.doTcpServer(cfg);
+			net.tcpSvr(cfg);
 		}
 		@Override
 		public void onTcpConnOpen(int requestId, DFTcpChannel channel) {
@@ -93,7 +93,7 @@ public class TcpTest {
 			DFTcpClientCfg cfg = new DFTcpClientCfg("127.0.0.1", serverPort) 
 				.setConnTimeout(5000) //设置连接超时，毫秒
 				.setTcpProtocol(TCP_PROTOCOL_LENGTH); //设置解码器为length，头两字节为包长度
-			net.doTcpConnect(cfg, serverPort);
+			net.tcpCli(cfg, serverPort);
 			
 			//启动定时器定时发送  一秒发送一次
 			timer.timeout(1000, 10000);

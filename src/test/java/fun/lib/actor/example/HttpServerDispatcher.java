@@ -33,7 +33,7 @@ public final class HttpServerDispatcher {
 			actorId = sys.createActor("/user", UserActor.class);
 			mapUri.put("/user", actorId);
 			//
-			net.doHttpServer(8080, new CbHttpServer() {
+			net.httpSvr(8080, new CbHttpServer() {
 				@Override
 				public int onHttpRequest(Object msg) {
 					DFHttpSvrReq req = (DFHttpSvrReq) msg;

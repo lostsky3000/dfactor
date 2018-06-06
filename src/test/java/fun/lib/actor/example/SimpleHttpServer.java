@@ -23,7 +23,7 @@ public final class SimpleHttpServer {
 	private static class EntryActor extends DFActor{
 		@Override
 		public void onStart(Object param) {
-			net.doHttpServer(8080, new CbHttpServer() {
+			net.httpSvr(8080, new CbHttpServer() {
 				@Override
 				public int onHttpRequest(Object msg) {
 					DFHttpSvrReq req = (DFHttpSvrReq) msg;

@@ -3,6 +3,7 @@ package fun.lib.actor.core;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -52,6 +53,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
@@ -59,11 +61,15 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.codec.http.websocketx.WebSocketVersion;
+import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -128,7 +134,6 @@ public final class DFSocketManager {
 				}
 			}
 		});
-
         return 0;
 	}
 	
@@ -364,7 +369,7 @@ public final class DFSocketManager {
 			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int)cfg.getConnTimeout())
 			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.handler(new TcpHandlerInit(false, cfg.getTcpProtocol(), 
-					cfg.getTcpMsgMaxLength(), srcActorId, requestId, null, dispatcher, 
+					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslCfg()
 					, cfg.getReqData()));
 		if(ioGroup instanceof EpollEventLoopGroup){
@@ -839,18 +844,34 @@ public final class DFSocketManager {
 		protected void initChannel(SocketChannel ch) throws Exception {
 			final ChannelPipeline pipe = ch.pipeline();
 			if(_sslCfg != null){ //ssl
-				final SslContext sslCtx = SslContextBuilder.forServer(new File(_sslCfg.getCertPath()), 
-						new File(_sslCfg.getPemPath())).build();
+				SslContext sslCtx = null;
+				if(_isServer){
+					sslCtx = SslContextBuilder.forServer(new File(_sslCfg.getCertPath()), 
+							new File(_sslCfg.getPemPath())).build();
+				}else{
+					sslCtx = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+				}
 				SslHandler sslHandler = sslCtx.newHandler(ch.alloc());
 				pipe.addLast(sslHandler);
 			}
 			//
 			if(_decodeType == DFActorDefine.TCP_DECODE_WEBSOCKET){
-				pipe.addLast(new HttpServerCodec());
-				pipe.addLast(new HttpObjectAggregator(64*1024));
-				pipe.addLast(new DFWSRequestHandler("/"+_wsSfx));
-				pipe.addLast(new WebSocketServerProtocolHandler("/"+_wsSfx, null, true));
-				pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
+				if(_isServer){
+					pipe.addLast(new HttpServerCodec());
+					pipe.addLast(new HttpObjectAggregator(64*1024));
+					pipe.addLast(new DFWSRequestHandler("/"+_wsSfx));
+					pipe.addLast(new WebSocketServerProtocolHandler("/"+_wsSfx, null, true));
+					pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
+				}else{
+					pipe.addLast(new HttpClientCodec());
+					pipe.addLast(new HttpObjectAggregator(64*1024));
+					DFWsClientHandler handler =  
+		                    new DFWsClientHandler(  
+		                            WebSocketClientHandshakerFactory.newHandshaker(  
+		                            		new URI(_wsSfx), WebSocketVersion.V13, null, false, new DefaultHttpHeaders()),
+		                            _actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder); 
+					pipe.addLast(handler);
+				}
 			}
 			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
 				if(_isServer){

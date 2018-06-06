@@ -15,14 +15,16 @@ import com.google.protobuf.GeneratedMessageV3.Builder;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.cb.Cb;
-import fun.lib.actor.api.cb.CbActorReq;
 import fun.lib.actor.api.cb.CbHttpClient;
 import fun.lib.actor.api.cb.CbHttpServer;
+import fun.lib.actor.api.cb.CbNode;
 import fun.lib.actor.api.cb.RpcFuture;
 import fun.lib.actor.api.http.DFHttpCliReq;
 import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpSvrReq;
+import fun.lib.actor.po.DFNode;
+import fun.lib.actor.po.DFSSLConfig;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
 import io.netty.buffer.ByteBuf;
@@ -46,6 +48,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	private boolean _regOnSchedule = true;
 	private boolean _regOnTcpConnClose = true;
 	private boolean _regOnTcpMsg = true;
+	private boolean _regOnNodeMsg = true;
 	//
 	private int _lastSrcId = 0;
 	@Override
@@ -64,6 +67,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		if(!_checkFunction("onTick")) _regOnSchedule = false;
 		if(!_checkFunction("onTcpMsg")) _regOnTcpMsg = false;
 		if(!_checkFunction("onTcpClose")) _regOnTcpConnClose = false;
+		if(!_checkFunction("onNodeMsg")) _regOnNodeMsg = false;
 		//set df
 		ScriptObjectMirror mirFnApi = (ScriptObjectMirror) mapParam.get("fnApi");
 		ScriptObjectMirror mirApi = null;
@@ -79,15 +83,17 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		mapParam.clear(); mapParam = null;
 	}
 	
-	private Object _curUserHandler = null;
-	private int _curReqId = 0;
 	@Override
 	public int onMessage(int cmd, Object payload, int srcId) {
 		if(_regOnMessage){
-			_lastSrcId = srcId;
-			_curUserHandler = null;
-			_curReqId = 0;
 			_js.callMember("onMsg", cmd, payload, srcId);
+		}
+		return 0;
+	}
+	@Override
+	public int onClusterMessage(String srcType, String srcNode, String srcActor, int cmd, Object payload) {
+		if(_regOnNodeMsg){
+			_js.callMember("onNodeMsg", cmd, payload, srcNode, srcActor, srcType);
 		}
 		return 0;
 	}
@@ -217,11 +223,27 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 				obj = cfgWrap.get("boss");
 				bossTh = obj==null?bossTh:(Integer)obj;
 				obj = cfgWrap.get("ws");
-				websocket = obj==null?websocket:(Boolean)obj;
+				websocket = obj==null?false:true;
+				//
 				log.info("start try tcpSvr, port="+port+", worker="+workerTh+", boss="+bossTh+", isWebsocket="+websocket);
 				DFTcpServerCfg svrCfg = new DFTcpServerCfg(port, workerTh, bossTh)
 						.setTcpProtocol(websocket?DFActorDefine.TCP_DECODE_WEBSOCKET:DFActorDefine.TCP_DECODE_LENGTH);
-				net.doTcpServer(svrCfg);
+				if(websocket){  //检测uri
+					obj = ((ScriptObjectMirror)cfgWrap.get("ws")).get("uri");
+					if(obj != null){
+						svrCfg.setWsUri(((String)obj).trim());
+					}
+				}
+				//check ssl
+				obj = cfgWrap.get("ssl");
+				if(obj!=null && !ScriptObjectMirror.isUndefined(obj)){  //use ssl
+					DFSSLConfig sslCfg = DFSSLConfig.newCfg()
+							.certPath((String)((ScriptObjectMirror)obj).get("cert"))
+							.pemPath((String)((ScriptObjectMirror)obj).get("key"));
+					svrCfg.setSslConfig(sslCfg);
+				}
+				//
+				net.tcpSvr(svrCfg);
 				_mapTcpSvrJsFunc.put(port, (ScriptObjectMirror) func);  //map port<->jsFunc 
 			}catch(Throwable e){
 				e.printStackTrace(); break;
@@ -261,11 +283,30 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 				}
 				host = host.trim();
 				int reqId = _genTcpCliReqId();
-				DFTcpClientCfg cfgCli = new DFTcpClientCfg(host, port)
-						.setTcpProtocol(DFActorDefine.TCP_DECODE_LENGTH);
-				Object obj = cfgWrap.get("timeout");
+				Object obj = cfgWrap.get("ssl");
+				boolean ssl = obj==null?false:(Boolean)obj;
+				DFTcpClientCfg cfgCli = new DFTcpClientCfg(host, port);
+				obj = cfgWrap.get("ws");
+				boolean websocket = obj==null?false:true;
+				if(websocket){
+					cfgCli.setTcpProtocol(DFActorDefine.TCP_DECODE_WEBSOCKET);
+					obj = ((ScriptObjectMirror)obj).get("uri");
+					if(obj != null){
+						cfgCli.setWsUri(ssl?"wss":"ws" + "://"+host+":"+port+"/"+obj);
+					}else{
+						cfgCli.setWsUri(ssl?"wss":"ws" + "://"+host+":"+port);
+					}
+				}else{
+					cfgCli.setTcpProtocol(DFActorDefine.TCP_DECODE_LENGTH);
+				}		
+				if(ssl){
+					cfgCli.setSslCfg(DFSSLConfig.newCfg());
+				}
+				obj = cfgWrap.get("timeout");
 				if(obj != null) cfgCli.setConnTimeout((Integer)obj);
-				net.doTcpConnect(cfgCli, reqId);
+				
+				
+				net.tcpCli(cfgCli, reqId);
 				if(_mapTcpCliJsFunc == null) _mapTcpCliJsFunc = new HashMap<>();
 				_mapTcpCliJsFunc.put(reqId, (ScriptObjectMirror)func);
 				log.info("start try tcpCli, "+host+":"+port);
@@ -443,15 +484,12 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		final Cb cbWrap = new Cb() {
 			@Override
 			public int onFailed(int code) {
-				_jsEvent.type = "err";
-				_jsEvent.err = code + "";
-				mirCb.call(0, _js, _jsEvent);
+				mirCb.call(0, _js, code==0?"timeout":"call failed");
 				return 0;
 			}
 			@Override
 			public int onCallback(int cmd, Object payload) {
-				_jsEvent.type = "rsp";
-				mirCb.call(0, _js, _jsEvent, cmd, payload);
+				mirCb.call(0, _js, null, cmd, payload);
 				return 0;
 			}
 		};
@@ -468,6 +506,101 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	public int ret(int cmd, Object payload) {
 		return sys.ret(cmd, payload);
 	}
+	@Override
+	public int toNode(String dstNode, String dstActor, int cmd, Object payload) {
+		if(payload != null){
+			if(payload instanceof String){
+				return sys.toNode(dstNode, dstActor, cmd, (String)payload);
+			}else if(payload instanceof IScriptBuffer){
+				return sys.toNode(dstNode, dstActor, cmd, ((DFJsBuffer)payload).getBuf());
+			}else if(payload instanceof Builder){  //protobuf
+				byte[] b = ((Builder<?>)payload).build().toByteArray();
+				return sys.toNode(dstNode, dstActor, cmd, b);
+			}else{  //unknown
+				return -1;
+			}
+		}else{
+			byte[] b = null;
+			return sys.toNode(dstNode, dstActor, cmd, b);
+		}
+	}
+	@Override
+	public int toTypeNode(String type, String dstActor, int cmd, Object payload){
+		if(payload != null){
+			if(payload instanceof String){
+				return sys.toNodeByType(type, dstActor, cmd, (String)payload);
+			}else if(payload instanceof IScriptBuffer){
+				return sys.toNodeByType(type, dstActor, cmd, ((DFJsBuffer)payload).getBuf());
+			}else if(payload instanceof Builder){  //protobuf
+				byte[] b = ((Builder<?>)payload).build().toByteArray();
+				return sys.toNodeByType(type, dstActor, cmd, b);
+			}else{  //unknown
+				return -1;
+			}
+		}else{
+			byte[] b = null;
+			return sys.toNodeByType(type, dstActor, cmd, b);
+		}
+	}
+	@Override
+	public int toAllNode(String dstActor, int cmd, Object payload){
+		if(payload != null){
+			if(payload instanceof String){
+				return sys.toAllNode(dstActor, cmd, (String)payload);
+			}else if(payload instanceof IScriptBuffer){
+				return sys.toAllNode(dstActor, cmd, ((DFJsBuffer)payload).getBuf());
+			}else if(payload instanceof Builder){  //protobuf
+				byte[] b = ((Builder<?>)payload).build().toByteArray();
+				return sys.toAllNode(dstActor, cmd, b);
+			}else{  //unknown
+				return -1;
+			}
+		}else{
+			byte[] b = null;
+			return sys.toAllNode(dstActor, cmd, b);
+		}
+	}
+	@Override
+	public int rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, Object payload, Object cb){
+		try{
+			final ScriptObjectMirror mirCb = (cb==null||ScriptObjectMirror.isUndefined(cb))?null:(ScriptObjectMirror)cb;
+			RpcFuture future = null;
+			if(payload != null){
+				if(payload instanceof String){
+					future = sys.rpcNode(dstNode, dstActor, dstMethod, cmd, (String)payload);
+				}else if(payload instanceof IScriptBuffer){
+					future = sys.rpcNode(dstNode, dstActor, dstMethod, cmd, ((DFJsBuffer)payload).getBuf());
+				}else if(payload instanceof Builder){
+					byte[] b = ((Builder<?>)payload).build().toByteArray();
+					future = sys.rpcNode(dstNode, dstActor, dstMethod, cmd, b);
+				}else{
+					return -2;
+				}
+			}else{
+				byte[] b = null;
+				future = sys.rpcNode(dstNode, dstActor, dstMethod, cmd, b);
+			}
+			if(future != null && mirCb != null){
+				future.addListener(new Cb() {
+					@Override
+					public int onFailed(int code) {
+						mirCb.call(0, _js, code+"");
+						return 0;
+					}
+					@Override
+					public int onCallback(int cmd, Object payload) {
+						mirCb.call(0, _js, null, cmd, payload);
+						return 0;
+					}
+				}, 60000);
+			}
+			return 0;
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		return -1;
+	}
+	
 	@Override
 	public void timeout(int delay, Object requestId) {
 		if(requestId == null || ScriptObjectMirror.isUndefined(requestId)) timer.timeout(delay, 0);
@@ -581,14 +714,12 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			final Cb cbWrap = mirCb==null?null:new Cb() {
 				@Override
 				public int onFailed(int code) {
-					_jsEvent.type = "err"; _jsEvent.err = code+"";
-					mirCb.call(0, _js, _jsEvent);
+					mirCb.call(0, _js, code==0?"timeout":"rpc failed");
 					return 0;
 				}
 				@Override
 				public int onCallback(int cmd, Object payload) {
-					_jsEvent.type = "rsp";
-					mirCb.call(0, _js, _jsEvent, cmd, payload);
+					mirCb.call(0, _js, null, cmd, payload);
 					return 0;
 				}
 			};
@@ -630,22 +761,28 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			int connTimeout = mirCfg.containsKey("timeout")?(Integer)(mirCfg.get("timeout")):0;
 			final ScriptObjectMirror mirCb = DFJsUtil.isJsFunction(cb)?(ScriptObjectMirror) cb:null;
 			//
+			req.end();
 			DFTcpClientCfg cfgCli = DFTcpClientCfg.newCfg(host, port)
 					.setReqData(req);
 			if(connTimeout > 0){
 				cfgCli.setConnTimeout(connTimeout);
 			}	
-			net.doHttpClient(cfgCli, mirCb==null?null:new CbHttpClient() {
+			Object objSsl = mirCfg.get("ssl");
+			if(objSsl != null && !ScriptObjectMirror.isUndefined(objSsl)){ //has ssl config
+				if((Boolean)objSsl){
+					cfgCli.setSslCfg(DFSSLConfig.newCfg());
+				}
+			}
+			net.httpCli(cfgCli, mirCb==null?null:new CbHttpClient() {
 				@Override
 				public int onHttpResponse(Object msg, boolean isSucc, String errMsg) {
 					if(mirCb != null){
-						DFHttpCliRsp rsp = (DFHttpCliRsp) msg;
 						if(isSucc){
-							_jsEvent.type = "rsp";
+							DFHttpCliRsp rsp = (DFHttpCliRsp) msg;
+							mirCb.call(0, _js, null, rsp);
 						}else{
-							_jsEvent.type = "ret"; _jsEvent.succ = false; _jsEvent.err = errMsg;
+							mirCb.call(0, _js, errMsg, null);
 						}
-						mirCb.call(0, _js, _jsEvent, rsp);
 					}
 					return 0;
 				}
@@ -672,9 +809,18 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			}else{
 				cfgSvr = new DFTcpServerCfg(port);
 			}
+			Object objSsl = mirCfg.get("ssl");
+			if(objSsl != null && !ScriptObjectMirror.isUndefined(objSsl)){ //has ssl config
+				ScriptObjectMirror mirSslCfg = (ScriptObjectMirror) objSsl;
+				DFSSLConfig cfgSsl = DFSSLConfig.newCfg()
+							.certPath((String)mirSslCfg.get("cert"))
+							.pemPath((String)mirSslCfg.get("key"));
+				cfgSvr.setSslConfig(cfgSsl);
+			}
+			
 			cfgSvr.setTcpProtocol(DFActorDefine.TCP_DECODE_HTTP);
 			final ScriptObjectMirror jsCb = mirCb;
-			net.doHttpServer(cfgSvr, new CbHttpServer() {
+			net.httpSvr(cfgSvr, new CbHttpServer() {
 				@Override
 				public void onListenResult(boolean isSucc, String errMsg) {
 					if(jsCb != null){
@@ -704,7 +850,73 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			e.printStackTrace();
 		}
 	}
-	
+
+	@Override
+	public boolean isNode() {
+		return sys.isClusterEnable();
+	}
+
+	@Override
+	public String getNodeName() {
+		return DFActorManager.get().getNodeName();
+	}
+
+	@Override
+	public String getNodeType() {
+		return DFActorManager.get().getNodeType();
+	}
+
+	@Override
+	public int listenNode(String type, Object val, Object cb) {
+		try{
+			Object objCb = null;
+			String strVal = null;
+			if(type.equalsIgnoreCase("all")){
+				objCb = val;
+			}else if(type.equalsIgnoreCase("type")){
+				objCb = cb;
+				strVal = (String) val;
+			}else if(type.equalsIgnoreCase("name")){
+				strVal = (String) val;
+				objCb = cb;
+			}else{
+				return 2;
+			}
+			if(objCb == null || ScriptObjectMirror.isUndefined(objCb)){
+				return 3;
+			}
+			final ScriptObjectMirror mirCb = (ScriptObjectMirror) objCb;
+			if(!mirCb.isFunction()){
+				return 4;
+			}
+			CbNode cbWrap = new CbNode() {
+				@Override
+				public void onNodeRemove(DFNode node) {
+					mirCb.call(0, _js, "off", node);
+				}
+				@Override
+				public void onNodeAdd(DFNode node) {
+					mirCb.call(0, _js, "on", node);
+				}
+			};
+			if(type.equalsIgnoreCase("all")){
+				sys.listenNodeAll(cbWrap);
+			}else if(type.equalsIgnoreCase("type")){
+				sys.listenNodeByType(strVal, cbWrap);
+			}else if(type.equalsIgnoreCase("name")){
+				sys.listenNodeByName(strVal, cbWrap);
+			}
+			return 0;
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		return 1;
+	}
+
+	@Override
+	public boolean isNodeOnline(String nodeName) {
+		return sys.isNodeOnline(nodeName);
+	}
 	
 	
 }

@@ -89,8 +89,8 @@ public final class ClusterParam {
 		public AnswerActor(Integer id, String name, Boolean isBlockActor) {
 			super(id, name, isBlockActor);
 		}
-		//被调用方法需满足如下参数列表: public (int,Object,RpcContext)
-		public void doMath(int cmd, Object payload, RpcContext ctx){
+		//被调用方法需满足如下参数列表: public (int,Object)
+		public void doMath(int cmd, Object payload){
 			if(payload instanceof DFSerializable){  //自定义消息类型
 				ClusterCustomMsg msg = (ClusterCustomMsg) payload;
 				log.info("recv customMsg: cmd="+cmd+", "+msg);

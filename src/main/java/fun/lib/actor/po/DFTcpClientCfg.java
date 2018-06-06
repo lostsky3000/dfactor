@@ -25,6 +25,7 @@ public final class DFTcpClientCfg {
 	private volatile DFSSLConfig sslCfg = null;
 	
 	private volatile Object reqData = null;
+	private volatile String wsUri = null;
 	/**
 	 * 
 	 * @param host 目标主机地址
@@ -90,6 +91,7 @@ public final class DFTcpClientCfg {
 		if(tcpProtocol == DFActorDefine.TCP_DECODE_LENGTH 
 				|| tcpProtocol == DFActorDefine.TCP_DECODE_RAW
 				|| tcpProtocol == DFActorDefine.TCP_DECODE_HTTP
+				|| tcpProtocol == DFActorDefine.TCP_DECODE_WEBSOCKET
 				){ //valid
 			
 		}else{ //invalid
@@ -121,6 +123,14 @@ public final class DFTcpClientCfg {
 	public DFTcpClientCfg setEncoder(DFTcpEncoder encoder) {
 		this.encoder = encoder;
 		return this;
+	}
+	
+	public DFTcpClientCfg setWsUri(String uri){
+		this.wsUri = uri;
+		return this;
+	}
+	public String getWsUri(){
+		return this.wsUri;
 	}
 	
 	public Object getUserHandler() {

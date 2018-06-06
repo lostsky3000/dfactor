@@ -245,7 +245,13 @@ public final class DFActorWrap {
 									(DFUdpChannel) event.getExtObj1());
 						}
 					}else if(msg.subject == DFActorDefine.SUBJECT_CLUSTER){
-						_actor.onClusterMessage((String)msg.payload2, (String)msg.context, (String)msg.userHandler, msg.cmd, msg.payload);
+						_actor._lastSrcNode = (String)msg.context;
+						_actor._lastSrcActor = (String)msg.userHandler;
+						_actor._hasRet = false;
+						_actor.onClusterMessage((String)msg.payload2, _actor._lastSrcNode, _actor._lastSrcActor, msg.cmd, msg.payload);
+						_actor._lastSrcNode = null;
+						_actor._lastSrcActor = null;
+						_actor._hasRet = true;
 					}else if(msg.subject == DFActorDefine.SUBJECT_RPC){
 						if(msg.method != null){   //call method
 							_actor._hasRet = false;
@@ -367,6 +373,9 @@ public final class DFActorWrap {
 		if(noCb){
 			_actor.onMessage(msg.cmd, msg.payload, msg.srcId); //msg.sessionId, msg.subject, 
 		}
+		_actor._lastSrcId = 0;
+		_actor._lastSessionId = 0;
+		_actor._hasRet = true;
 	}
 	
 	protected void markRemoved(){

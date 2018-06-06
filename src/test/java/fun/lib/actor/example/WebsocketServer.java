@@ -32,7 +32,7 @@ public final class WebsocketServer {
 				.setWsUri("test");  //如 ws://127.0.0.1:10001/test
 			log.info("onStart, ready to listen on port "+serverPort);
 			//启动端口监听
-			net.doTcpServer(cfg);
+			net.tcpSvr(cfg);
 		}
 		@Override
 		public void onTcpConnOpen(int requestId, DFTcpChannel channel) {

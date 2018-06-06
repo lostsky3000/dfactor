@@ -75,7 +75,27 @@ public final class DFActorSystemWrap implements DFActorSystem{
 			return -1;
 		}
 		actor._hasRet = true;
-		if(actor._lastRpcCtx != null){
+		if(actor._lastSrcNode != null && actor._lastSrcActor != null){  //is cluster msg
+			if(payload == null){
+				byte[] b = null;
+				cmd = this.toNode(actor._lastSrcNode, actor._lastSrcActor, cmd, b);
+			}else{   //has payload
+				if(payload instanceof String){
+					cmd = this.toNode(actor._lastSrcNode, actor._lastSrcActor, cmd, (String)payload);
+				}else if(payload instanceof IScriptBuffer){
+					cmd = this.toNode(actor._lastSrcNode, actor._lastSrcActor, cmd, ((DFJsBuffer)payload).getBuf());
+				}else if(payload instanceof byte[]){
+					cmd = this.toNode(actor._lastSrcNode, actor._lastSrcActor, cmd, (byte[])payload);
+				}else if(payload instanceof ByteBuf){
+					cmd = this.toNode(actor._lastSrcNode, actor._lastSrcActor, cmd, (ByteBuf)payload);
+				}else if(payload instanceof JSONObject){
+					cmd = this.toNode(actor._lastSrcNode, actor._lastSrcActor, cmd, (JSONObject)payload);
+				}
+				else{	//unknown type
+					cmd = -2;
+				}
+			}
+		}else if(actor._lastRpcCtx != null){  //is rpc
 			actor._lastRpcCtx.response(cmd, payload);
 			actor._lastRpcCtx = null;
 			cmd = 0;
@@ -369,6 +389,10 @@ public final class DFActorSystemWrap implements DFActorSystem{
 			return actor._lastRpcCtx.getSrcActor();
 		}
 		return null;
+	}
+	@Override
+	public boolean isClusterEnable() {
+		return DFActorManager.get().isClusterEnable();
 	}
 	
 	

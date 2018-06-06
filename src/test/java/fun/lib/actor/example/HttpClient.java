@@ -22,7 +22,7 @@ public final class HttpClient {
 			DFHttpCliReq req = DFHttpReqBuilder.build()
 					.method(DFHttpMethod.GET).end();
 			
-			net.doHttpClient(DFTcpClientCfg.newCfg("www.baidu.com", 80)
+			net.httpCli(DFTcpClientCfg.newCfg("www.baidu.com", 80)
 								.setReqData(req),
 					new CbHttpClient() {
 						@Override

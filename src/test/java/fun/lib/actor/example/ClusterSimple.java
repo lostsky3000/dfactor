@@ -69,7 +69,7 @@ public final class ClusterSimple {
 		public int onClusterMessage(String srcType, String srcNode, String srcActor, int cmd, Object payload) {
 			log.info("onClusterMessage, from="+srcNode+", cmd="+cmd+", payload="+payload);
 			if(NODE_IDX == 1){  //game-2收到game-1消息，回复
-				sys.toNode(srcNode, srcActor, 1, "answer from game-2, tm="+System.currentTimeMillis());
+				sys.ret(1, "answer from game-2, tm="+System.currentTimeMillis());
 			}
 			return 0;
 		}

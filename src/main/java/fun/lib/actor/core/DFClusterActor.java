@@ -98,6 +98,8 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 			_selfNodeName = _cfgCluster.getNodeName();
 		}
 		DFClusterManager.get().setSelfNodeName(_selfNodeName, _cfgCluster.getNodeType());
+		_mgrActor.setNodeName(_selfNodeName);
+		_mgrActor.setNodeType(_cfgCluster.getNodeType());
 		log.info("curNodeName = "+_selfNodeName);
 		//
 		_tmStart = System.currentTimeMillis();
@@ -110,7 +112,7 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 		DFTcpServerCfg cfg = new DFTcpServerCfg(_curTcpPort, DFActorManager.get().getClusterIoGroup())
 			.setSoBackLog(1024)
 			.setTcpProtocol(DFActorDefine.TCP_DECODE_LENGTH);
-		net.doTcpServer(cfg, this);
+		net.tcpSvr(cfg, this);
 	}
 	@Override
 	public void onTcpServerListenResult(int requestId, boolean isSucc, String errMsg) {
@@ -142,7 +144,7 @@ public final class DFClusterActor extends DFActor implements DFActorTcpDispatche
 	
 	private void _tryUdpListen(){
 		DFUdpServerCfg cfg = new DFUdpServerCfg(_curUdpPort, false, DFActorManager.get().getClusterIoGroup());
-		net.doUdpServer(cfg, new DFActorUdpDispatcher() {
+		net.udpSvr(cfg, new DFActorUdpDispatcher() {
 			@Override
 			public int onQueryMsgActorId(Object msg) {
 				return id;

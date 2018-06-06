@@ -27,7 +27,7 @@ public final class HttpsServer {
 			//私钥文件路径
 			String pemPath = "/var/dfactor/private.pem";
 			
-			net.doHttpServer(DFTcpServerCfg.newCfg(443)
+			net.httpSvr(DFTcpServerCfg.newCfg(443)
 								.setSslConfig(DFSSLConfig.newCfg()
 												.certPath(certPath)
 												.pemPath(pemPath)), 

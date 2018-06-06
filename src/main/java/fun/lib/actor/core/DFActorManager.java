@@ -116,7 +116,9 @@ public final class DFActorManager {
 	private volatile EventLoopGroup _clientIoGroup = null;
 	private volatile EventLoopGroup _clusterIoGroup = null;
 	
-	
+	private volatile boolean _isClusterEnable = false;
+	private volatile String _nodeName = null;
+	private volatile String _nodeType = null;
 	private int _blockThNum = 0;
 	private int _workerThNum = 0;
 	private int _clusterThNum = 0;
@@ -211,6 +213,7 @@ public final class DFActorManager {
 				int ioThNum = Math.max(1, cfg.getClusterConfig().getIoThreadNum());
 				_clusterThNum = 1;  //use one thread for cluster biz
 				_clusterIoGroup = DFSysUtil.isLinux()?new EpollEventLoopGroup(ioThNum):new NioEventLoopGroup(ioThNum);
+				_isClusterEnable = true;
 			}else{
 				_clusterThNum = 0;
 			}
@@ -937,6 +940,21 @@ public final class DFActorManager {
 	
 	protected int getClientIoThreadNum(){
 		return _initCfg.getClientIoThreadNum();
+	}
+	protected boolean isClusterEnable(){
+		return _isClusterEnable;
+	}
+	protected String getNodeName(){
+		return _nodeName;
+	}
+	protected void setNodeName(String nodeName){
+		_nodeName = nodeName;
+	}
+	protected void setNodeType(String nodeType){
+		_nodeType = nodeType;
+	}
+	protected String getNodeType(){
+		return _nodeType;
 	}
 	
 	static final Map<String,Integer> s_mapSysActorNameId = new HashMap<>();

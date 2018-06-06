@@ -34,6 +34,7 @@ import javax.tools.ToolProvider;
 import com.funtag.util.net.DFIpUtil;
 import com.funtag.util.proto.DFProtoUtil;
 import com.funtag.util.system.DFSysUtil;
+import com.google.common.io.Files;
 import com.google.protobuf.GeneratedMessageV3;
 
 import fun.lib.actor.api.cb.Cb;
@@ -541,7 +542,7 @@ public final class DFActorManagerJs{
 				if(DFSysUtil.getOSType() == DFSysUtil.OS_WINDOWS){
 					binPath += "protoc.exe";
 				}else{
-					
+					binPath = "protoc";
 				}
 				File dirOut = new File(outDir);
 				if(!dirOut.exists()){
@@ -570,6 +571,34 @@ public final class DFActorManagerJs{
 				lsJava.clear();
 				_iteratorJavaFile(dirOut, lsJava, false);
 				if(!lsJava.isEmpty()){
+					//获取系统Java编译器
+				    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+				    if(compiler == null){  //未获取到编译器
+				    	//检测java编译环境
+						String javaHome = System.getProperty("java.home");
+				    	if(javaHome == null){
+				    		printError("no JAVA_HOME specify"); break;
+				    	}
+				    	print("java_home="+javaHome);
+				    	File dirJavaHome = new File(javaHome);
+				    	if(!dirJavaHome.exists() || !dirJavaHome.isDirectory()){
+				    		printError("invalid JAVA_HOME: "+dirJavaHome.getAbsolutePath()); break;
+				    	}
+				    	File fToolsJar = new File(dirJavaHome.getAbsolutePath()+File.separator+"lib"+File.separator+"tools.jar");
+				    	printError("you need copy jdk/lib/tools.jar to "+fToolsJar.getAbsolutePath()+" manually");
+//				    	if(!fToolsJar.exists()){  //tools.jar not exist, copy
+//				    		print("tools.jar not found, start copy");
+//				    		File fSrcJar = new File(dirRun.getAbsolutePath()+File.separator+"lib"+File.separator+"tools.jar");
+//				    		try{
+//				    			Files.copy(fSrcJar, fToolsJar);
+//				    		}catch(Throwable e){
+//				    			e.printStackTrace();
+//				    			printError("you should copy "+fSrcJar.getAbsolutePath()+" to "+fToolsJar.getAbsolutePath()+" manually");
+//				    			break;
+//				    		}
+//				    	}
+				    	break;
+				    }
 					File[] arrJava = new File[lsJava.size()];
 					Iterator<File> itJava = lsJava.iterator();
 					int idx = 0;
@@ -578,8 +607,6 @@ public final class DFActorManagerJs{
 					}
 					print("start compile proto java, hold on ...");
 					//start compile
-					//获取系统Java编译器
-				    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 				    //获取Java文件管理器
 				    final HashMap<String,byte[]> bytes = new HashMap<>();
 				    final LinkedList<String> lsClzName = new LinkedList<>();

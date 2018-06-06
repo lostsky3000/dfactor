@@ -14,6 +14,17 @@ public interface IScriptAPI {
 	public void timeout(int delay, Object requestId);
 	public int rpc(Object dstActor, String dstMethod, int cmd, Object payload, Object cb);
 	
+	//cluster
+	public int toNode(String dstNode, String dstActor, int cmd, Object payload);
+	public int toTypeNode(String type, String dstActor, int cmd, Object payload);
+	public int toAllNode(String dstActor, int cmd, Object payload);
+	public int rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, Object payload, Object cb);
+	public boolean isNode();
+	public String getNodeName();
+	public String getNodeType();
+	public int listenNode(String type, Object val, Object cb);
+	public boolean isNodeOnline(String nodeName);
+	
 	//buf function
 	public IScriptBuffer newBuf(int capacity);
 	//proto function
@@ -33,6 +44,7 @@ public interface IScriptAPI {
 	public void httpSvr(Object cfg, Object cb);
 	public void httpCli(Object cfg, Object cb);
 	public DFHttpCliReq newHttpReq();
+	
 	
 	//string <-> buf
 	public String bufToStr(Object buf);

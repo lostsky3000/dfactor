@@ -325,7 +325,7 @@ public interface DFActorSystem {
 	public RpcFuture rpcNode(String dstNode, String dstActor, String dstMethod, int cmd, JSONObject payload);
 	
 	
-	
+	public boolean isClusterEnable();
 	
 	/**
 	 * 检测指定结点是否在线

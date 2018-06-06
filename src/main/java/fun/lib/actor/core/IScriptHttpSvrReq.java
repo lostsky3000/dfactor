@@ -16,7 +16,7 @@ public interface IScriptHttpSvrReq {
 	public String header(String key);
 	public String getUserAgent();
 	
-	public Iterator<Entry<String,String>> getAttrIterator();
+	public Iterator<Entry<String,String>> getFieldIterator();
 	
 	public DFHttpSvrRsp response(Object data);
 }

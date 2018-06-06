@@ -34,6 +34,9 @@ public class DFActor implements CallHereContext{
 	protected Object _lastUserHandler = null;
 	protected RpcContext _lastRpcCtx = null;
 	protected boolean _hasRet = false;
+	protected String _lastSrcActor = null;
+	protected String _lastSrcNode = null;
+	
 	protected boolean isScriptActor = false;
 	
 	public DFActor(Integer id, String name, Boolean isBlockActor) {

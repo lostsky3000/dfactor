@@ -300,6 +300,27 @@ public final class DFActorManager {
 	public boolean startAsDaemon(DFActorManagerConfig cfg, String dirJar, String entryActorFullName, Object params){
 		boolean bRet = false;
 		do {
+			HashMap<String,Class<?>> mapClz = new HashMap<>();
+			if(!this.loadJars(dirJar, mapClz)){
+				break;
+			}
+			//
+			Class clzEntry = mapClz.get(entryActorFullName);
+			if(clzEntry != null){ //find entryActor
+				ActorProp prop = ActorProp.newProp()
+						.classz(clzEntry)
+						.param(params);
+				return this.start(cfg, prop);
+			}else{
+				return false;
+			}
+		} while (false);
+		return bRet;
+	}
+	
+	protected boolean loadJars(String dirJar, Map<String,Class<?>> map){
+		boolean bRet = false;
+		do {
 			File dir = new File(dirJar);
 			if(!dir.isDirectory()){ //not dir
 				log.E("dirJar invalid: "+dirJar);
@@ -333,7 +354,6 @@ public final class DFActorManager {
 				break;
 			}
 			//
-			Class clzEntry = null;
 			Class clz = null;
 			ClassLoader defLoader = Thread.currentThread().getContextClassLoader();
 			try {
@@ -358,18 +378,12 @@ public final class DFActorManager {
 							if(clz == null){
 								continue;
 							}
-							if(clzEntry == null && clzName.equals(entryActorFullName)){
-								clzEntry = clz;
+							if(map != null){
+								map.put(clzName, clz);
 							}
 						}
 					}
 					jar.close();
-				}
-				if(clzEntry != null){ //find entryActor
-					ActorProp prop = ActorProp.newProp()
-							.classz(clzEntry)
-							.param(params);
-					return this.start(cfg, prop);
 				}
 			} catch (MalformedURLException e) {
 				e.printStackTrace();

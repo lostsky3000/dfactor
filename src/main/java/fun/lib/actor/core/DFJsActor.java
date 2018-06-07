@@ -1,10 +1,13 @@
 package fun.lib.actor.core;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
@@ -12,6 +15,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import com.funtag.util.script.DFJsUtil;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.GeneratedMessageV3.Builder;
+import com.mongodb.client.MongoDatabase;
 
 import fun.lib.actor.api.DFTcpChannel;
 import fun.lib.actor.api.cb.Cb;
@@ -23,7 +27,10 @@ import fun.lib.actor.api.http.DFHttpCliReq;
 import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpSvrReq;
+import fun.lib.actor.po.DFDbCfg;
+import fun.lib.actor.po.DFMongoCfg;
 import fun.lib.actor.po.DFNode;
+import fun.lib.actor.po.DFRedisCfg;
 import fun.lib.actor.po.DFSSLConfig;
 import fun.lib.actor.po.DFTcpClientCfg;
 import fun.lib.actor.po.DFTcpServerCfg;
@@ -32,6 +39,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.util.CharsetUtil;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import redis.clients.jedis.Jedis;
 
 public final class DFJsActor extends DFActor implements IScriptAPI{
 
@@ -50,7 +58,6 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	private boolean _regOnTcpMsg = true;
 	private boolean _regOnNodeMsg = true;
 	//
-	private int _lastSrcId = 0;
 	@Override
 	public void onStart(Object param) {
 		_mgrActorJs = DFActorManagerJs.get();
@@ -183,6 +190,9 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		Object msgOut = msg;
 		if(msg instanceof ByteBuf){
 			msgOut = DFJsBuffer.newBuffer((ByteBuf)msg);
+		}else if(msg instanceof DFHttpSvrReq){
+			DFHttpSvrReq req = (DFHttpSvrReq) msg;
+			msgOut = (IScriptHttpSvrReq)new DFJsHttpSvrReq(req);
 		}
 		if(chWrap != null){ //notify js
 			_jsEvent.type = "msg";
@@ -809,14 +819,16 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			}else{
 				cfgSvr = new DFTcpServerCfg(port);
 			}
-			Object objSsl = mirCfg.get("ssl");
-			if(objSsl != null && !ScriptObjectMirror.isUndefined(objSsl)){ //has ssl config
-				ScriptObjectMirror mirSslCfg = (ScriptObjectMirror) objSsl;
+			Object obj = mirCfg.get("ssl");
+			if(obj != null && !ScriptObjectMirror.isUndefined(obj)){ //has ssl config
+				ScriptObjectMirror mirSslCfg = (ScriptObjectMirror) obj;
 				DFSSLConfig cfgSsl = DFSSLConfig.newCfg()
 							.certPath((String)mirSslCfg.get("cert"))
 							.pemPath((String)mirSslCfg.get("key"));
 				cfgSvr.setSslConfig(cfgSsl);
 			}
+			obj = mirCfg.get("multi");
+			final boolean multi = obj==null?false:true;
 			
 			cfgSvr.setTcpProtocol(DFActorDefine.TCP_DECODE_HTTP);
 			final ScriptObjectMirror jsCb = mirCb;
@@ -843,6 +855,11 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			}, new DFHttpDispatcher() {
 				@Override
 				public int onQueryMsgActorId(int port, InetSocketAddress addrRemote, Object msg) {
+					if(multi && jsCb != null){
+						DFJsHttpSvrReq reqWrap = new DFJsHttpSvrReq((DFHttpSvrReq)msg);
+						_jsEvent.type = "multi";
+						return (Integer)jsCb.call(0, _js, _jsEvent, (IScriptHttpSvrReq)reqWrap);
+					}
 					return id;
 				}
 			});
@@ -916,6 +933,184 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 	@Override
 	public boolean isNodeOnline(String nodeName) {
 		return sys.isNodeOnline(nodeName);
+	}
+
+	@Override
+	public int cpuNum() {
+		return Runtime.getRuntime().availableProcessors();
+	}
+
+	@Override
+	public int mysqlInitPool(Object cfg) {
+		try{
+			ScriptObjectMirror mirCfg = (ScriptObjectMirror) cfg;
+			DFDbCfg dbCfg = DFDbCfg.newCfg(
+					(String)mirCfg.get("host"), (Integer)mirCfg.get("port"), 
+					(String)mirCfg.get("db"), (String)mirCfg.get("user"), (String)mirCfg.get("pwd"));
+			if(mirCfg.containsKey("initSize")) dbCfg.setInitSize((Integer)mirCfg.get("initSize"));
+			if(mirCfg.containsKey("maxActive")) dbCfg.setMaxActive((Integer)mirCfg.get("maxActive"));
+			if(mirCfg.containsKey("minIdle")) dbCfg.setMinIdle((Integer)mirCfg.get("minIdle"));
+			if(mirCfg.containsKey("maxIdle")) dbCfg.setMaxIdle((Integer)mirCfg.get("maxIdle"));
+			int dbId = db.initPool(dbCfg);
+			return dbId;
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	@Override
+	public int mysqlGetConn(int poolId, Object cb) {
+		Connection conn = null;
+		try{
+			conn = db.getConn(poolId);
+			ScriptObjectMirror mirCb = (ScriptObjectMirror) cb;
+			if(conn == null){ //error
+				mirCb.call(0, _js, "no conn available");
+			}else{ //succ
+				mirCb.call(0, _js, null, conn);
+			}
+		}catch(Throwable e){
+			e.printStackTrace();
+		}finally{
+			if(conn != null){
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return -1;
+	}
+
+	@Override
+	public int redisInitPool(Object cfg) {
+		try{
+			ScriptObjectMirror mirCfg = (ScriptObjectMirror) cfg;
+			DFRedisCfg cfgRedis = DFRedisCfg.newCfg((String)mirCfg.get("host"), (Integer)mirCfg.get("port"), 
+						(String)mirCfg.get("auth"));
+			if(mirCfg.containsKey("maxTotal")) cfgRedis.setMaxTotal((Integer)mirCfg.get("maxTotal"));
+			if(mirCfg.containsKey("minIdle")) cfgRedis.setMinIdle((Integer)mirCfg.get("minIdle"));
+			if(mirCfg.containsKey("maxIdle")) cfgRedis.setMaxIdle((Integer)mirCfg.get("maxIdle"));
+			int redisId = redis.initPool(cfgRedis);
+			return redisId;
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	@Override
+	public int redisGetConn(int poolId, Object cb) {
+		Jedis conn = null;
+		try{
+			conn = redis.getConn(poolId);
+			ScriptObjectMirror mirCb = (ScriptObjectMirror) cb;
+			if(conn == null){ //error
+				mirCb.call(0, _js, "no conn available");
+			}else{ //succ
+				mirCb.call(0, _js, null, conn);
+			}
+		}catch(Throwable e){
+			e.printStackTrace();
+		}finally{
+			if(conn != null){
+				conn.close();
+			}
+		}
+		return -1;
+	}
+
+	@Override
+	public int mongoInitPool(Object cfg) {
+		try{
+			ScriptObjectMirror mirCfg = (ScriptObjectMirror) cfg;
+			DFMongoCfg cfgMongo = DFMongoCfg.newCfg()
+					.addAddress((String)mirCfg.get("host"),    //mongodb host
+							(Integer)mirCfg.get("port")); //mongodb port
+			if(mirCfg.containsKey("auth")){
+				ScriptObjectMirror mirAuth = (ScriptObjectMirror) mirCfg.get("auth");
+				cfgMongo.setCredential((String)mirAuth.get("db"), (String)mirAuth.get("user"), 
+						(String)mirAuth.get("pwd"));
+			}
+			int poolId = mongo.initPool(cfgMongo);
+			return poolId;
+		}catch(Throwable e){
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	@Override
+	public int mongoGetDb(int poolId, String dbName, Object cb) {
+		MongoDatabase db = null;
+		try{
+			db = mongo.getDatabase(poolId, dbName);
+			ScriptObjectMirror mirCb = (ScriptObjectMirror) cb;
+			if(db == null){ //error
+				mirCb.call(0, _js, "no db available");
+			}else{ //succ
+				mirCb.call(0, _js, null, db);
+			}
+		}catch(Throwable e){
+			e.printStackTrace();
+		}finally{
+			
+		}
+		return -1;
+	}
+
+	@Override
+	public Object objByName(String name) {
+		try {
+			Class<?> clz = _mgrActorJs.getExtLibClass(name);
+			if(clz != null){
+				Constructor<?> ctor = clz.getDeclaredConstructor();
+				ctor.setAccessible(true);
+				return ctor.newInstance();
+			}
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@Override
+	public Object callObjMethod(Object obj, String method, Object... param) {
+		Class<?> clz = obj.getClass();
+		try {
+			int size = param.length;
+			if(size==1 && ScriptObjectMirror.isUndefined(param[0])){ //no param
+				Method m = clz.getDeclaredMethod(method);
+				return m.invoke(obj);
+			}else{
+				Class<?>[] arrPType = new Class[size];
+				for(int i=0; i<size; ++i){
+					Class<?> c = param[i].getClass();
+					String n = c.getSimpleName();
+					if(n.equals("Integer")){
+						c = int.class;
+					}else if(n.equals("Boolean")){
+						c = boolean.class;
+					}
+					arrPType[i] = c;
+				}
+				Method m = clz.getDeclaredMethod(method, arrPType);
+				return m.invoke(obj, param);
+			}
+		} catch (IllegalArgumentException | NoSuchMethodException | SecurityException 
+				| IllegalAccessException | InvocationTargetException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 	

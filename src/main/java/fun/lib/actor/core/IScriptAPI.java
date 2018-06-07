@@ -13,6 +13,7 @@ public interface IScriptAPI {
 	public int ret(int cmd, Object payload);
 	public void timeout(int delay, Object requestId);
 	public int rpc(Object dstActor, String dstMethod, int cmd, Object payload, Object cb);
+	public int cpuNum();
 	
 	//cluster
 	public int toNode(String dstNode, String dstActor, int cmd, Object payload);
@@ -45,6 +46,17 @@ public interface IScriptAPI {
 	public void httpCli(Object cfg, Object cb);
 	public DFHttpCliReq newHttpReq();
 	
+	//mysql function
+	public int mysqlInitPool(Object cfg);
+	public int mysqlGetConn(int poolId, Object cb);
+	
+	//redis function
+	public int redisInitPool(Object cfg);
+	public int redisGetConn(int poolId, Object cb);
+	
+	//mongodb function
+	public int mongoInitPool(Object cfg);
+	public int mongoGetDb(int poolId, String db, Object cb);
 	
 	//string <-> buf
 	public String bufToStr(Object buf);
@@ -59,4 +71,8 @@ public interface IScriptAPI {
 	public void logW(Object msg);
 	public void logE(Object msg);
 	public void logF(Object msg);
+	
+	//reflect function
+	public Object objByName(String name);
+	public Object callObjMethod(Object obj, String method, Object...param);
 }

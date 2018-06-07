@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.script.Bindings;
 import javax.script.ScriptContext;
@@ -74,6 +75,7 @@ public final class DFActorManagerJs{
 	}
 	
 	protected int createActor(Object template, Object name, Object param, Object initCfg) {
+		
 		HashMap<String,Object> mapParam = new HashMap<>();
 		mapParam.put("template", template);
 		mapParam.put("fnApi", _jsFnApi);
@@ -121,6 +123,7 @@ public final class DFActorManagerJs{
 	private String _entryActorName = null;
 	private String _customDir = null;
 	private String _protoDir = null;
+	private String _extLibDir = null;
 	
 	public boolean start(String runDir){
 		boolean bRet = false;
@@ -151,7 +154,14 @@ public final class DFActorManagerJs{
 					break;
 				}
 			}
-			
+			if(_extLibDir != null){ //has ext lib
+				print("start load extLib in dir: "+_extLibDir);
+				if(!_loadExtLib(dirRun)){
+					printError("load ext lib failed");
+					break;
+				}
+				print("load extLib done");
+			}
 			//init js
 			if(!_initScript(dirRun)){
 				printError("initScript failed");
@@ -190,6 +200,27 @@ public final class DFActorManagerJs{
 			bRet = true;
 		} while (false);
 		return bRet;
+	}
+	
+	private boolean _loadExtLib(File dirRun){
+		boolean bRet = false;
+		do {
+			File dir = new File(dirRun.getAbsolutePath()+File.separator+_extLibDir);
+			if(!dir.exists() || !dir.isDirectory()){
+				printError("invalid extLibDir: "+dir.getAbsolutePath()); 
+				break;
+			}
+			if(!_mgrActor.loadJars(dir.getAbsolutePath(), _mapExtClz)){
+				printError("load extLib failed in dir: "+dir.getAbsolutePath());
+				break;
+			}
+			bRet = true;
+		} while (false);
+		return bRet;
+	}
+	private ConcurrentHashMap<String, Class<?>> _mapExtClz = new ConcurrentHashMap<>();
+	protected Class<?> getExtLibClass(String clzName){
+		return _mapExtClz.get(clzName);
 	}
 	
 	private boolean _initCustomScript(File dir){
@@ -341,6 +372,12 @@ public final class DFActorManagerJs{
 				if(_protoDir != null){
 					_protoDir = _protoDir.trim();
 					if(_protoDir.equals("")) _protoDir = null;
+				}
+				//
+				_extLibDir = propBase.getProperty("ext_lib_dir");
+				if(_extLibDir != null){
+					_extLibDir = _extLibDir.trim();
+					if(_extLibDir.equals("")) _extLibDir = null;
 				}
 				//
 				_entryActor = propBase.getProperty("entry_actor");
@@ -577,9 +614,9 @@ public final class DFActorManagerJs{
 				    	//检测java编译环境
 						String javaHome = System.getProperty("java.home");
 				    	if(javaHome == null){
-				    		printError("no JAVA_HOME specify"); break;
+				    		printError("JAVA_HOME not found"); break;
 				    	}
-				    	print("java_home="+javaHome);
+				    	print("JAVA_HOME="+javaHome);
 				    	File dirJavaHome = new File(javaHome);
 				    	if(!dirJavaHome.exists() || !dirJavaHome.isDirectory()){
 				    		printError("invalid JAVA_HOME: "+dirJavaHome.getAbsolutePath()); break;

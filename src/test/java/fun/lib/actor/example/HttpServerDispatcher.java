@@ -40,7 +40,7 @@ public final class HttpServerDispatcher {
 					//response
 					req.response("echo from server, entryModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 						.send();
-					return MSG_AUTO_RELEASE;
+					return 0;
 				}
 				@Override
 				public void onListenResult(boolean isSucc, String errMsg) {
@@ -73,7 +73,7 @@ public final class HttpServerDispatcher {
 			//response
 			req.response("echo from server, indexModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 				.send();
-			return MSG_AUTO_RELEASE;
+			return 0;
 		}
 		public IndexActor(Integer id, String name, Boolean isBlockActor) {
 			super(id, name, isBlockActor);
@@ -87,7 +87,7 @@ public final class HttpServerDispatcher {
 			//response
 			req.response("echo from server, userModule, reqUri="+req.getUri()+", curThread="+Thread.currentThread().getName())
 				.send();
-			return MSG_AUTO_RELEASE;
+			return 0;
 		}
 		public UserActor(Integer id, String name, Boolean isBlockActor) {
 			super(id, name, isBlockActor);

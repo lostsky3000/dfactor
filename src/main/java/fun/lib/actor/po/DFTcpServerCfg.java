@@ -15,7 +15,7 @@ public final class DFTcpServerCfg {
 	private volatile int soSendBufLen = 2048;
 	private volatile boolean tcpNoDelay = true;
 	private volatile boolean keepAlive = true;
-	private volatile int soBackLog = 128;
+	private volatile int soBackLog = 1024;
 	
 	private volatile int tcpProtocol = DFActorDefine.TCP_DECODE_RAW;
 	private volatile int tcpMsgMaxLength = 4096;
@@ -44,7 +44,7 @@ public final class DFTcpServerCfg {
 		ioGroup = null;
 	}
 	public DFTcpServerCfg(int port) {
-		this(port, Runtime.getRuntime().availableProcessors(), 1);
+		this(port, Math.min(4, Runtime.getRuntime().availableProcessors()), 1);
 	}
 	public DFTcpServerCfg(int port, EventLoopGroup ioGroup){
 		this.port = port;

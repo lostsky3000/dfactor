@@ -14,6 +14,7 @@ import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ import javax.tools.ToolProvider;
 
 import com.funtag.util.net.DFIpUtil;
 import com.funtag.util.proto.DFProtoUtil;
+import com.funtag.util.script.DFJsPageModel;
 import com.funtag.util.system.DFSysUtil;
 import com.google.common.io.Files;
 import com.google.protobuf.GeneratedMessageV3;
@@ -42,6 +44,7 @@ import fun.lib.actor.api.cb.Cb;
 import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFActorClusterConfig;
 import fun.lib.actor.po.DFActorManagerConfig;
+import fun.lib.actor.po.DFPageInfo;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 
 public final class DFActorManagerJs{
@@ -59,6 +62,7 @@ public final class DFActorManagerJs{
 	private DFActorManagerJs() {
 		_mgrActor = DFActorManager.get();
 	}
+	
 	//
 	protected int send(int srcId, Object dst, int cmd, Object payload){
 		if(dst instanceof String){ //dst name
@@ -113,6 +117,17 @@ public final class DFActorManagerJs{
 		return s_mapProto.get(className);
 	}
 	
+	private final ConcurrentHashMap<String, DFPageInfo> _mapPageInfo = new ConcurrentHashMap<>();
+	protected DFPageInfo getPageInfo(String absPath){
+		return _mapPageInfo.get(absPath);
+	}
+	protected void addPageInfo(String absPath, DFPageInfo pageInfo){
+		_mapPageInfo.put(absPath, pageInfo);
+	}
+	protected void removePageInfo(String absPath){
+		_mapPageInfo.remove(absPath);
+	}
+	
 	//
 	
 	private ScriptEngineManager _engineMgr = null;
@@ -124,6 +139,7 @@ public final class DFActorManagerJs{
 	private String _customDir = null;
 	private String _protoDir = null;
 	private String _extLibDir = null;
+	private String _absRunDir = null;
 	
 	public boolean start(String runDir){
 		boolean bRet = false;
@@ -169,11 +185,16 @@ public final class DFActorManagerJs{
 			}
 			Bindings bind = _jsEngine.getBindings(ScriptContext.ENGINE_SCOPE);
 			_jsFnApi = (ScriptObjectMirror) bind.get("g_fn_df");
-			
+			//
+			_absRunDir = dirRun.getAbsolutePath();
 			//start dfactor
 			bRet = _mgrActor.start(_cfgMgr, _propActorEntry);
 		} while (false);
 		return bRet;
+	}
+	
+	protected String getAbsRunDir(){
+		return _absRunDir;
 	}
 	private boolean _initScript(File dirRun){
 		boolean bRet = false;

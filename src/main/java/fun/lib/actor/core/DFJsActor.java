@@ -1,5 +1,9 @@
 package fun.lib.actor.core;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,11 +11,16 @@ import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
+import com.funtag.util.fs.DFFileMonitor;
+import com.funtag.util.fs.IFSMonitor;
+import com.funtag.util.script.DFJsPageModel;
 import com.funtag.util.script.DFJsUtil;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.GeneratedMessageV3.Builder;
@@ -27,9 +36,11 @@ import fun.lib.actor.api.http.DFHttpCliReq;
 import fun.lib.actor.api.http.DFHttpCliRsp;
 import fun.lib.actor.api.http.DFHttpDispatcher;
 import fun.lib.actor.api.http.DFHttpSvrReq;
+import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFDbCfg;
 import fun.lib.actor.po.DFMongoCfg;
 import fun.lib.actor.po.DFNode;
+import fun.lib.actor.po.DFPageInfo;
 import fun.lib.actor.po.DFRedisCfg;
 import fun.lib.actor.po.DFSSLConfig;
 import fun.lib.actor.po.DFTcpClientCfg;
@@ -135,7 +146,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 				_mapTcpSvrJsFunc.remove(requestId);
 			}
 			_jsEvent.type = "ret"; _jsEvent.succ = isSucc; _jsEvent.err = errMsg;
-			cb.call(0, _js, _jsEvent);
+			cb.call(_js, _jsEvent);
 		}
 	}
 	@Override
@@ -148,7 +159,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 					_mapTcpCliJsFunc.remove(requestId);
 				}
 				_jsEvent.type = "ret"; _jsEvent.succ = isSucc; _jsEvent.err = errMsg;
-				cb.call(0, _js, _jsEvent);
+				cb.call(_js, _jsEvent);
 			}
 		}
 	}
@@ -167,7 +178,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			int chId = channel.getChannelId();
 			_mapChJsFunc.put(chId, chWrap);
 			_jsEvent.type = "open";
-			cb.call(0, _js, _jsEvent, chId); //notify js
+			cb.call(_js, _jsEvent, chId); //notify js
 		}
 	}
 	@Override
@@ -177,7 +188,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		JsTcpChannel chWrap = _mapChJsFunc.remove(chId);
 		if(chWrap != null){ //notify js
 			_jsEvent.type = "close";
-			chWrap.cbFunc.call(0, _js, _jsEvent, chId);
+			chWrap.cbFunc.call(_js, _jsEvent, chId);
 		}else if(_regOnTcpConnClose){  //没有指定回调，检测是否有默认回调
 			_js.callMember("onTcpClose", chId);
 		}
@@ -196,7 +207,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		}
 		if(chWrap != null){ //notify js
 			_jsEvent.type = "msg";
-			chWrap.cbFunc.call(0, _js, _jsEvent, chId, msgOut);
+			chWrap.cbFunc.call(_js, _jsEvent, chId, msgOut);
 		}else if(_regOnTcpMsg){ //没有指定回调，检测是否有默认回调
 			_js.callMember("onTcpMsg", chId, msgOut);
 		}
@@ -415,7 +426,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			}
 			lock = lockRW.writeLock();
 			lock.lock();
-			funcWrap.call(0, _js);
+			funcWrap.call(_js);
 		}catch(Throwable e){
 			e.printStackTrace();
 		}finally{
@@ -454,7 +465,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			}
 			lock = lockRW.readLock();
 			lock.lock();
-			funcWrap.call(0, _js);
+			funcWrap.call(_js);
 		}catch(Throwable e){
 			e.printStackTrace();
 		}finally{
@@ -494,12 +505,12 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		final Cb cbWrap = new Cb() {
 			@Override
 			public int onFailed(int code) {
-				mirCb.call(0, _js, code==0?"timeout":"call failed");
+				mirCb.call(_js, code==0?"timeout":"call failed");
 				return 0;
 			}
 			@Override
 			public int onCallback(int cmd, Object payload) {
-				mirCb.call(0, _js, null, cmd, payload);
+				mirCb.call(_js, null, cmd, payload);
 				return 0;
 			}
 		};
@@ -594,12 +605,12 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 				future.addListener(new Cb() {
 					@Override
 					public int onFailed(int code) {
-						mirCb.call(0, _js, code+"");
+						mirCb.call(_js, code+"");
 						return 0;
 					}
 					@Override
 					public int onCallback(int cmd, Object payload) {
-						mirCb.call(0, _js, null, cmd, payload);
+						mirCb.call(_js, null, cmd, payload);
 						return 0;
 					}
 				}, 60000);
@@ -724,12 +735,12 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			final Cb cbWrap = mirCb==null?null:new Cb() {
 				@Override
 				public int onFailed(int code) {
-					mirCb.call(0, _js, code==0?"timeout":"rpc failed");
+					mirCb.call(_js, code==0?"timeout":"rpc failed");
 					return 0;
 				}
 				@Override
 				public int onCallback(int cmd, Object payload) {
-					mirCb.call(0, _js, null, cmd, payload);
+					mirCb.call(_js, null, cmd, payload);
 					return 0;
 				}
 			};
@@ -789,9 +800,9 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 					if(mirCb != null){
 						if(isSucc){
 							DFHttpCliRsp rsp = (DFHttpCliRsp) msg;
-							mirCb.call(0, _js, null, rsp);
+							mirCb.call(_js, null, rsp);
 						}else{
-							mirCb.call(0, _js, errMsg, null);
+							mirCb.call(_js, errMsg, null);
 						}
 					}
 					return 0;
@@ -827,9 +838,133 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 							.pemPath((String)mirSslCfg.get("key"));
 				cfgSvr.setSslConfig(cfgSsl);
 			}
-			obj = mirCfg.get("multi");
-			final boolean multi = obj==null?false:true;
-			
+			//检测是否web类型
+			obj = mirCfg.get("web");
+			final boolean isWeb = obj==null?false:true;
+			final boolean isMulti;
+			final int webThNum;
+			final String webRoot;
+			final int[] arrWebActor;
+			final AtomicInteger webReqCount = new AtomicInteger(0);
+			if(isWeb){
+				ScriptObjectMirror mirWebCfg = (ScriptObjectMirror) obj;
+				webRoot = ((String)mirWebCfg.get("root")).trim();
+				String load = (String) mirWebCfg.get("load");
+				if(load != null){
+					load = load.trim();
+				}else{
+					load = "both";
+				}
+				final String sfx;
+				obj = mirWebCfg.get("sfx");
+				sfx = obj==null?DFJsPageModel.SFX:((String)obj).trim();
+				//
+				int logicThNum = 0, blockThNum = 0;
+				if(load.equals("block")){
+					blockThNum = DFActorManager.get().getBlockThreadNum();
+					webThNum = blockThNum;
+				}else if(load.equals("logic")){
+					logicThNum = DFActorManager.get().getLogicThreadNum();
+					webThNum = logicThNum;
+				}else{  //both
+					blockThNum = DFActorManager.get().getBlockThreadNum();
+					logicThNum = DFActorManager.get().getLogicThreadNum();
+					webThNum = blockThNum + logicThNum;
+				}
+				final String strInitJs = _loadWebInitJs(_mgrActorJs.getAbsRunDir()
+						+File.separator+"script"+File.separator+"Init_web.js");
+				final File dirWebRoot = new File(_mgrActorJs.getAbsRunDir()+File.separator+webRoot);
+				log.info("start web server, load="+load+", logicTh="+logicThNum+", blockTh="+blockThNum
+						+", webRoot="+dirWebRoot.getAbsolutePath());
+				arrWebActor = new int[webThNum];
+				for(int i=0; i<webThNum; ++i){
+					ActorProp prop = ActorProp.newProp()
+							.classz(DFJsWebActor.class)
+							.consumeType(DFActorDefine.CONSUME_ALL)
+							.blockActor(i<logicThNum?false:true);
+					HashMap<String,String> mapParam = new HashMap<>();
+					mapParam.put("webRoot", webRoot);
+					mapParam.put("sfx", sfx);
+					mapParam.put("initJs", strInitJs);
+					prop.param(mapParam);
+					arrWebActor[i] = sys.createActor(prop);
+				}
+				//record exist pages
+				LinkedList<File> lsWebDir = new LinkedList<>();
+				lsWebDir.add(dirWebRoot);
+				while(!lsWebDir.isEmpty()){
+					File d = lsWebDir.removeFirst();
+					File[] arrF = d.listFiles();
+					if(arrF == null || arrF.length == 0){
+						continue;
+					}
+					for(File f : arrF){
+						if(f.isDirectory()){
+							lsWebDir.offer(f);
+						}else{
+							String absPath = f.getAbsolutePath();
+							if(absPath.endsWith("."+DFJsPageModel.SFX)){
+								DFPageInfo p = new DFPageInfo(absPath);
+								p.increaseVersion();
+								_mgrActorJs.addPageInfo(absPath, p);
+							}
+						}
+					}
+				}
+				//start page monitor
+				final DFFileMonitor monitor = new DFFileMonitor(dirWebRoot, new IFSMonitor() {
+					@Override
+					public void onModify(File f) {
+						if(f.isFile()){
+							String absPath = f.getAbsolutePath();
+							if(absPath.endsWith("."+DFJsPageModel.SFX)){
+								if(!f.exists()){
+									_mgrActorJs.removePageInfo(absPath);
+								}else{
+									DFPageInfo p = _mgrActorJs.getPageInfo(absPath);
+									if(p == null){
+										p = new DFPageInfo(absPath);
+										_mgrActorJs.addPageInfo(absPath, p);
+									}
+									p.increaseVersion();
+								}
+							}
+						}
+					}
+					@Override
+					public void onDelete(File f) {
+						if(f.isFile()){
+							String absPath = f.getAbsolutePath();
+							if(absPath.endsWith("."+DFJsPageModel.SFX)){
+								_mgrActorJs.removePageInfo(absPath);
+							}
+						}
+					}
+					@Override
+					public void onCreate(File f) {
+						if(f.isFile()){
+							String absPath = f.getAbsolutePath();
+							if(absPath.endsWith("."+DFJsPageModel.SFX)){
+								DFPageInfo p = new DFPageInfo(absPath);
+								p.increaseVersion();
+								_mgrActorJs.addPageInfo(absPath, p);
+							}
+						}
+					}
+					@Override
+					public void onClose() {
+						
+					}
+				});
+				monitor.start();
+				
+				isMulti = false;
+			}else{
+				webThNum = 0;
+				arrWebActor = null;
+				obj = mirCfg.get("multi");
+				isMulti = obj==null?false:true;
+			}
 			cfgSvr.setTcpProtocol(DFActorDefine.TCP_DECODE_HTTP);
 			final ScriptObjectMirror jsCb = mirCb;
 			net.httpSvr(cfgSvr, new CbHttpServer() {
@@ -839,7 +974,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 						_jsEvent.type = "ret";
 						if(isSucc){  _jsEvent.succ = true;
 						}else{ _jsEvent.succ = false; _jsEvent.err = errMsg; }
-						jsCb.call(0, _js, _jsEvent);
+						jsCb.call(_js, _jsEvent);
 					}
 				}
 				@Override
@@ -848,17 +983,19 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 						DFHttpSvrReq req = (DFHttpSvrReq) msg;
 						DFJsHttpSvrReq reqWrap = new DFJsHttpSvrReq(req);
 						_jsEvent.type = "req";
-						jsCb.call(0, _js, _jsEvent, (IScriptHttpSvrReq)reqWrap);
+						jsCb.call(_js, _jsEvent, (IScriptHttpSvrReq)reqWrap);
 					}
 					return 0;
 				}
 			}, new DFHttpDispatcher() {
 				@Override
 				public int onQueryMsgActorId(int port, InetSocketAddress addrRemote, Object msg) {
-					if(multi && jsCb != null){
+					if(isWeb){
+						return arrWebActor[webReqCount.incrementAndGet()%webThNum];
+					}else if(isMulti && jsCb != null){
 						DFJsHttpSvrReq reqWrap = new DFJsHttpSvrReq((DFHttpSvrReq)msg);
 						_jsEvent.type = "multi";
-						return (Integer)jsCb.call(0, _js, _jsEvent, (IScriptHttpSvrReq)reqWrap);
+						return (Integer)jsCb.call(_js, _jsEvent, (IScriptHttpSvrReq)reqWrap);
 					}
 					return id;
 				}
@@ -909,11 +1046,11 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			CbNode cbWrap = new CbNode() {
 				@Override
 				public void onNodeRemove(DFNode node) {
-					mirCb.call(0, _js, "off", node);
+					mirCb.call(_js, "off", node);
 				}
 				@Override
 				public void onNodeAdd(DFNode node) {
-					mirCb.call(0, _js, "on", node);
+					mirCb.call(_js, "on", node);
 				}
 			};
 			if(type.equalsIgnoreCase("all")){
@@ -965,9 +1102,9 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			conn = db.getConn(poolId);
 			ScriptObjectMirror mirCb = (ScriptObjectMirror) cb;
 			if(conn == null){ //error
-				mirCb.call(0, _js, "no conn available");
+				mirCb.call(_js, "no conn available");
 			}else{ //succ
-				mirCb.call(0, _js, null, conn);
+				mirCb.call(_js, null, conn);
 			}
 		}catch(Throwable e){
 			e.printStackTrace();
@@ -1006,9 +1143,9 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			conn = redis.getConn(poolId);
 			ScriptObjectMirror mirCb = (ScriptObjectMirror) cb;
 			if(conn == null){ //error
-				mirCb.call(0, _js, "no conn available");
+				mirCb.call(_js, "no conn available");
 			}else{ //succ
-				mirCb.call(0, _js, null, conn);
+				mirCb.call(_js, null, conn);
 			}
 		}catch(Throwable e){
 			e.printStackTrace();
@@ -1046,9 +1183,9 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			db = mongo.getDatabase(poolId, dbName);
 			ScriptObjectMirror mirCb = (ScriptObjectMirror) cb;
 			if(db == null){ //error
-				mirCb.call(0, _js, "no db available");
+				mirCb.call(_js, "no db available");
 			}else{ //succ
-				mirCb.call(0, _js, null, db);
+				mirCb.call(_js, null, db);
 			}
 		}catch(Throwable e){
 			e.printStackTrace();
@@ -1113,6 +1250,29 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 		return null;
 	}
 	
-	
+	private String _loadWebInitJs(String strDir){
+		File dir = new File(strDir);
+		BufferedReader br = null;
+		try{
+			br = new BufferedReader(new FileReader(dir));
+			StringBuilder sb = new StringBuilder();
+			String line = null;
+			while( (line=br.readLine()) != null ){
+				sb.append(line).append("\n");
+			}
+			return sb.toString();
+		}catch(Throwable e){
+			e.printStackTrace();
+		}finally{
+			if(br != null){
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return null;
+	}
 }
 

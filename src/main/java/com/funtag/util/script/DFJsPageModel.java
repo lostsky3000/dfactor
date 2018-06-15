@@ -17,51 +17,43 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 
+import fun.lib.actor.core.DFVirtualHost;
+import fun.lib.actor.core.IWebScriptAPI;
+
 public final class DFJsPageModel implements IScriptAnalyzer{
 	public static final String SFX = "jssp";
 	private static final String TAG_BEGIN = "<?"+SFX;
 	private static final int TAG_BEGIN_LEN = TAG_BEGIN.length();
 	private static final String TAG_END = "?>";
 	private static final int TAG_END_LEN = TAG_END.length();
-	private static final String TXT_ECHO_FUNC = "asdw234SFfii";
-	private static final String JS_INNER_API_NAME = "kakajsapi";
-	public static final String JS_API_NAME = "uqOdapil";
-	public static final String JS_QUERY_IT = "Undk12ual";
-	public static final String JS_HEADER_IT = "dHjq34tikp";
-	public static final String JS_IS_GET = "k23sDf73op";
+	//
+	public static final String TXT_ECHO_FUNC = "df_aNdH1mfiQ";
 	
 	public final String name;
+	public final String dir;
+	public final String file;
 	private CompiledScript cs = null;
-	private StringBuilder sbOut = null;
+	private StringBuilder curSbOut = null;
 	private StringBuilder sbJs = null;
 	private HashMap<Integer, String> mapTxt = null;
 	private int version = 0;
 	
-	public DFJsPageModel(String name) {
+	//
+	
+	public DFJsPageModel(String name, String dir, String file) {
 		this.name = name;
-		sbOut = new StringBuilder();
+		this.dir = dir;
+		this.file = file;
 		sbJs = new StringBuilder();
 		mapTxt = new HashMap<>();
 	}
-	private static final String JS_HEAD_CODE = 
-			"var g_213ddx="+JS_INNER_API_NAME+";\n"
-			+"var "+TXT_ECHO_FUNC+"=function(id){g_213ddx.txtCall(id);};\n"
-			//global api
-			+"var echo=function(msg){g_213ddx.scriptCall(msg);};\n"
-			+"var g_kksQ4euHf="+JS_HEADER_IT+";\n"
-			+"var _HEADER=g_fn_wrap_query(g_kksQ4euHf);\n"
-			+"var g_lq0Ud3i="+JS_QUERY_IT+";\n"
-			+"var _GET={};var _POST={};\n"
-			+"var g_s0Uy3Uj="+JS_IS_GET+";\n"
-			+"if(g_s0Uy3Uj){_GET=g_fn_wrap_query(g_lq0Ud3i);}else{_POST=g_fn_wrap_query(g_lq0Ud3i);}\n"
-			+"var df="+JS_API_NAME+";\n";
+	
+	
 	public boolean analyze(StringBuilder sb, Compilable compiler){
 		boolean bRet = false;
 		do {
 			//reset
 			sbJs.setLength(0);
-			sbJs.append("var ").append(name).append("=function(){\n")
-				.append(JS_HEAD_CODE);
 			mapTxt.clear();
 			int txtCount = 0;
 			//
@@ -149,8 +141,6 @@ public final class DFJsPageModel implements IScriptAnalyzer{
 					}
 				}
 			}
-			//call
-			sbJs.append("};\n").append(name).append("();");
 			try {
 				cs = null;
 				cs = compiler.compile(sbJs.toString());
@@ -163,37 +153,44 @@ public final class DFJsPageModel implements IScriptAnalyzer{
 		return bRet;
 	}
 	
-	public String execute(Bindings bind){
+	public boolean execute(Bindings bind, StringBuilder sbOut, DFJsPageModel parent){
 		if(cs != null){
-			sbOut.setLength(0);
+			curSbOut = sbOut;
 			try {
-				bind.put(JS_INNER_API_NAME, (IScriptAnalyzer)this);
 				cs.eval(bind);
-				return sbOut.toString();
+				curSbOut = null;
+				if(parent != null){ //has parent, reset
+					bind.put(DFVirtualHost.JS_INNER_ANALYZER, parent);
+					bind.put(DFVirtualHost.JS_DIR, parent.dir);
+					bind.put(DFVirtualHost.JS_FILE, parent.file);
+					bind.put(DFVirtualHost.JS_PAGE_ID, parent.name);
+				}
+				return true;
 			} catch (ScriptException e) {
 				e.printStackTrace();
 			}
 		}
-		return null;
+		return false;
 	}
 	
 	@Override
 	public void scriptCall(Object content) {
 		if(content instanceof Double){
-			sbOut.append(((Double)content).intValue());
+			curSbOut.append(((Double)content).intValue());
 		}else{
-			sbOut.append(content);
+			curSbOut.append(content);
 		}
 	}
 	@Override
 	public void txtCall(Integer txtId) {
 		final String str = mapTxt.get(txtId);
 		if(str != null){
-			sbOut.append(str);
+			curSbOut.append(str);
 		}else{ //error, impossible
 			
 		}
 	}
+	
 	public int getVersion(){
 		return version;
 	}
@@ -201,97 +198,15 @@ public final class DFJsPageModel implements IScriptAnalyzer{
 		this.version = ver;
 	}
 	
-	public static void main(String[] args) {
-		
-		ScriptEngineManager mgr = new ScriptEngineManager();
-		ScriptEngine engJs = mgr.getEngineByName("JavaScript");
-		Compilable compiler = (Compilable)engJs;
-		
-//		try {
-//			CompiledScript cs1 = compiler.compile("var test1 = 1;");
-//			CompiledScript cs2 = compiler.compile("print(test1);");
-//			cs1.eval();
-//			cs2.eval();
-//		} catch (ScriptException e1) {
-//			e1.printStackTrace();
-//		}
-		
-		
-		String srcPath = "F:/dev/guaji/svn/program/server/src/dfactorjs/runtime/example/webroot/test.html";
-		
-		StringBuilder sb = new StringBuilder();
-		BufferedReader br = null;
-		try {
-			br = new BufferedReader(new FileReader(srcPath));
-			String line = null;
-			
-			while( (line=br.readLine()) != null ){
-				sb.append(line).append("\n");
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}finally{
-			if(br != null){
-				try {
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		//
-		DFJsPageModel mod = new DFJsPageModel("index");
-		mod.analyze(sb, compiler);
-		Bindings bind = new SimpleBindings();
-		bind.put("api", 1);
-		mod.execute(bind);
-		
-//		_compareJsCompile(engJs, src);
-	}
-	
-	
-	private static void _compareJsCompile(ScriptEngine engJs, String src){
-		Compilable cEng = (Compilable) engJs;
-		CompiledScript cs = null;
-		try {
-			cs = cEng.compile(src);
-		} catch (ScriptException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		//
-		long tmStart = 0;
-		int cycleNum = 1000;
-		for(int i=0; i<10; ++i){
-			tmStart = System.currentTimeMillis();
-			for(int j=0; j<cycleNum; ++j){
-				try {
-					cs = cEng.compile(src);
-//					cs.eval();
-				} catch (ScriptException e) {
-					e.printStackTrace();
-				}
-			}
-			print("cs tmCost = "+(System.currentTimeMillis() - tmStart));
-			//
-			tmStart = System.currentTimeMillis();
-			for(int j=0; j<cycleNum; ++j){
-				try {
-					engJs.eval(src);
-				} catch (ScriptException e) {
-					e.printStackTrace();
-				}
-			}
-			print("ori tmCost = "+(System.currentTimeMillis() - tmStart));
-		}
-	}
 	
 	
 	private static void print(Object msg){
 		System.out.println(msg);
 	}
+	private static void printError(Object msg){
+		System.err.println(msg);
+	}
+	
 
 	
 }

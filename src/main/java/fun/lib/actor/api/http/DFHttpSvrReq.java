@@ -22,6 +22,7 @@ public interface DFHttpSvrReq {
 	public String getUri();
 	public boolean isKeepAlive();
 	public void release();
+	public boolean contentIsStr();
 	
 	
 	//response

@@ -42,7 +42,7 @@ public interface IScriptAPI {
 	public void tcpChange(Integer channelId, Object msgHandler, Object statusHandler);
 	
 	//http function
-	public void httpSvr(Object cfg, Object cb);
+	public boolean httpSvr(Object cfg, Object cb);
 	public void httpCli(Object cfg, Object cb);
 	public DFHttpCliReq newHttpReq();
 	

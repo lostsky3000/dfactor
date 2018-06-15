@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -297,7 +298,18 @@ public final class DFActorManagerJs{
 		}
 	}
 	private boolean _isValidJsFile(File f){
-		if(f.getName().endsWith(".js")){
+		if(f.getName().endsWith(".js")){  //检测是否客户端js
+			if(_lsWebRoot != null && !_lsWebRoot.isEmpty()){ //has config webRoot, ignore client js file
+				String absPath = f.getAbsolutePath();
+				if(DFSysUtil.getOSType() == DFSysUtil.OS_WINDOWS){
+					absPath = absPath.replaceAll("\\\\", "/");
+				}
+				for(String pathWebRoot : _lsWebRoot){
+					if(absPath.startsWith(pathWebRoot)){
+						return false;
+					}
+				}
+			}
 			return true;
 		}
 		return false;
@@ -375,6 +387,7 @@ public final class DFActorManagerJs{
 		} while (false);
 		return bRet;
 	}
+	private LinkedList<String> _lsWebRoot = null;
 	private boolean _initCfg(File dirCfg, File dirRun){
 		boolean bRet = false;
 		do {
@@ -393,6 +406,25 @@ public final class DFActorManagerJs{
 				if(_protoDir != null){
 					_protoDir = _protoDir.trim();
 					if(_protoDir.equals("")) _protoDir = null;
+				}
+				//
+				if(propBase.containsKey("web_root")){
+					String absDirRun = dirRun.getAbsolutePath();
+					String tmp = propBase.getProperty("web_root").trim();
+					String[] arr = tmp.split(",");
+					for(int i=0; i<arr.length; ++i){
+						tmp = arr[i].trim();
+						if(!tmp.equals("")){
+							tmp = absDirRun + File.separator + tmp;
+							if(DFSysUtil.getOSType() == DFSysUtil.OS_WINDOWS){
+								tmp = tmp.replaceAll("\\\\", "/");
+							}
+							if(_lsWebRoot == null){
+								_lsWebRoot = new LinkedList<>();
+							}
+							_lsWebRoot.offer(tmp);
+						}
+					}
 				}
 				//
 				_extLibDir = propBase.getProperty("ext_lib_dir");

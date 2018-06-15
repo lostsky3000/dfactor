@@ -34,7 +34,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.ReferenceCountUtil;
 
-public final class DFActorWrap {
+public final class DFActorWrap implements Runnable{
 
 	
 	private final LinkedList<DFActorMessage>[] _arrQueue = new LinkedList[2];
@@ -490,6 +490,28 @@ public final class DFActorWrap {
 		public boolean isRemote() {
 			return _isRemote;
 		}
+		
+	}
+	@Override
+	public void run() {
+		int ret = consumeMsg(DFActorDefine.CONSUME_ALL);
+		if(_isClusterActor){   //cluster actor
+			if(0 == ret){
+				_actorMgr.addToQueueCluster(this);
+			}
+//			_actorMgr.notifyRejectQueueCluster();
+		}else if(_isBlockActor){  //block actor
+			if(0 == ret){
+				_actorMgr.addToQueueBlock(this);
+			}
+//			_actorMgr.notifyRejectQueueBlock();
+		}else{ //logic actor
+			if(0 == ret){
+				_actorMgr.addToQueueLogic(this);
+			}
+//			_actorMgr.notifyRejectQueueLogic();
+		}
+		//
 		
 	}
 }

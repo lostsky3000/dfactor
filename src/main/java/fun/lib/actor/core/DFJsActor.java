@@ -812,8 +812,11 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			e.printStackTrace();
 		}
 	}
+	
+	private static int[] s_arrWebActor = null;
+	private static final String WEB_ACTOR_LOCK = "wIOQ%&^BBkKLBKJ127uu";
 	@Override
-	public void httpSvr(Object cfg, Object cb) {
+	public boolean httpSvr(Object cfg, Object cb) {
 		try{
 			ScriptObjectMirror mirCfg = (ScriptObjectMirror) cfg;
 			int port = (Integer)mirCfg.get("port");
@@ -843,123 +846,43 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			final boolean isWeb = obj==null?false:true;
 			final boolean isMulti;
 			final int webThNum;
-			final String webRoot;
 			final int[] arrWebActor;
 			final AtomicInteger webReqCount = new AtomicInteger(0);
+			final DFVirtualHost vHost;
 			if(isWeb){
-				ScriptObjectMirror mirWebCfg = (ScriptObjectMirror) obj;
-				webRoot = ((String)mirWebCfg.get("root")).trim();
-				String load = (String) mirWebCfg.get("load");
-				if(load != null){
-					load = load.trim();
-				}else{
-					load = "both";
+				final String strInitJs = _loadWebInitJs(_mgrActorJs.getAbsRunDir()
+						+File.separator+"script"+File.separator+"Init_web.js");
+				DFVirtualHost tmpVHost = new DFVirtualHost(port, obj, _mgrActorJs.getAbsRunDir(), strInitJs);
+				if(!tmpVHost.init(log)){
+					return false;
 				}
-				final String sfx;
-				obj = mirWebCfg.get("sfx");
-				sfx = obj==null?DFJsPageModel.SFX:((String)obj).trim();
-				//
-				int logicThNum = 0, blockThNum = 0;
-				if(load.equals("block")){
-					blockThNum = DFActorManager.get().getBlockThreadNum();
-					webThNum = blockThNum;
-				}else if(load.equals("logic")){
-					logicThNum = DFActorManager.get().getLogicThreadNum();
-					webThNum = logicThNum;
-				}else{  //both
+				vHost = tmpVHost;
+				//check web thread status
+				synchronized (WEB_ACTOR_LOCK) {
+					int logicThNum = 0, blockThNum = 0;
 					blockThNum = DFActorManager.get().getBlockThreadNum();
 					logicThNum = DFActorManager.get().getLogicThreadNum();
 					webThNum = blockThNum + logicThNum;
+					if(s_arrWebActor == null){
+						s_arrWebActor = new int[webThNum];
+						for(int i=0; i<webThNum; ++i){
+							ActorProp prop = ActorProp.newProp()
+									.classz(DFJsWebActor.class)
+									.consumeType(DFActorDefine.CONSUME_ALL)
+									.blockActor(i<logicThNum?false:true);
+							HashMap<String,String> mapParam = new HashMap<>();
+//							mapParam.put("webRoot", vHost.getWebRoot());
+//							mapParam.put("sfx", vHost.getSfx());
+							mapParam.put("initJs", strInitJs);
+							prop.param(mapParam);
+							s_arrWebActor[i] = sys.createActor(prop);
+						}
+					}
+					arrWebActor = s_arrWebActor;
 				}
-				final String strInitJs = _loadWebInitJs(_mgrActorJs.getAbsRunDir()
-						+File.separator+"script"+File.separator+"Init_web.js");
-				final File dirWebRoot = new File(_mgrActorJs.getAbsRunDir()+File.separator+webRoot);
-				log.info("start web server, load="+load+", logicTh="+logicThNum+", blockTh="+blockThNum
-						+", webRoot="+dirWebRoot.getAbsolutePath());
-				arrWebActor = new int[webThNum];
-				for(int i=0; i<webThNum; ++i){
-					ActorProp prop = ActorProp.newProp()
-							.classz(DFJsWebActor.class)
-							.consumeType(DFActorDefine.CONSUME_ALL)
-							.blockActor(i<logicThNum?false:true);
-					HashMap<String,String> mapParam = new HashMap<>();
-					mapParam.put("webRoot", webRoot);
-					mapParam.put("sfx", sfx);
-					mapParam.put("initJs", strInitJs);
-					prop.param(mapParam);
-					arrWebActor[i] = sys.createActor(prop);
-				}
-				//record exist pages
-				LinkedList<File> lsWebDir = new LinkedList<>();
-				lsWebDir.add(dirWebRoot);
-				while(!lsWebDir.isEmpty()){
-					File d = lsWebDir.removeFirst();
-					File[] arrF = d.listFiles();
-					if(arrF == null || arrF.length == 0){
-						continue;
-					}
-					for(File f : arrF){
-						if(f.isDirectory()){
-							lsWebDir.offer(f);
-						}else{
-							String absPath = f.getAbsolutePath();
-							if(absPath.endsWith("."+DFJsPageModel.SFX)){
-								DFPageInfo p = new DFPageInfo(absPath);
-								p.increaseVersion();
-								_mgrActorJs.addPageInfo(absPath, p);
-							}
-						}
-					}
-				}
-				//start page monitor
-				final DFFileMonitor monitor = new DFFileMonitor(dirWebRoot, new IFSMonitor() {
-					@Override
-					public void onModify(File f) {
-						if(f.isFile()){
-							String absPath = f.getAbsolutePath();
-							if(absPath.endsWith("."+DFJsPageModel.SFX)){
-								if(!f.exists()){
-									_mgrActorJs.removePageInfo(absPath);
-								}else{
-									DFPageInfo p = _mgrActorJs.getPageInfo(absPath);
-									if(p == null){
-										p = new DFPageInfo(absPath);
-										_mgrActorJs.addPageInfo(absPath, p);
-									}
-									p.increaseVersion();
-								}
-							}
-						}
-					}
-					@Override
-					public void onDelete(File f) {
-						if(f.isFile()){
-							String absPath = f.getAbsolutePath();
-							if(absPath.endsWith("."+DFJsPageModel.SFX)){
-								_mgrActorJs.removePageInfo(absPath);
-							}
-						}
-					}
-					@Override
-					public void onCreate(File f) {
-						if(f.isFile()){
-							String absPath = f.getAbsolutePath();
-							if(absPath.endsWith("."+DFJsPageModel.SFX)){
-								DFPageInfo p = new DFPageInfo(absPath);
-								p.increaseVersion();
-								_mgrActorJs.addPageInfo(absPath, p);
-							}
-						}
-					}
-					@Override
-					public void onClose() {
-						
-					}
-				});
-				monitor.start();
-				
 				isMulti = false;
 			}else{
+				vHost = null;
 				webThNum = 0;
 				arrWebActor = null;
 				obj = mirCfg.get("multi");
@@ -972,8 +895,15 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 				public void onListenResult(boolean isSucc, String errMsg) {
 					if(jsCb != null){
 						_jsEvent.type = "ret";
-						if(isSucc){  _jsEvent.succ = true;
-						}else{ _jsEvent.succ = false; _jsEvent.err = errMsg; }
+						if(isSucc){  
+							_jsEvent.succ = true;
+							if(isWeb){
+								vHost.start();
+								DFVirtualHostManager.get().addHost(vHost);
+							}
+						}else{ 
+							_jsEvent.succ = false; _jsEvent.err = errMsg; 
+						}
 						jsCb.call(_js, _jsEvent);
 					}
 				}
@@ -1002,7 +932,9 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			});
 		}catch(Throwable e){
 			e.printStackTrace();
+			return false;
 		}
+		return true;
 	}
 
 	@Override

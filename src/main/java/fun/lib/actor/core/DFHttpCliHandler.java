@@ -16,6 +16,7 @@ import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseDecoder;
@@ -142,6 +143,7 @@ public final class DFHttpCliHandler extends ChannelInboundHandlerAdapter{
 				|| contentType.equals(DFHttpContentType.XML)
 				|| contentType.equals(DFHttpContentType.TEXT_PLAIN)
 				)){
+			
 			return true;
 		}
 		return false;

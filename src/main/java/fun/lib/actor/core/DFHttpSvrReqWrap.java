@@ -84,6 +84,13 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 		return contentLength;
 	}
 	@Override
+	public boolean contentIsStr() {
+		if(appData != null && appData instanceof String){
+			return true;
+		}
+		return false;
+	}
+	@Override
 	public String getUri() {
 		return uri;
 	}
@@ -166,5 +173,6 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 		}
 		return response;
 	}
+	
 	
 }

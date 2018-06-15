@@ -13,7 +13,7 @@ public final class DFDbCfg {
 	
 	private DFDbCfg(String host, int port, String dbName, String user, String pwd) {
 		//jdbc:mysql://host:port/dbName?useUnicode=true&characterEncoding=UTF-8
-		this.url = "jdbc:mysql://"+host+":"+port+"/"+dbName+"?useUnicode=true&characterEncoding=UTF-8";
+		this.url = makeUrl(host, port, dbName);
 		this.user = user;
 		this.pwd = pwd;
 	}
@@ -69,5 +69,10 @@ public final class DFDbCfg {
 	
 	public static DFDbCfg newCfg(String host, int port, String dbName, String user, String pwd){
 		return new DFDbCfg(host, port, dbName, user, pwd);
+	}
+	
+	
+	public static String makeUrl(String host, int port, String dbName){
+		return "jdbc:mysql://"+host+":"+port+"/"+dbName+"?useUnicode=true&characterEncoding=UTF-8";
 	}
 }

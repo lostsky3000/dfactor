@@ -35,11 +35,7 @@ public final class DFJsHttpSvrReq implements IScriptHttpSvrReq{
 	}
 	@Override
 	public boolean isIsStr() {
-		Object data = req.getApplicationData();
-		if(data != null && data instanceof String){
-			return true;
-		}
-		return false;
+		return req.contentIsStr();
 	}
 
 	@Override

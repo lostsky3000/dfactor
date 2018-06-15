@@ -23,7 +23,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -81,7 +86,9 @@ public final class DFActorManager {
 	}
 	
 	private volatile boolean _hasStarted = false;
-	private volatile List<LoopWorker> _lsLoopWorker = null;
+//	private volatile List<LoopWorker> _lsLoopWorker = null;
+	
+	private volatile List<LoopRejectMonitor> _lsLoopRejectMonitor = null;
 	//
 	
 	private volatile List<DFHashWheelTimer> _lsTimer = null;
@@ -90,17 +97,109 @@ public final class DFActorManager {
 	private volatile int _timerThNum = 1;
 	private final AtomicInteger _timerIdxCount = new AtomicInteger(0);
 	//
-	private final ConcurrentLinkedQueue<DFActorWrap> _queueGlobalActor = new ConcurrentLinkedQueue<>();
+	private final LinkedBlockingQueue<Runnable> _queueLogicActor = new LinkedBlockingQueue<>(10);
+	private final ConcurrentLinkedQueue<DFActorWrap> _queueRejectLogicActor = new ConcurrentLinkedQueue<>();
 	private final Lock _lockQueueActor = new ReentrantLock();
 	private final Condition _condQueueActor = _lockQueueActor.newCondition();
-	
-	private final ConcurrentLinkedQueue<DFActorWrap> _queueGlobalBlockActor = new ConcurrentLinkedQueue<>();
+	private ThreadPoolExecutor _poolLogic = null;
+	private final RejectedExecutionHandler _rejectHandlerLogic = new RejectedExecutionHandler() {
+		@Override
+		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+			try{
+				_queueRejectLogicActor.offer((DFActorWrap)r);
+				notifyRejectQueueLogic();
+			}catch(Throwable e){
+				e.printStackTrace();
+			}
+			
+		}
+	};
+	protected void addToQueueLogic(DFActorWrap wrap){
+		_poolLogic.execute(wrap);
+	}
+	protected void notifyRejectQueueLogic(){
+		_lockQueueActor.lock();
+		try{
+			_condQueueActor.signal();
+		}finally{
+			_lockQueueActor.unlock();
+		}
+	}
+	//
+	private final LinkedBlockingQueue<Runnable> _queueBlockActor = new LinkedBlockingQueue<>(10);
+	private final ConcurrentLinkedQueue<DFActorWrap> _queueRejectBlockActor = new ConcurrentLinkedQueue<>();
 	private final Lock _lockQueueBlockActor = new ReentrantLock();
 	private final Condition _condQueueBlockActor = _lockQueueBlockActor.newCondition();
-	
-	private final ConcurrentLinkedQueue<DFActorWrap> _queueGlobalClusterActor = new ConcurrentLinkedQueue<>();
+	private ThreadPoolExecutor _poolBlock = null;
+	private final RejectedExecutionHandler _rejectHandlerBlock = new RejectedExecutionHandler() {
+		@Override
+		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+			_queueRejectBlockActor.offer((DFActorWrap)r);
+			notifyRejectQueueBlock();
+		}
+	};
+	protected void addToQueueBlock(DFActorWrap wrap){
+		_poolBlock.execute(wrap);
+	}
+	protected void notifyRejectQueueBlock(){
+		_lockQueueActor.lock();
+		_lockQueueBlockActor.lock();
+		try{
+			_condQueueBlockActor.signal();
+		}finally{
+			_lockQueueBlockActor.unlock();
+		}
+	}
+	//
+	private final LinkedBlockingQueue<Runnable> _queueClusterActor = new LinkedBlockingQueue<>(10);
+	private final ConcurrentLinkedQueue<DFActorWrap> _queueRejectClusterActor = new ConcurrentLinkedQueue<>();
 	private final Lock _lockQueueClusterActor = new ReentrantLock();
 	private final Condition _condQueueClusterActor = _lockQueueClusterActor.newCondition(); 
+	private ThreadPoolExecutor _poolCluster = null;
+	private final RejectedExecutionHandler _rejectHandlerCluster = new RejectedExecutionHandler() {
+		@Override
+		public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+			_queueRejectClusterActor.offer((DFActorWrap)r);
+			notifyRejectQueueCluster();
+		}
+	};
+	protected void addToQueueCluster(DFActorWrap wrap){
+		_poolCluster.execute(wrap);
+	}
+	protected void notifyRejectQueueCluster(){
+		_lockQueueClusterActor.lock();
+		try{
+			_condQueueClusterActor.signal();
+		}finally{
+			_lockQueueClusterActor.unlock();
+		}
+	}
+	//
+	private class DFThreadFactory implements ThreadFactory{
+		private final String thName;
+		private int count = 0;
+		private DFThreadFactory(String thName){
+			this.thName = thName;
+		}
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread th = new Thread(r);
+			synchronized (thName) {
+				th.setName(thName + (++count));
+				if(count >= Integer.MAX_VALUE){
+					count = 0;
+				}
+			}
+			return th;
+		}
+	}
+	private ThreadPoolExecutor _createThreadPool(int coreSize, int maxSize, int aliveTime, 
+				LinkedBlockingQueue<Runnable> queue,
+				DFThreadFactory threadFactory, RejectedExecutionHandler rejectHandler){
+		ThreadPoolExecutor pool = new ThreadPoolExecutor(coreSize, maxSize, aliveTime, TimeUnit.SECONDS, 
+				queue, threadFactory, rejectHandler);
+		return pool;
+	}
 	
 	//
 	private volatile CountDownLatch _cdInit = null;
@@ -233,8 +332,10 @@ public final class DFActorManager {
 			_arrSysBlockId = new int[_blockThNum];
 			//
 			_timerThNum = cfg.getTimerThreadNum();
-			_cdInit = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _clusterThNum + _timerThNum); //worker + timer
-			_cdWorkerStop = new CountDownLatch(logicWorkerThNum + blockWorkerThNum + _clusterThNum + _timerThNum);
+			int tmpThNum = (logicWorkerThNum>0?1:0) + (blockWorkerThNum>0?1:0) 
+					+ (_clusterThNum>0?1:0) + (_timerThNum>0?1:0);
+			_cdInit = new CountDownLatch(tmpThNum); //worker + timer
+			_cdWorkerStop = new CountDownLatch(tmpThNum);
 			//start timer thread
 			_lsTimer = new ArrayList<>(_timerThNum);
 			_lsLoopTimer = new ArrayList<>(_timerThNum);
@@ -250,38 +351,106 @@ public final class DFActorManager {
 				th.setPriority(Thread.MAX_PRIORITY);
 				th.start();
 			}
-			//start worker thread
-			_lsLoopWorker = new ArrayList<>(logicWorkerThNum + blockWorkerThNum + _clusterThNum);
-			//logic worker thread
-			final Thread[] arrWorkerTh = new Thread[logicWorkerThNum + blockWorkerThNum + _clusterThNum];
+			//
+			ArrayList<String> lsThName = new ArrayList<>();
+			_lsLoopRejectMonitor = new ArrayList<>();
+			if(_clusterThNum > 0){ //has cluster
+				DFThreadFactory tf = new DFThreadFactory("thread-cluster-");
+				_poolCluster = _createThreadPool(_clusterThNum, _clusterThNum, 0, _queueClusterActor, tf, _rejectHandlerCluster);
+				LoopRejectMonitor loop = new LoopRejectMonitor(_poolCluster, _queueRejectClusterActor, 
+											_lockQueueClusterActor, _condQueueClusterActor, _queueClusterActor);
+				_lsLoopRejectMonitor.add(loop);
+				lsThName.add("thread-monitor-cluster");
+			}
+			if(_blockThNum > 0){ //has block
+				DFThreadFactory tf = new DFThreadFactory("thread-block-");
+				_poolBlock = _createThreadPool(_blockThNum, _blockThNum*2, 300, _queueBlockActor, tf, _rejectHandlerBlock);
+				LoopRejectMonitor loop = new LoopRejectMonitor(_poolBlock, _queueRejectBlockActor, 
+											_lockQueueBlockActor, _condQueueBlockActor, _queueBlockActor);
+				_lsLoopRejectMonitor.add(loop);
+				lsThName.add("thread-monitor-block");
+			}
+			if(_workerThNum > 0){ //logic
+				DFThreadFactory tf = new DFThreadFactory("thread-logic-");
+				_poolLogic = _createThreadPool(_workerThNum, _workerThNum*2, 300, _queueLogicActor, tf, _rejectHandlerLogic);
+				LoopRejectMonitor loop = new LoopRejectMonitor(_poolLogic, _queueRejectLogicActor, 
+											_lockQueueActor, _condQueueActor, _queueLogicActor);
+				_lsLoopRejectMonitor.add(loop);
+				lsThName.add("thread-monitor-logic");
+			}
+			final Thread[] arrWorkerTh = new Thread[_lsLoopRejectMonitor.size()];
 			for(int i=0; i<arrWorkerTh.length; ++i){
-				LoopWorker loop = null;
-				Thread th = null;
-				if(i < logicWorkerThNum){  //logic worker thread
-					loop = new LoopWorker(i+1, i==0?true:false, _queueGlobalActor, _lockQueueActor, _condQueueActor);
-					th = new Thread(loop);
-					th.setName("thread-logic-worker-"+i);
-				}else if(i < logicWorkerThNum + blockWorkerThNum){   //block worker thread
-					loop = new LoopWorker(i+1, false, _queueGlobalBlockActor, _lockQueueBlockActor, _condQueueBlockActor);
-					th = new Thread(loop);
-					th.setName("thread-block-worker-"+(i-logicWorkerThNum));
-				}else{ //cluster thread
-					loop = new LoopWorker(i+1, false, _queueGlobalClusterActor, _lockQueueClusterActor, _condQueueClusterActor);
-					th = new Thread(loop);
-					th.setName("thread-cluster-worker-"+(i-logicWorkerThNum-blockWorkerThNum));
-				}
-				_lsLoopWorker.add(loop);
+				Thread th = new Thread(_lsLoopRejectMonitor.get(i));
+				th.setName(lsThName.get(i));
 				arrWorkerTh[i] = th;
 			}
+			
+//			//start worker thread
+//			_lsLoopWorker = new ArrayList<>(logicWorkerThNum + blockWorkerThNum + _clusterThNum);
+//			//logic worker thread
+//			final Thread[] arrWorkerTh = new Thread[logicWorkerThNum + blockWorkerThNum + _clusterThNum];
+//			for(int i=0; i<arrWorkerTh.length; ++i){
+//				LoopWorker loop = null;
+//				Thread th = null;
+//				if(i < logicWorkerThNum){  //logic worker thread
+//					loop = new LoopWorker(i+1, i==0?true:false, _queueGlobalActor, _lockQueueActor, _condQueueActor);
+//					th = new Thread(loop);
+//					th.setName("thread-logic-worker-"+i);
+//				}else if(i < logicWorkerThNum + blockWorkerThNum){   //block worker thread
+//					loop = new LoopWorker(i+1, false, _queueGlobalBlockActor, _lockQueueBlockActor, _condQueueBlockActor);
+//					th = new Thread(loop);
+//					th.setName("thread-block-worker-"+(i-logicWorkerThNum));
+//				}else{ //cluster thread
+//					loop = new LoopWorker(i+1, false, _queueGlobalClusterActor, _lockQueueClusterActor, _condQueueClusterActor);
+//					th = new Thread(loop);
+//					th.setName("thread-cluster-worker-"+(i-logicWorkerThNum-blockWorkerThNum));
+//				}
+//				_lsLoopWorker.add(loop);
+//				arrWorkerTh[i] = th;
+//			}
+			
 			for(int i=0; i<arrWorkerTh.length; ++i){
 				arrWorkerTh[i].start();
 			}
+			
 			try {
 				_cdInit.await();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			//
+			//do logic init task
+			_poolLogic.submit(new Runnable(){
+				@Override
+				public void run() {
+					//init system actor
+					if(_initCfg.isUseSysLog()){ //use system log
+						createActor(DFActorDefine.ACTOR_NAME_LOG, ActorLog.class, null, 
+								0, _initCfg.getSysLogConsumeType(), false);
+					}
+					if(_blockThNum > 0){   //create sys block actor
+						for(int i=0; i<_blockThNum; ++i){
+							int tmpId = createActor(null, DFSysBlockActor.class, null, 0, DFActorDefine.CONSUME_ALL, true);
+							_arrSysBlockId[i] = tmpId;
+						}
+					}
+					//create entry actor
+					DFActorClusterConfig clusterCfg = _initCfg.getClusterConfig();
+					if(clusterCfg == null){
+						createActor(_entryName, _entryClassz, _entryParam, _entryScheduleUnit, 
+								_entryConsumeType, _entryIsBlock);
+					}else{  //use cluster
+						ActorProp propEntry = ActorProp.newProp()
+								.name(_entryName).classz(_entryClassz).param(_entryParam)
+								.scheduleMilli(_entryScheduleMilli).consumeType(DFActorDefine.CONSUME_ALL);
+						HashMap<String,Object> mapParam = new HashMap<>();
+						mapParam.put("entry", propEntry);
+						mapParam.put("cluster", clusterCfg);
+						//
+						createActor(DFClusterActor.NAME, DFClusterActor.class, mapParam, 0, 
+								DFActorDefine.CONSUME_ALL, true, false);
+					}
+				}
+			});
 			_hasStarted = true;
 			bRet = true;
 		} while (false);
@@ -434,10 +603,23 @@ public final class DFActorManager {
 					}
 					_lsLoopTimer.clear(); _lsLoopTimer = null;
 					//stop worker thread 
-					for(LoopWorker w : _lsLoopWorker){
-						w.stop();
+//					for(LoopWorker w : _lsLoopWorker){
+//						w.stop();
+//					}
+//					_lsLoopWorker.clear(); _lsLoopWorker = null;
+					for(LoopRejectMonitor loop : _lsLoopRejectMonitor){
+						loop.stop();
 					}
-					_lsLoopWorker.clear(); _lsLoopWorker = null;
+					_lsLoopRejectMonitor.clear(); _lsLoopRejectMonitor = null;
+					if(_workerThNum > 0){
+						_poolLogic.shutdown();
+					}
+					if(_blockThNum > 0){
+						_poolBlock.shutdown();
+					}
+					if(_clusterThNum > 0){
+						_poolCluster.shutdown();
+					}
 					//
 					try {
 						_cdWorkerStop.await(30000, TimeUnit.MILLISECONDS);
@@ -562,14 +744,17 @@ public final class DFActorManager {
 		try{
 			if(wrap.pushMsg(0, 0, DFActorDefine.SUBJECT_START, 0, param, null, false, null, false, null, null) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
-					_queueGlobalClusterActor.offer(wrap);
-					_doGlobalClusterQueueNotify();
+//					_queueGlobalClusterActor.offer(wrap);
+//					_doGlobalClusterQueueNotify();
+					_poolCluster.execute(wrap);
 				}else if(wrap.isBlockActor()){
-					_queueGlobalBlockActor.offer(wrap);
-					_doGlobalBlockQueueNotify();
+//					_queueGlobalBlockActor.offer(wrap);
+//					_doGlobalBlockQueueNotify();
+					_poolBlock.execute(wrap);
 				}else{
-					_queueGlobalActor.offer(wrap);
-					_doGlobalQueueNotify();
+//					_queueGlobalActor.offer(wrap);
+//					_doGlobalQueueNotify();
+					_poolLogic.execute(wrap);
 				}
 			}
 		}catch(Throwable e){
@@ -636,14 +821,17 @@ public final class DFActorManager {
 		if(wrap != null){
 			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb, payload2, method) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
-					_queueGlobalClusterActor.offer(wrap);
-					_doGlobalClusterQueueNotify();
+//					_queueGlobalClusterActor.offer(wrap);
+//					_doGlobalClusterQueueNotify();
+					_poolCluster.execute(wrap);
 				}else if(wrap.isBlockActor()){
-					_queueGlobalBlockActor.offer(wrap);
-					_doGlobalBlockQueueNotify();
+//					_queueGlobalBlockActor.offer(wrap);
+//					_doGlobalBlockQueueNotify();
+					_poolBlock.execute(wrap);
 				}else{
-					_queueGlobalActor.offer(wrap);
-					_doGlobalQueueNotify();
+//					_queueGlobalActor.offer(wrap);
+//					_doGlobalQueueNotify();
+					_poolLogic.execute(wrap);
 				}
 			} 
 			return 0;
@@ -666,14 +854,17 @@ public final class DFActorManager {
 		if(wrap != null){
 			if(wrap.pushMsg(srcId, requestId, subject, cmd, payload, context, addTail, userHandler, isCb, payload2, method) == 0){ //add to global queue
 				if(wrap.isClusterActor()){
-					_queueGlobalClusterActor.offer(wrap);
-					_doGlobalClusterQueueNotify();
+//					_queueGlobalClusterActor.offer(wrap);
+//					_doGlobalClusterQueueNotify();
+					_poolCluster.execute(wrap);
 				}else if(wrap.isBlockActor()){
-					_queueGlobalBlockActor.offer(wrap);
-					_doGlobalBlockQueueNotify();
+//					_queueGlobalBlockActor.offer(wrap);
+//					_doGlobalBlockQueueNotify();
+					_poolBlock.execute(wrap);
 				}else{
-					_queueGlobalActor.offer(wrap);
-					_doGlobalQueueNotify();
+//					_queueGlobalActor.offer(wrap);
+//					_doGlobalQueueNotify();
+					_poolLogic.execute(wrap);
 				}
 			}
 			return 0;
@@ -738,6 +929,56 @@ public final class DFActorManager {
 		return _initCfg.getBlockWorkerThreadNum();
 	}
 	
+	
+	private class LoopRejectMonitor implements Runnable{
+		private final ConcurrentLinkedQueue<DFActorWrap> _queueRejectActor;
+		private final LinkedBlockingQueue<Runnable> _queueActor;
+		private final Lock _lockActor;
+		private final Condition _condActor;
+		private final ThreadPoolExecutor _pool;
+		public LoopRejectMonitor(ThreadPoolExecutor pool, ConcurrentLinkedQueue<DFActorWrap> queueRejectActor, 
+				Lock lockActor, Condition condActor, LinkedBlockingQueue<Runnable> queueActor) {
+			this._pool = pool;
+			this._queueRejectActor = queueRejectActor;
+			this._lockActor = lockActor;
+			this._condActor = condActor;
+			this._queueActor = queueActor;
+		}
+		@Override
+		public void run() {
+			final String thName = Thread.currentThread().getName();
+			int maxThread = _pool.getCorePoolSize() + _pool.getMaximumPoolSize();
+			_cdInit.countDown();
+			_onLoop = true;
+			DFActorWrap wrap = null;
+			while(_onLoop){
+				try{
+					wrap = _queueRejectActor.poll();
+					if(wrap != null){
+						if(!_queueActor.offer(wrap, 2000, TimeUnit.MILLISECONDS)){
+							_queueRejectActor.offer(wrap);
+						}
+					}else{
+						_lockActor.lock();
+						try{
+							_condActor.await(2000, TimeUnit.MILLISECONDS);
+						}finally{
+							_lockActor.unlock();
+						}
+					}
+				}catch(Throwable e){
+					e.printStackTrace();
+				}
+			}
+			_debugLog("LoopRejectMonitorDone: "+thName);
+			_cdWorkerStop.countDown();
+		}
+		private volatile boolean _onLoop = false;
+		protected void stop(){
+			_onLoop = false;
+		}
+		
+	}
 	private class LoopWorker implements Runnable{
 		protected final int id;
 		private final int _consumeType;

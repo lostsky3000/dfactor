@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
@@ -117,12 +118,14 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	            	}
 	            }else if(method.equals(HttpMethod.POST)){
 	            	HttpHeaders headers = req.headers();
-	            	final String contentType = headers.get(DFHttpHeader.CONTENT_TYPE);
+	            	final String contentType = headers.get(DFHttpHeader.CONTENT_TYPE);    
 	            	final int contentLen = (int) HttpUtil.getContentLength(req);
 	            	//data
-	            	if(contentType != null && contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
+	            	if(contentType != null && 
+	            			contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
 	            		dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, 
-	            						contentType==null?DFHttpContentType.UNKNOWN:contentType, contentLen, null);
+	            						contentType,//==null?DFHttpContentType.UNKNOWN:contentType, 
+	            						contentLen, null);
 	            		HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(req);
 	                	List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
 	                    for (InterfaceHttpData parm : parmList) {
@@ -141,7 +144,8 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 		            		}
 	            		}
 	            		dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, 
-        								contentType==null?DFHttpContentType.UNKNOWN:contentType, contentLen, appData);
+        								contentType, //==null?DFHttpContentType.UNKNOWN:contentType, 
+        								contentLen, appData);
 	            	}
 	            	//headers
 	            	dfReq.setHeaders(headers);

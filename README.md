@@ -1,5 +1,7 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
+示例在github可见，[链接](https://github.com/lostsky3000/dfactor)
+
 # 最新
 
 - 监听集群内结点事件api  [示例](src/test/java/fun/lib/actor/example/ClusterNodeEvent.java)

@@ -237,7 +237,7 @@ public class DFActor implements CallHereContext{
 		return timer;
 	}
 	@Override
-	public DFActorRedis getRedis() {
+	public DFActorRedis getRedisWrap() {
 		return redis;
 	}
 	@Override
@@ -248,13 +248,11 @@ public class DFActor implements CallHereContext{
 	public DFActorMongo getMongo() {
 		return mongo;
 	}
-
 	@Override
 	public String getActorName() {
 		// TODO Auto-generated method stub
 		return this.name;
 	}
-
 	@Override
 	public DFActorLog getLog() {
 		// TODO Auto-generated method stub

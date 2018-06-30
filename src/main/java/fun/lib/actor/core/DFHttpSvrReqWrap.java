@@ -20,17 +20,20 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 	private final HttpMethod method;
 	private final String contentType;
 	private final int contentLength;
-	private final String uri;
+	private String uri;
 	private final boolean keepAlive;
 	private HttpHeaders headers = null;
-	private Map<String,String> mapQueryData = null;
+	private Map<String,Object> mapQueryData = null;
 	private Object appData = null;
 	
 	private volatile DFHttpSvrRspWrap response = null;
 	private final DFTcpChannel channel;
+	private boolean _shouldNoRsp = false;
+	private final boolean isMultipart;
+	private boolean _isForward = false;
 	
 	protected DFHttpSvrReqWrap(DFTcpChannel channel, String uri, HttpMethod method, boolean keepAlive, 
-				String contentType, int contentLength, Object appData) {
+				String contentType, int contentLength, Object appData, boolean isMultipart) {
 		this.channel = channel;
 		this.uri = uri;
 		this.method = method;
@@ -38,16 +41,17 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 		this.contentLength = contentLength;
 		this.keepAlive = keepAlive;
 		this.appData = appData;
+		this.isMultipart = isMultipart;
 	}
 	@Override
-	public Iterator<Entry<String,String>> getQueryDataIterator(){
+	public Iterator<Entry<String,Object>> getQueryDataIterator(){
 		if(mapQueryData != null){
 			return mapQueryData.entrySet().iterator();
 		}
 		return null;
 	}
 	@Override
-	public String getQueryData(String name){
+	public Object getQueryData(String name){
 		if(mapQueryData != null){
 			return mapQueryData.get(name);
 		}
@@ -110,7 +114,7 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 	protected void setHeaders(HttpHeaders headers){
 		this.headers = headers;
 	}
-	protected void addQueryDatas(Map<String,String> map){
+	protected void addQueryDatas(Map<String,Object> map){
 		if(mapQueryData == null){
 			mapQueryData = new HashMap<>();
 		}
@@ -174,5 +178,31 @@ public final class DFHttpSvrReqWrap implements DFHttpSvrReq{
 		return response;
 	}
 	
+	protected DFHttpSvrRsp getResponse(){
+		return response;
+	}
 	
+	protected boolean shouldNoRsp(){
+		return _shouldNoRsp;
+	}
+	protected void setShouldNoRsp(boolean b){
+		_shouldNoRsp = b;
+	}
+	@Override
+	public boolean isMultipart() {
+		return isMultipart;
+	}
+	
+	protected DFTcpChannel getChannel(){
+		return channel;
+	}
+	protected boolean isForward(){
+		return _isForward;
+	}
+	protected void setForward(boolean b){
+		_isForward = b;
+	}
+	protected void setUri(String uri){
+		this.uri = uri;
+	}
 }

@@ -72,6 +72,14 @@ public final class DFTcpChannelWrap implements DFTcpChannel{
 
 	@Override
 	public int write(Object msg) {
+		return _doWrite(msg, true);
+	}
+	
+	public int writeNoFlush(Object msg){
+		return _doWrite(msg, false);
+	}
+	
+	private int _doWrite(Object msg, boolean flushNow){
 		if(_isClosed){
 			return 1;
 		}
@@ -80,14 +88,30 @@ public final class DFTcpChannelWrap implements DFTcpChannel{
 				msg = _encoder.onEncode(msg);
 			}
 			if(msg instanceof String){
-				_channel.writeAndFlush(new TextWebSocketFrame((String) msg));
+				if(flushNow){
+					_channel.writeAndFlush(new TextWebSocketFrame((String) msg));
+				}else{
+					_channel.write(new TextWebSocketFrame((String) msg));
+				}
 			}else if(msg instanceof ByteBuf){
-				_channel.writeAndFlush(new BinaryWebSocketFrame((ByteBuf) msg));
+				if(flushNow){
+					_channel.writeAndFlush(new BinaryWebSocketFrame((ByteBuf) msg));
+				}else{
+					_channel.write(new BinaryWebSocketFrame((ByteBuf) msg));
+				}
 			}else if(msg instanceof JSONObject){
 				final String str = JSONObject.toJSONString(msg);
-				_channel.writeAndFlush(new TextWebSocketFrame(str));
+				if(flushNow){
+					_channel.writeAndFlush(new TextWebSocketFrame(str));
+				}else{
+					_channel.write(new TextWebSocketFrame(str));
+				}
 			}else{  
-				_channel.writeAndFlush(msg);
+				if(flushNow){
+					_channel.writeAndFlush(msg);
+				}else{
+					_channel.write(msg);
+				}
 			}
 		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_LENGTH
 					||_tcpDecodeType == DFActorDefine.TCP_DECODE_RAW 
@@ -121,19 +145,38 @@ public final class DFTcpChannelWrap implements DFTcpChannel{
 					((CompositeByteBuf)msg).addComponents(true, bufHead, bufPayload);
 				}
 			}
-			_channel.writeAndFlush(msg);
+			if(flushNow){
+				_channel.writeAndFlush(msg);
+			}else{
+				_channel.write(msg);
+			}
 		}else if(_tcpDecodeType == DFActorDefine.TCP_DECODE_HTTP){
 			if(msg instanceof DFHttpSvrRspWrap){
 				DFHttpSvrRspWrap rsp = (DFHttpSvrRspWrap) msg;
-				_channel.writeAndFlush(rsp.getRawResponse()).addListener(ChannelFutureListener.CLOSE);
+				if(flushNow){
+					_channel.writeAndFlush(rsp.getRawResponse()).addListener(ChannelFutureListener.CLOSE);
+				}else{
+					_channel.write(rsp.getRawResponse());//addListener(ChannelFutureListener.CLOSE);
+				}
 			}else if(msg instanceof DFHttpCliReqWrap){
 				DFHttpCliReqWrap req = (DFHttpCliReqWrap) msg;
-				_channel.writeAndFlush(req.getReqRaw());
+				if(flushNow){
+					_channel.writeAndFlush(req.getReqRaw()).addListener(ChannelFutureListener.CLOSE);
+				}else{
+					_channel.write(req.getReqRaw());
+				}
+			}else{
+				if(flushNow){
+					_channel.writeAndFlush(msg).addListener(ChannelFutureListener.CLOSE);
+				}else{
+					_channel.write(msg);
+				}
 			}
 		}
 		return 0;
 	}
-
+	
+	
 	@Override
 	public boolean isClosed() {
 		return _isClosed;

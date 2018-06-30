@@ -16,7 +16,7 @@ public final class DFTcpClientCfg {
 	private volatile long _connTimeout = 5000;
 	
 	private volatile int tcpProtocol = DFActorDefine.TCP_DECODE_RAW;
-	private volatile int tcpMsgMaxLength = 4096;
+	private volatile int tcpMsgMaxLength = 1024*64;
 	
 	private volatile DFTcpDecoder decoder = null;
 	private volatile DFTcpEncoder encoder = null;

@@ -24,26 +24,32 @@ public final class DFMysqlManager {
 	private final ReadLock lockDbRead = lockDb.readLock();
 	private final WriteLock lockDbWrite = lockDb.writeLock();
 	private final HashMap<Integer, DbPoolWrap> mapDb = new HashMap<>();
+	private final HashMap<String,Integer> mapDbId = new HashMap<>();
+	
 	private int idCount = 1;
 	
 	protected int initPool(DFDbCfg cfg){
-		final DataSource dbSrc = DFDbUtil.createMysqlDbSource(cfg.getUrl(), cfg.getUser(), cfg.getPwd(), 
-				cfg.getInitSize(), cfg.getMaxActive(), cfg.getMaxWait(), cfg.getMaxIdle(), cfg.getMinIdle());
-		DbPoolWrap wrap = new DbPoolWrap(dbSrc);
-		//
-		int curId = idCount;
 		lockDbWrite.lock();
 		try{
+			Integer idExist = mapDbId.get(cfg.strId);
+			if(idExist != null){ //exist
+				return idExist;
+			}
+			int curId = idCount;
+			final DataSource dbSrc = DFDbUtil.createMysqlDbSource(cfg.getUrl(), cfg.getUser(), cfg.getPwd(), 
+					cfg.getInitSize(), cfg.getMaxActive(), cfg.getMaxWait(), cfg.getMaxIdle(), cfg.getMinIdle());
+			DbPoolWrap wrap = new DbPoolWrap(dbSrc, cfg.strId);
 			mapDb.put(curId, wrap);
+			mapDbId.put(cfg.strId, curId);
 			if(idCount >= Integer.MAX_VALUE){
 				idCount = 1;
 			}else{
 				++idCount;
 			}
+			return curId;
 		}finally{
 			lockDbWrite.unlock();
 		}
-		return curId;
 	}
 	protected Connection getConn(int id){
 		Connection conn = null;
@@ -63,6 +69,9 @@ public final class DFMysqlManager {
 		lockDbWrite.lock();
 		try{
 			wrap = mapDb.remove(id);
+			if(wrap != null){
+				mapDbId.remove(wrap.strId);
+			}
 		}finally{
 			lockDbWrite.unlock();
 		}
@@ -79,6 +88,7 @@ public final class DFMysqlManager {
 				lsTmp.offer(it.next());
 			}
 			mapDb.clear();
+			mapDbId.clear();
 		}finally{
 			lockDbWrite.unlock();
 		}
@@ -92,8 +102,10 @@ public final class DFMysqlManager {
 	
 	class DbPoolWrap{
 		private DataSource dbSrc = null;
-		private DbPoolWrap(DataSource src) {
+		private final String strId;
+		private DbPoolWrap(DataSource src,String strId) {
 			dbSrc = src;
+			this.strId = strId;
 		}
 		private Connection getConn(){
 			Connection conn = null;

@@ -11,11 +11,14 @@ public final class DFRedisCfg {
 	private int minIdle = 2;
 	private int connTimeoutMilli = 5000;
 	private int borrowTimeoutMilli = 10000;
+	public final String strId;
 	
 	private DFRedisCfg(String host, int port, String auth) {
 		this.host = host;
 		this.port = port;
 		this.auth = auth;
+		//
+		this.strId = host+":"+port+"_"+auth;
 	}
 
 	public DFRedisCfg setMaxTotal(int maxTotal){

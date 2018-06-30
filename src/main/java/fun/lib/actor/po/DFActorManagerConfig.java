@@ -6,11 +6,16 @@ import fun.lib.actor.helper.DFActorLogLevel;
 public final class DFActorManagerConfig {
 
 	private volatile int logicWorkerThreadNum = Math.max(2, Runtime.getRuntime().availableProcessors()); 
+	private volatile int logicWorkerThreadNumMax = logicWorkerThreadNum;
+	private volatile int logicQueueWait = 10;
+	
 	private volatile int logLevel = DFActorLogLevel.DEBUG;
 	private volatile int timerThreadNum = 1;
 	private volatile int clientIoThreadNum = 1;
 	
 	private volatile int blockWorkerThreadNum = 1;
+	private volatile int blockWorkerThreadNumMax = blockWorkerThreadNum;
+	private volatile int blockQueueWait = 10;
 	
 	private volatile boolean useSysLog = true;
 	private volatile int sysLogConsumeType = DFActorDefine.CONSUME_AUTO;
@@ -37,8 +42,23 @@ public final class DFActorManagerConfig {
 	public int getBlockWorkerThreadNum(){
 		return blockWorkerThreadNum;
 	}
+	public int getBlockWorkerThreadNumMax(){
+		return blockWorkerThreadNumMax;
+	}
+	public int getBlockQueueWait(){
+		return this.blockQueueWait;
+	}
 	public DFActorManagerConfig setBlockWorkerThreadNum(int blockWorkerThreadNum){
 		this.blockWorkerThreadNum = blockWorkerThreadNum;
+		this.blockWorkerThreadNumMax = this.blockWorkerThreadNum;
+		return this;
+	}
+	public DFActorManagerConfig setBlockWorkerThreadNumMax(int blockWorkerThreadNumMax){
+		this.blockWorkerThreadNumMax = blockWorkerThreadNumMax;
+		return this;
+	}
+	public DFActorManagerConfig setBlockQueueWait(int queueWait){
+		this.blockQueueWait = Math.max(0, queueWait);
 		return this;
 	}
 	
@@ -61,10 +81,26 @@ public final class DFActorManagerConfig {
 	public int getLogicWorkerThreadNum() {
 		return logicWorkerThreadNum;
 	}
+	public int getLogicWorkerThreadNumMax() {
+		return logicWorkerThreadNumMax;
+	}
+	public int getLogicQueueWait(){
+		return this.logicQueueWait;
+	}
 	public DFActorManagerConfig setLogicWorkerThreadNum(int logicWorkerThreadNum) {
 		this.logicWorkerThreadNum = logicWorkerThreadNum;
+		this.logicWorkerThreadNumMax = this.logicWorkerThreadNum;
 		return this;
 	}
+	public DFActorManagerConfig setLogicWorkerThreadNumMax(int logicWorkerThreadNumMax) {
+		this.logicWorkerThreadNumMax = logicWorkerThreadNumMax;
+		return this;
+	}
+	public DFActorManagerConfig setLogicQueueWait(int queueWait) {
+		this.logicQueueWait = Math.max(0, queueWait);
+		return this;
+	}
+	
 
 	public boolean isUseSysLog() {
 		return useSysLog;

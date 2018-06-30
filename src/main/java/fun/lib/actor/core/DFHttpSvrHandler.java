@@ -1,6 +1,7 @@
 package fun.lib.actor.core;
 
 
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Iterator;
@@ -23,20 +24,28 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.DefaultFileRegion;
+import io.netty.channel.FileRegion;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.multipart.Attribute;
+import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData.HttpDataType;
+import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.ReferenceCountUtil;
 
 public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
@@ -91,7 +100,7 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	            if(method.equals(HttpMethod.GET)){
 	            	HttpHeaders headers = req.headers();
 	            	//
-	            	dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, null, 0, null);
+	            	dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, null, 0, null, false);
 	            	//headers
 	            	dfReq.setHeaders(headers);
 	            	//values
@@ -125,7 +134,7 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	            			contentType.equalsIgnoreCase(DFHttpContentType.FORM)){ //表单请求
 	            		dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, 
 	            						contentType,//==null?DFHttpContentType.UNKNOWN:contentType, 
-	            						contentLen, null);
+	            						contentLen, null, false);
 	            		HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(req);
 	                	List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
 	                    for (InterfaceHttpData parm : parmList) {
@@ -133,19 +142,40 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 	                        dfReq.addQueryData(data.getName(), data.getValue());
 	                    }
 	            	}else{ //application 请求
+	            		boolean isMultipart = false;
 	            		Object appData = null;
 	            		ByteBuf buf = req.content();
-	            		if(contentIsString(contentType)){ //String
-	            			appData = buf.readCharSequence(buf.readableBytes(), Charset.forName("utf-8"));
-	            		}else{  //raw bin
-	            			appData = buf;
-	            			if(buf != null){
-		            			buf.retain();
+	            		HttpPostRequestDecoder postDec = new HttpPostRequestDecoder(req);
+	            		try{
+	            			if(postDec.isMultipart()){
+//	            				List<InterfaceHttpData> lsData = postDec.getBodyHttpDatas();
+//			            		for(InterfaceHttpData data : lsData){
+//			            			if(data.getHttpDataType() == HttpDataType.FileUpload){
+//			            				FileUpload fUp = (FileUpload) data;
+//			            				String name = fUp.getName();
+//			            				String fileName = fUp.getFilename();
+//			            				String tmpType = fUp.getContentType();
+//			            				ByteBuf bufTmp = fUp.content();	
+//			            				
+//			            			}
+//			            		}
+			            		appData = new DFHttpMultiData(postDec);
+			            		isMultipart = true;
+	            			}else if(contentIsString(contentType)){ //String
+		            			appData = buf.readCharSequence(buf.readableBytes(), Charset.forName("utf-8"));
+		            		}else{  //raw bin
+		            			appData = buf;
+		            			if(buf != null){
+			            			buf.retain();
+			            		}
 		            		}
+	            		}finally{
+//	            			postDec.cleanFiles();
+//	            			postDec.destroy();
 	            		}
 	            		dfReq = new DFHttpSvrReqWrap(_session, uri, method, keepAlive, 
         								contentType, //==null?DFHttpContentType.UNKNOWN:contentType, 
-        								contentLen, appData);
+        								contentLen, appData, isMultipart);
 	            	}
 	            	//headers
 	            	dfReq.setHeaders(headers);
@@ -203,6 +233,7 @@ public final class DFHttpSvrHandler extends ChannelInboundHandlerAdapter{
 				(contentType.equals(DFHttpContentType.JSON)
 				|| contentType.equals(DFHttpContentType.XML)
 				|| contentType.equals(DFHttpContentType.TEXT_PLAIN)
+				|| contentType.equals(DFHttpContentType.TEXT_HTML)
 				)){
 			return true;
 		}

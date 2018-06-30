@@ -77,7 +77,7 @@ public final class DFJsHttpSvrReq implements IScriptHttpSvrReq{
 		return rsp;
 	}
 	@Override
-	public Iterator<Entry<String, String>> getFieldIterator() {
+	public Iterator<Entry<String, Object>> getFieldIterator() {
 		return req.getQueryDataIterator();
 	}
 

@@ -19,26 +19,33 @@ public final class DFRedisManager {
 	private final ReadLock lockRedisRead = lockRedis.readLock();
 	private final WriteLock lockRedisWrite = lockRedis.writeLock();
 	private final HashMap<Integer,RedisPoolWrap> mapRedis = new HashMap<>();
+	private final HashMap<String,Integer> mapRedisId = new HashMap<>();
+	
 	private int redisIdCount = 1;
 	protected int initPool(DFRedisCfg cfg){
-		JedisPool pool = DFRedisUtil.createJedisPool(
-				cfg.getHost(), cfg.getPort(), cfg.getAuth(),
-				cfg.getMaxTotal(), cfg.getMaxIdle(), cfg.getMinIdle(),
-				cfg.getConnTimeoutMilli(), cfg.getBorrowTimeoutMilli());
-		RedisPoolWrap wrap = new RedisPoolWrap(pool);
 		lockRedisWrite.lock();
-		int curId = redisIdCount;
 		try{
+			Integer existId = mapRedisId.get(cfg.strId);
+			if(existId != null){  //pool exist
+				return existId;
+			}
+			JedisPool pool = DFRedisUtil.createJedisPool(
+					cfg.getHost(), cfg.getPort(), cfg.getAuth(),
+					cfg.getMaxTotal(), cfg.getMaxIdle(), cfg.getMinIdle(),
+					cfg.getConnTimeoutMilli(), cfg.getBorrowTimeoutMilli());
+			RedisPoolWrap wrap = new RedisPoolWrap(pool, cfg.strId);
+			int curId = redisIdCount;
 			mapRedis.put(curId, wrap);
+			mapRedisId.put(cfg.strId, curId);
 			if(redisIdCount >= Integer.MAX_VALUE){
 				redisIdCount = 1;
 			}else{
 				++redisIdCount;
 			}
+			return curId;
 		}finally{
 			lockRedisWrite.unlock();
 		}
-		return curId;
 	}
 	protected Jedis getConn(int id){
 		Jedis j = null;
@@ -61,6 +68,9 @@ public final class DFRedisManager {
 		lockRedisWrite.lock();
 		try{
 			wrap = mapRedis.remove(id);	
+			if(wrap != null){
+				mapRedisId.remove(wrap.strId);
+			}
 		}finally{
 			lockRedisWrite.unlock();
 		}
@@ -77,6 +87,7 @@ public final class DFRedisManager {
 				wrap.close();
 			}
 			mapRedis.clear();
+			mapRedisId.clear();
 		}finally{
 			lockRedisWrite.unlock();
 		}
@@ -84,8 +95,10 @@ public final class DFRedisManager {
 	
 	class RedisPoolWrap{
 		private JedisPool pool = null;
-		public RedisPoolWrap(JedisPool p) {
+		private final String strId;
+		public RedisPoolWrap(JedisPool p, String strId) {
 			pool = p;
+			this.strId = strId;
 		}
 		private Jedis getConn(){
 			Jedis j = null;

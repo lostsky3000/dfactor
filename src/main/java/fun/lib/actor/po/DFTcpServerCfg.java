@@ -18,7 +18,7 @@ public final class DFTcpServerCfg {
 	private volatile int soBackLog = 1024;
 	
 	private volatile int tcpProtocol = DFActorDefine.TCP_DECODE_RAW;
-	private volatile int tcpMsgMaxLength = 4096;
+	private volatile int tcpMsgMaxLength = 1024*64;
 	
 	private volatile String wsUri = "";
 	

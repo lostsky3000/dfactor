@@ -97,7 +97,7 @@ public final class DFActorManager {
 	private volatile int _timerThNum = 1;
 	private final AtomicInteger _timerIdxCount = new AtomicInteger(0);
 	//
-	private final LinkedBlockingQueue<Runnable> _queueLogicActor = new LinkedBlockingQueue<>(10);
+	private volatile LinkedBlockingQueue<Runnable> _queueLogicActor = null;
 	private final ConcurrentLinkedQueue<DFActorWrap> _queueRejectLogicActor = new ConcurrentLinkedQueue<>();
 	private final Lock _lockQueueActor = new ReentrantLock();
 	private final Condition _condQueueActor = _lockQueueActor.newCondition();
@@ -126,7 +126,7 @@ public final class DFActorManager {
 		}
 	}
 	//
-	private final LinkedBlockingQueue<Runnable> _queueBlockActor = new LinkedBlockingQueue<>(10);
+	private volatile LinkedBlockingQueue<Runnable> _queueBlockActor = null;
 	private final ConcurrentLinkedQueue<DFActorWrap> _queueRejectBlockActor = new ConcurrentLinkedQueue<>();
 	private final Lock _lockQueueBlockActor = new ReentrantLock();
 	private final Condition _condQueueBlockActor = _lockQueueBlockActor.newCondition();
@@ -142,7 +142,6 @@ public final class DFActorManager {
 		_poolBlock.execute(wrap);
 	}
 	protected void notifyRejectQueueBlock(){
-		_lockQueueActor.lock();
 		_lockQueueBlockActor.lock();
 		try{
 			_condQueueBlockActor.signal();
@@ -177,19 +176,14 @@ public final class DFActorManager {
 	//
 	private class DFThreadFactory implements ThreadFactory{
 		private final String thName;
-		private int count = 0;
+		private final AtomicInteger count = new AtomicInteger(0);
 		private DFThreadFactory(String thName){
 			this.thName = thName;
 		}
 		@Override
 		public Thread newThread(Runnable r) {
 			Thread th = new Thread(r);
-			synchronized (thName) {
-				th.setName(thName + (++count));
-				if(count >= Integer.MAX_VALUE){
-					count = 0;
-				}
-			}
+			th.setName(thName + (count.incrementAndGet()));
 			return th;
 		}
 	}
@@ -329,6 +323,8 @@ public final class DFActorManager {
 			int blockWorkerThNum = cfg.getBlockWorkerThreadNum();
 			_blockThNum = blockWorkerThNum;
 			_workerThNum = logicWorkerThNum;
+			int blockThNumMax = cfg.getBlockWorkerThreadNumMax();
+			int logicThNumMax = cfg.getLogicWorkerThreadNumMax();
 			_arrSysBlockId = new int[_blockThNum];
 			//
 			_timerThNum = cfg.getTimerThreadNum();
@@ -364,7 +360,8 @@ public final class DFActorManager {
 			}
 			if(_blockThNum > 0){ //has block
 				DFThreadFactory tf = new DFThreadFactory("thread-block-");
-				_poolBlock = _createThreadPool(_blockThNum, _blockThNum*2, 300, _queueBlockActor, tf, _rejectHandlerBlock);
+				_queueBlockActor = new LinkedBlockingQueue<>(cfg.getBlockQueueWait());
+				_poolBlock = _createThreadPool(_blockThNum, blockThNumMax, 120, _queueBlockActor, tf, _rejectHandlerBlock);
 				LoopRejectMonitor loop = new LoopRejectMonitor(_poolBlock, _queueRejectBlockActor, 
 											_lockQueueBlockActor, _condQueueBlockActor, _queueBlockActor);
 				_lsLoopRejectMonitor.add(loop);
@@ -372,7 +369,8 @@ public final class DFActorManager {
 			}
 			if(_workerThNum > 0){ //logic
 				DFThreadFactory tf = new DFThreadFactory("thread-logic-");
-				_poolLogic = _createThreadPool(_workerThNum, _workerThNum*2, 300, _queueLogicActor, tf, _rejectHandlerLogic);
+				_queueLogicActor = new LinkedBlockingQueue<>(cfg.getLogicQueueWait());
+				_poolLogic = _createThreadPool(_workerThNum, logicThNumMax, 120, _queueLogicActor, tf, _rejectHandlerLogic);
 				LoopRejectMonitor loop = new LoopRejectMonitor(_poolLogic, _queueRejectLogicActor, 
 											_lockQueueActor, _condQueueActor, _queueLogicActor);
 				_lsLoopRejectMonitor.add(loop);
@@ -509,8 +507,8 @@ public final class DFActorManager {
 			//check jar num
 			int size = arrJarFile.length;
 			if(size < 1){
-				log.E("no jar found in dir: "+dirJar);
-				break;
+				log.W("no jar found in dir: "+dirJar);
+				return true;
 			}
 			//load jar
 			URL[] urls = new URL[size];
@@ -533,10 +531,13 @@ public final class DFActorManager {
 			URLClassLoader urlCl = new URLClassLoader(urls, defLoader);
 			try {
 				for(int i=0; i<size; ++i){
-					String jarPath = "jar:file:/"+arrJarFile[i].getAbsolutePath()+"!/";
-					URL urlJar = new URL(jarPath);
-					JarURLConnection jarConn = (JarURLConnection) urlJar.openConnection();
-					JarFile jar = jarConn.getJarFile();
+//					String jarPath = "jar:file:/"+arrJarFile[i].getAbsolutePath()+"!/";
+//					URL urlJar = new URL(jarPath);
+//					JarURLConnection jarConn = (JarURLConnection) urlJar.openConnection();
+//					JarFile jar = jarConn.getJarFile();
+					
+					JarFile jar = new JarFile(arrJarFile[i]);
+					
 					Enumeration<JarEntry> enumJar = jar.entries();
 					while(enumJar.hasMoreElements()){
 						JarEntry en = enumJar.nextElement();
@@ -636,6 +637,9 @@ public final class DFActorManager {
 					_clusterIoGroup.shutdownGracefully();
 					_clusterIoGroup = null;
 				}
+				//
+				DFActorManagerJs.get().shutdown();
+				DFVirtualHostManager.get().shutdown();
 				//
 				svcShutdown.shutdown();
 			}
@@ -928,7 +932,9 @@ public final class DFActorManager {
 	protected int getBlockThreadNum(){
 		return _initCfg.getBlockWorkerThreadNum();
 	}
-	
+	protected DFActorManagerConfig getInitCfg(){
+		return _initCfg;
+	}
 	
 	private class LoopRejectMonitor implements Runnable{
 		private final ConcurrentLinkedQueue<DFActorWrap> _queueRejectActor;

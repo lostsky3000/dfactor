@@ -11,8 +11,8 @@ import io.netty.handler.codec.http.HttpMethod;
 
 public interface DFHttpSvrReq {
 
-	public Iterator<Entry<String,String>> getQueryDataIterator();
-	public String getQueryData(String name);
+	public Iterator<Entry<String,Object>> getQueryDataIterator();
+	public Object getQueryData(String name);
 	public Iterator<Entry<String,String>> getHeaderIterator();
 	public String getHeaderValue(String name);
 	public Object getApplicationData();
@@ -23,6 +23,7 @@ public interface DFHttpSvrReq {
 	public boolean isKeepAlive();
 	public void release();
 	public boolean contentIsStr();
+	public boolean isMultipart();
 	
 	
 	//response

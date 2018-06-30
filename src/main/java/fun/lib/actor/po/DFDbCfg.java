@@ -7,15 +7,17 @@ public final class DFDbCfg {
 	private final String pwd;
 	private int initSize = 4;
 	private int maxActive = 10;
-	private int maxWait = 10;
+	private int maxWait = 200;
 	private int maxIdle = 4;
 	private int minIdle = 2;
+	public final String strId;
 	
 	private DFDbCfg(String host, int port, String dbName, String user, String pwd) {
 		//jdbc:mysql://host:port/dbName?useUnicode=true&characterEncoding=UTF-8
 		this.url = makeUrl(host, port, dbName);
 		this.user = user;
 		this.pwd = pwd;
+		this.strId = host+":"+port+"*?"+dbName+"*?"+user+"*?"+pwd;
 	}
 	
 	//set

@@ -15,16 +15,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
+import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.script.SimpleBindings;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaCompiler;
@@ -46,6 +52,12 @@ import fun.lib.actor.po.ActorProp;
 import fun.lib.actor.po.DFActorClusterConfig;
 import fun.lib.actor.po.DFActorManagerConfig;
 import fun.lib.actor.po.DFPageInfo;
+import fun.lib.actor.po.DFTcpClientCfg;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 
 public final class DFActorManagerJs{
@@ -142,7 +154,7 @@ public final class DFActorManagerJs{
 	private String _extLibDir = null;
 	private String _absRunDir = null;
 	
-	public boolean start(String runDir){
+	public boolean start(String runDir, boolean isWeb, Class webEntryClass){
 		boolean bRet = false;
 		do {
 			File dirRun = new File(runDir);
@@ -150,44 +162,98 @@ public final class DFActorManagerJs{
 				printError("runDir invalid: "+runDir);
 				break;
 			}
-			File dirCfg = new File(dirRun.getAbsolutePath()+File.separator+"cfg");
-			if(!dirCfg.exists()){
-				printError("cfgDir not exist: "+dirCfg.getAbsolutePath());
-				break;
-			}
-			if(!_initEngine()){
-				printError("initJsEngine failed");
-				break;
-			}
-			print("initJsEngine succ");
-			if(!_initCfg(dirCfg, dirRun) || _cfgMgr==null || _propActorEntry==null){
-				printError("initCfg failed");
-				break;
-			}
-			print("initCfg succ");
-			if(_protoDir != null){ //has protobuf define
-				if(!_checkProtobuf(dirRun)){
-					printError("parse proto failed");
-					break;
-				}
-			}
-			if(_extLibDir != null){ //has ext lib
-				print("start load extLib in dir: "+_extLibDir);
-				if(!_loadExtLib(dirRun)){
-					printError("load ext lib failed");
-					break;
-				}
-				print("load extLib done");
-			}
-			//init js
-			if(!_initScript(dirRun)){
-				printError("initScript failed");
-				break;
-			}
-			Bindings bind = _jsEngine.getBindings(ScriptContext.ENGINE_SCOPE);
-			_jsFnApi = (ScriptObjectMirror) bind.get("g_fn_df");
-			//
 			_absRunDir = dirRun.getAbsolutePath();
+			if(isWeb){
+				try{
+//					_extLibDir = "lib";
+//					print("start load extLib in dir: "+_extLibDir);
+//					if(!_loadExtLib(dirRun)){
+//						printError("load ext lib failed");
+//						break;
+//					}
+//					print("load extLib done");
+					
+					//
+					_cfgMgr = new DFActorManagerConfig()
+								.setTimerThreadNum(1);
+					String cfgPath = _absRunDir + File.separator + "cfg/web.js";
+					ScriptEngineManager sMgr = new ScriptEngineManager();
+					ScriptEngine eng = sMgr.getEngineByName("JavaScript");
+					eng.eval(new FileReader(cfgPath));
+					Object objWorker = eng.get("worker");
+					int cpuNum = Runtime.getRuntime().availableProcessors();
+					int baseTh = cpuNum*2;
+					int maxTh = Math.max(100, cpuNum*10);
+					if(objWorker == null){
+						
+					}else{
+						ScriptObjectMirror mirWorker = (ScriptObjectMirror) objWorker;
+						if(mirWorker.containsKey("base")){
+							baseTh = (Integer)mirWorker.get("base");
+						}
+						if(mirWorker.containsKey("max")){
+							maxTh = (Integer)mirWorker.get("max");
+						}
+					}
+					maxTh = Math.max(baseTh, maxTh);
+					
+					_cfgMgr.setBlockWorkerThreadNum(baseTh);
+					_cfgMgr.setBlockWorkerThreadNumMax(maxTh);
+					_cfgMgr.setBlockQueueWait(10);
+					
+					_cfgMgr.setLogicWorkerThreadNum(1);
+					_cfgMgr.setLogicQueueWait(20);
+					
+					HashMap<String,Object> mapParam = new HashMap<>();
+					mapParam.put("cfg", _cfgMgr);
+					mapParam.put("engine", eng);
+					_propActorEntry = ActorProp.newProp()
+							.classz(webEntryClass)
+							.param(mapParam);
+				}catch(Throwable e){
+					e.printStackTrace();
+					break;
+				}
+			}else{
+				File dirCfg = new File(dirRun.getAbsolutePath()+File.separator+"cfg");
+				if(!dirCfg.exists()){
+					printError("cfgDir not exist: "+dirCfg.getAbsolutePath());
+					break;
+				}
+				if(!_initEngine()){
+					printError("initJsEngine failed");
+					break;
+				}
+				print("initJsEngine succ");
+				if(!_initCfg(dirCfg, dirRun) || _cfgMgr==null || _propActorEntry==null){
+					printError("initCfg failed");
+					break;
+				}
+				print("initCfg succ");
+				if(_protoDir != null){ //has protobuf define
+					if(!_checkProtobuf(dirRun)){
+						printError("parse proto failed");
+						break;
+					}
+				}
+				if(_extLibDir != null){ //has ext lib
+					print("start load extLib in dir: "+_extLibDir);
+					if(!_loadExtLib(dirRun)){
+						printError("load ext lib failed");
+						break;
+					}
+					print("load extLib done");
+				}
+				//init js
+				if(!_initScript(dirRun)){
+					printError("initScript failed");
+					break;
+				}
+				Bindings bind = _jsEngine.getBindings(ScriptContext.ENGINE_SCOPE);
+				_jsFnApi = (ScriptObjectMirror) bind.get("g_fn_df");
+				//
+				
+			}
 			//start dfactor
 			bRet = _mgrActor.start(_cfgMgr, _propActorEntry);
 		} while (false);
@@ -374,7 +440,15 @@ public final class DFActorManagerJs{
 				if(_engineMgr == null){
 					_engineMgr = new ScriptEngineManager();
 				}
-				_jsEngine = _engineMgr.getEngineByName("JavaScript");
+				List<ScriptEngineFactory> lsEng = _engineMgr.getEngineFactories();
+				for(ScriptEngineFactory f : lsEng){
+					String name = f.getEngineName();
+					if(name.equals("Oracle Nashorn")){
+						NashornScriptEngineFactory nashorn = (NashornScriptEngineFactory) f;
+						_jsEngine = nashorn.getScriptEngine("-doe", "--global-per-engine");
+						break;
+					}
+				}
 				if(_jsEngine == null){
 					printError("getJsEngine failed");
 					break;
@@ -821,6 +895,38 @@ public final class DFActorManagerJs{
 				return super.findClass(name);
 			}
 			return defineClass(name, bufClz, 0, bufClz.length);
+		}
+	}
+	//
+	private volatile boolean _hasShutdown = false;
+	private volatile ExecutorService _poolIo = null;
+	private final String _poolIoLock = "sadfqewr1324&^$&^%Fj";
+	protected void shutdown(){
+		if(_hasShutdown){
+			return ;
+		}
+		_hasShutdown = true;
+		if(_poolIo != null){
+			synchronized (_poolIoLock) {
+				if(_poolIo != null){
+					_poolIo.shutdown();
+					_poolIo = null;
+				}
+			}
+		}
+	}
+	protected void addIoTask(Runnable task){
+		if(_poolIo == null){
+			synchronized (_poolIoLock) {
+				if(_poolIo == null){
+					_poolIo = Executors.newCachedThreadPool();
+				}
+			}
+		}
+		synchronized (_poolIoLock) {
+			if(_poolIo != null){
+				_poolIo.execute(task);
+			}
 		}
 	}
 	

@@ -11,21 +11,26 @@ import fun.lib.actor.api.http.DFHttpSvrRsp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpStatusClass;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 
 public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 
-	private FullHttpResponse response = null;
+	private volatile boolean hasSend = false;
+	private HttpResponse response = null;
 	private final DFTcpChannel channel;
+	private ByteBuf _bufContent = null;
 	
 	protected DFHttpSvrRspWrap(DFTcpChannel channel, int statusCode) {
 		this.channel = channel;
-		response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode));
+		response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode));
 	}
 	protected DFHttpSvrRspWrap(int statusCode) {
 		this(null, statusCode);
@@ -57,8 +62,11 @@ public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 		this.channel = channel;
 		try {
 			byte[] arrBuf = strData.getBytes("utf-8");
-			ByteBuf buf = Unpooled.wrappedBuffer(arrBuf);
-			response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode), buf);
+			_bufContent = Unpooled.wrappedBuffer(arrBuf);
+			response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode));
+			if(statusCode == 500){
+				contentType("text/html;charset=utf-8");
+			}
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
@@ -69,8 +77,9 @@ public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 	}
 	protected DFHttpSvrRspWrap(DFTcpChannel channel, int statusCode, ByteBuf buf){
 		this.channel = channel;
-		response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode), buf);
+		response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(statusCode));
 		contentType(DFHttpContentType.OCTET_STREAM);
+		_bufContent = buf;
 	}
 	
 	//
@@ -91,13 +100,27 @@ public final class DFHttpSvrRspWrap implements DFHttpSvrRsp{
 	}
 	@Override
 	public void send(){
+		if(hasSend){
+			return ;
+		}
+		hasSend = true;
 		if(channel != null){
-			channel.write(this);
+			DFTcpChannelWrap chWrap = (DFTcpChannelWrap) channel;
+			chWrap.writeNoFlush(this);
+			if(_bufContent != null){
+				response.headers().add(HttpHeaderNames.CONTENT_LENGTH, _bufContent.readableBytes());
+				chWrap.writeNoFlush(_bufContent);
+			}
+			channel.write(LastHttpContent.EMPTY_LAST_CONTENT);
 		}
 	}
 	
+	protected boolean hasSend(){
+		return this.hasSend;
+	}
+	
 	//
-	protected FullHttpResponse getRawResponse(){
+	protected HttpResponse getRawResponse(){
 		return response;
 	}
 	

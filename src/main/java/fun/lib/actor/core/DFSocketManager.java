@@ -35,6 +35,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -56,6 +57,9 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpRequestEncoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
@@ -70,6 +74,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -371,7 +376,7 @@ public final class DFSocketManager {
 			.handler(new TcpHandlerInit(false, cfg.getTcpProtocol(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
 					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslCfg()
-					, cfg.getReqData()));
+					, cfg.getReqData(), null));
 		if(ioGroup instanceof EpollEventLoopGroup){
 			boot.channel(EpollSocketChannel.class);
 		}else{
@@ -398,6 +403,32 @@ public final class DFSocketManager {
 				}
 			});
 		return 0;
+	}
+	
+	protected ChannelFuture doTcpConntecSync(DFTcpClientCfg cfg, EventLoopGroup ioGroup, ChannelHandler handler){
+		if(ioGroup == null){
+			return null;
+		}
+		Bootstrap boot = new Bootstrap();
+		boot.group(ioGroup)
+			.option(ChannelOption.ALLOCATOR, 
+					PooledByteBufAllocator.DEFAULT)
+			.option(ChannelOption.SO_KEEPALIVE, cfg.isKeepAlive())
+			.option(ChannelOption.SO_RCVBUF, cfg.getSoRecvBufLen())
+			.option(ChannelOption.SO_SNDBUF, cfg.getSoSendBufLen())
+			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int)cfg.getConnTimeout())
+			.option(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
+			.handler(new TcpHandlerInit(false, cfg.getTcpProtocol(), 
+					cfg.getTcpMsgMaxLength(), 0, 0, cfg.getWsUri(), null, 
+					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslCfg()
+					, cfg.getReqData(), handler));
+		if(ioGroup instanceof EpollEventLoopGroup){
+			boot.channel(EpollSocketChannel.class);
+		}else{
+			boot.channel(NioSocketChannel.class);
+		}
+		ChannelFuture future = boot.connect(cfg.host, cfg.port);
+		return future;
 	}
 	
 	private final HashMap<Integer, DFTcpIoGroup> mapTcpGroup = new HashMap<>();
@@ -428,7 +459,7 @@ public final class DFSocketManager {
 			.childOption(ChannelOption.TCP_NODELAY, cfg.isTcpNoDelay())
 			.childHandler(new TcpHandlerInit(true, cfg.getTcpProtocol(), 
 					cfg.getTcpMsgMaxLength(), srcActorId, requestId, cfg.getWsUri(), dispatcher, 
-					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslConfig(), null));
+					cfg.getDecoder(), cfg.getEncoder(), cfg.getUserHandler(), cfg.getSslConfig(), null, null));
 		if(group.ioGroupWorker instanceof EpollEventLoopGroup){
 			boot.channel(EpollServerSocketChannel.class);
 		}else{
@@ -824,9 +855,10 @@ public final class DFSocketManager {
 		private final boolean _isServer;
 		private final DFSSLConfig _sslCfg;
 		private final Object _reqData;
+		private final ChannelHandler _customHandler;
 		private TcpHandlerInit(boolean isServer, int decodeType, int maxLen, int actorId, int requestId, String wsSfx, 
 				Object dispatcher, DFTcpDecoder decoder, DFTcpEncoder encoder,
-				Object userHandler, DFSSLConfig sslCfg, Object reqData) {
+				Object userHandler, DFSSLConfig sslCfg, Object reqData, ChannelHandler customHandler) {
 			_isServer = isServer;
 			_decodeType = decodeType;
 			_maxLen = maxLen;
@@ -839,6 +871,7 @@ public final class DFSocketManager {
 			_userHandler = userHandler;
 			_sslCfg = sslCfg;
 			_reqData = reqData;
+			_customHandler = customHandler;
 		}
 		@Override
 		protected void initChannel(SocketChannel ch) throws Exception {
@@ -858,39 +891,63 @@ public final class DFSocketManager {
 			if(_decodeType == DFActorDefine.TCP_DECODE_WEBSOCKET){
 				if(_isServer){
 					pipe.addLast(new HttpServerCodec());
-					pipe.addLast(new HttpObjectAggregator(64*1024));
+					pipe.addLast(new HttpObjectAggregator(_maxLen));
 					pipe.addLast(new DFWSRequestHandler("/"+_wsSfx));
 					pipe.addLast(new WebSocketServerProtocolHandler("/"+_wsSfx, null, true));
-					pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
+					if(_customHandler == null){
+						pipe.addLast(new TcpWsHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
+					}else{
+						pipe.addLast(_customHandler);
+					}
 				}else{
 					pipe.addLast(new HttpClientCodec());
-					pipe.addLast(new HttpObjectAggregator(64*1024));
-					DFWsClientHandler handler =  
-		                    new DFWsClientHandler(  
-		                            WebSocketClientHandshakerFactory.newHandshaker(  
-		                            		new URI(_wsSfx), WebSocketVersion.V13, null, false, new DefaultHttpHeaders()),
-		                            _actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder); 
-					pipe.addLast(handler);
+					pipe.addLast(new HttpObjectAggregator(_maxLen));
+					if(_customHandler == null){
+						DFWsClientHandler handler =  
+			                    new DFWsClientHandler(  
+			                            WebSocketClientHandshakerFactory.newHandshaker(  
+			                            		new URI(_wsSfx), WebSocketVersion.V13, null, false, new DefaultHttpHeaders()),
+			                            _actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder); 
+						pipe.addLast(handler);
+					}else{
+						pipe.addLast(_customHandler);
+					}
 				}
 			}
 			else if(_decodeType == DFActorDefine.TCP_DECODE_HTTP){
 				if(_isServer){
-					pipe.addLast(new HttpServerCodec());
-					pipe.addLast(new HttpObjectAggregator(64*1024));
-//					pipe.addLast(new HttpServerExpectContinueHandler());
-					pipe.addLast(new DFHttpSvrHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, (CbHttpServer) _userHandler));
+//					pipe.addLast(new HttpServerCodec());
+					
+					pipe.addLast(new HttpRequestDecoder());
+					pipe.addLast(new HttpObjectAggregator(_maxLen));
+					pipe.addLast(new HttpResponseEncoder());
+					pipe.addLast(new ChunkedWriteHandler());
+					
+					if(_customHandler == null){
+						pipe.addLast(new DFHttpSvrHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, (CbHttpServer) _userHandler));
+					}else{
+						pipe.addLast(_customHandler);
+					}
 				}else{ //client
 					pipe.addLast(new HttpClientCodec());
-					pipe.addLast(new HttpObjectAggregator(64*1024));
-					pipe.addLast(new DFHttpCliHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, 
-										(CbHttpClient) _userHandler, (DFHttpCliReqWrap) _reqData));
+					pipe.addLast(new HttpObjectAggregator(_maxLen));
+					if(_customHandler == null){
+						pipe.addLast(new DFHttpCliHandler(_actorId, _requestId, _decoder, (DFHttpDispatcher) _dispatcher, 
+								(CbHttpClient) _userHandler, (DFHttpCliReqWrap) _reqData));
+					}else{
+						pipe.addLast(_customHandler);
+					}
 				}
 			}
 			else{
 				if(_decodeType == DFActorDefine.TCP_DECODE_LENGTH){ //length base field
 					pipe.addLast(new LengthFieldBasedFrameDecoder(_maxLen, 0, 2, 0, 2));
 				}
-				pipe.addLast(new TcpHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
+				if(_customHandler == null){
+					pipe.addLast(new TcpHandler(_actorId, _requestId, _decodeType, (DFActorTcpDispatcher) _dispatcher, _decoder, _encoder));
+				}else{
+					pipe.addLast(_customHandler);
+				}
 			}
 			
 		}

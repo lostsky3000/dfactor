@@ -848,46 +848,15 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 			final int webThNum;
 			final int[] arrWebActor;
 			final AtomicInteger webReqCount = new AtomicInteger(0);
-			final DFVirtualHost vHost;
-			if(isWeb){
-				final String strInitJs = _loadWebInitJs(_mgrActorJs.getAbsRunDir()
-						+File.separator+"script"+File.separator+"Init_web.js");
-				DFVirtualHost tmpVHost = new DFVirtualHost(port, obj, _mgrActorJs.getAbsRunDir(), strInitJs);
-				if(!tmpVHost.init(log)){
-					return false;
-				}
-				vHost = tmpVHost;
-				//check web thread status
-				synchronized (WEB_ACTOR_LOCK) {
-					int logicThNum = 0, blockThNum = 0;
-					blockThNum = DFActorManager.get().getBlockThreadNum();
-					logicThNum = DFActorManager.get().getLogicThreadNum();
-					webThNum = blockThNum + logicThNum;
-					if(s_arrWebActor == null){
-						s_arrWebActor = new int[webThNum];
-						for(int i=0; i<webThNum; ++i){
-							ActorProp prop = ActorProp.newProp()
-									.classz(DFJsWebActor.class)
-									.consumeType(DFActorDefine.CONSUME_ALL)
-									.blockActor(i<logicThNum?false:true);
-							HashMap<String,String> mapParam = new HashMap<>();
-//							mapParam.put("webRoot", vHost.getWebRoot());
-//							mapParam.put("sfx", vHost.getSfx());
-							mapParam.put("initJs", strInitJs);
-							prop.param(mapParam);
-							s_arrWebActor[i] = sys.createActor(prop);
-						}
-					}
-					arrWebActor = s_arrWebActor;
-				}
-				isMulti = false;
-			}else{
-				vHost = null;
+//			final DFVirtualHost vHost;
+//			if(isWeb){
+//			}else{
+//				vHost = null;
 				webThNum = 0;
 				arrWebActor = null;
 				obj = mirCfg.get("multi");
 				isMulti = obj==null?false:true;
-			}
+//			}
 			cfgSvr.setTcpProtocol(DFActorDefine.TCP_DECODE_HTTP);
 			final ScriptObjectMirror jsCb = mirCb;
 			net.httpSvr(cfgSvr, new CbHttpServer() {
@@ -898,8 +867,8 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 						if(isSucc){  
 							_jsEvent.succ = true;
 							if(isWeb){
-								vHost.start();
-								DFVirtualHostManager.get().addHost(vHost);
+//								vHost.start();
+//								DFVirtualHostManager.get().addHost(vHost);
 							}
 						}else{ 
 							_jsEvent.succ = false; _jsEvent.err = errMsg; 
@@ -921,7 +890,7 @@ public final class DFJsActor extends DFActor implements IScriptAPI{
 				@Override
 				public int onQueryMsgActorId(int port, InetSocketAddress addrRemote, Object msg) {
 					if(isWeb){
-						return arrWebActor[webReqCount.incrementAndGet()%webThNum];
+						return arrWebActor[Math.abs(webReqCount.incrementAndGet())%webThNum];
 					}else if(isMulti && jsCb != null){
 						DFJsHttpSvrReq reqWrap = new DFJsHttpSvrReq((DFHttpSvrReq)msg);
 						_jsEvent.type = "multi";

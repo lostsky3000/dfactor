@@ -18,7 +18,7 @@ public interface CallHereContext {
 	public DFActorSystem getSys();
 	public DFActorNet getNet();
 	public DFActorTimer getTimer();
-	public DFActorRedis getRedis();
+	public DFActorRedis getRedisWrap();
 	public DFActorDb getDb();
 	public DFActorMongo getMongo();
 }

@@ -1,6 +1,9 @@
 package com.funtag.util.script;
 
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
@@ -62,12 +65,17 @@ public final class DFJsPageModel implements IScriptAnalyzer{
 							subEnd = srcLen;
 							idxSearch = srcLen;
 						}else{  //endTag found, check
-							curSec = sb.substring(subBegin + TAG_BEGIN_LEN, tmp);
-							idxSearch = tmp + TAG_END_LEN;
-							subBegin = idxSearch;
-							subEnd = -2;
-							isJs = true;
-							jsStart = false;
+							if(_isValidEndTag(sb, subBegin + TAG_BEGIN_LEN, tmp)){
+								curSec = sb.substring(subBegin + TAG_BEGIN_LEN, tmp);
+								idxSearch = tmp + TAG_END_LEN;
+								subBegin = idxSearch;
+								subEnd = -2;
+								isJs = true;
+								jsStart = false;
+							}else{  //invalid endTag
+								subEnd = -2;
+								idxSearch = tmp + TAG_END_LEN;
+							}
 							
 //							try{
 //								compiler.compile(curSec);
@@ -139,6 +147,45 @@ public final class DFJsPageModel implements IScriptAnalyzer{
 		return bRet;
 	}
 	
+	private boolean _isValidEndTag(StringBuilder sb, int startPos, int endPos){
+		int stat = STAT_FREE;
+		char ch = 0;
+		boolean quotIsSingle = false;
+		endPos = endPos - 1;
+		for(int i=startPos; i<=endPos; ++i){
+			ch = sb.charAt(i);
+			if(stat == STAT_FREE){
+				if(ch=='/' && i<endPos && sb.charAt(i+1)=='*'){  //comment
+					stat = STAT_COMMENT;
+					++ i;
+				}else if(ch == '"'){
+					stat = STAT_QUOT; quotIsSingle = false;
+				}else if(ch == '\''){
+					stat = STAT_QUOT; quotIsSingle = true;
+				}
+			}else if(stat == STAT_COMMENT){
+				if(ch=='*' && i<endPos && sb.charAt(i+1)=='/'){
+					stat = STAT_FREE;
+					++ i;
+				}
+			}else if(stat == STAT_QUOT){
+				if(quotIsSingle){
+					if(ch == '\''){
+						stat = STAT_FREE;
+					}
+				}else{
+					if(ch == '"'){
+						stat = STAT_FREE;
+					}
+				}
+			}
+		}
+		return stat==STAT_FREE?true:false;
+	}
+	private static final int STAT_FREE = 1;
+	private static final int STAT_COMMENT = 2;  // 处于注释内
+	private static final int STAT_QUOT = 3;   //处于引号内
+	
 	public boolean execute(Bindings bind, StringBuilder sbOut, DFJsPageModel parent) throws Throwable{
 		if(cs != null){
 			curSbOut = sbOut;
@@ -184,8 +231,6 @@ public final class DFJsPageModel implements IScriptAnalyzer{
 	public void setVersion(int ver){
 		this.version = ver;
 	}
-	
-	
 	
 	private static void print(Object msg){
 		System.out.println(msg);

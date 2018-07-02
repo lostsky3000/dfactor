@@ -16,4 +16,5 @@ public interface IVirtualHost {
 	public static final String JS_FILE = "_FILE_";
 	public static final String JS_PAGE_ID = "_PAGE_ID_";
 	public static final String JS_INPUT = "_INPUT";
+	public static final String JS_ARGS = "_ARG";
 }

@@ -1,9 +1,6 @@
 package com.funtag.util.script;
 
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;

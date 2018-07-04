@@ -10,7 +10,7 @@ public interface DFActorDb {
 	 * @param cfg db连接池牌配置
 	 * @return 大于0 有效的连接池id   小于等于0 创建连接池失败
 	 */
-	public int initPool(DFDbCfg cfg);
+	public int initPool(DFDbCfg cfg) ;
 	
 	/**
 	 * 获取一个db连接
@@ -28,4 +28,9 @@ public interface DFActorDb {
 	 * @param id 连接池id
 	 */
 	public void closePool(int id);
+	/**
+	 * 获取最近一次错误信息
+	 * @return 错误信息
+	 */
+	public String getLastError();
 }

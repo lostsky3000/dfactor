@@ -9,16 +9,28 @@ import fun.lib.actor.po.DFDbCfg;
 public final class DFActorDbWrap implements DFActorDb{
 	private final DFDbManager dbMgr;
 	
+	private String lastError = null;
+	
 	protected DFActorDbWrap() {
 		dbMgr = DFDbManager.get();
 	}
 	@Override
 	public int initPool(DFDbCfg cfg) {
-		return dbMgr.initDbPool(cfg);
+		try {
+			return dbMgr.initDbPool(cfg);
+		} catch (Throwable e) {
+			lastError = e.getMessage();
+		}
+		return -1;
 	}
 	@Override
 	public Connection getConn(int id) {
-		return dbMgr.getDbConn(id);
+		try {
+			return dbMgr.getDbConn(id);
+		} catch (SQLException e) {
+			lastError = e.getMessage();
+		}
+		return null;
 	}
 	@Override
 	public void closePool(int id) {
@@ -31,8 +43,13 @@ public final class DFActorDbWrap implements DFActorDb{
 				conn.close();
 			} catch (Throwable e) {
 				e.printStackTrace();
+				lastError = e.getMessage();
 			}
 		}
+	}
+	@Override
+	public String getLastError() {
+		return lastError;
 	}
 
 }

@@ -29,4 +29,11 @@ public interface DFActorRedis {
 	 * @param id 连接池id
 	 */
 	public void closePool(int id);
+	
+	/**
+	 * 最近一次错误信息
+	 * @return 错误信息
+	 */
+	public String getLastError();
+	
 }

@@ -22,18 +22,46 @@ public final class DFRedisManager {
 	private final HashMap<String,Integer> mapRedisId = new HashMap<>();
 	
 	private int redisIdCount = 1;
-	protected int initPool(DFRedisCfg cfg){
-		lockRedisWrite.lock();
+	protected int initPool(DFRedisCfg cfg) throws Throwable{
+		lockRedisRead.lock();
 		try{
 			Integer existId = mapRedisId.get(cfg.strId);
 			if(existId != null){  //pool exist
 				return existId;
 			}
-			JedisPool pool = DFRedisUtil.createJedisPool(
-					cfg.getHost(), cfg.getPort(), cfg.getAuth(),
-					cfg.getMaxTotal(), cfg.getMaxIdle(), cfg.getMinIdle(),
-					cfg.getConnTimeoutMilli(), cfg.getBorrowTimeoutMilli());
-			RedisPoolWrap wrap = new RedisPoolWrap(pool, cfg.strId);
+		}finally{
+			lockRedisRead.unlock();
+		}
+		//
+		JedisPool pool = DFRedisUtil.createJedisPool(
+				cfg.getHost(), cfg.getPort(), cfg.getAuth(),
+				cfg.getMaxTotal(), cfg.getMaxIdle(), cfg.getMinIdle(),
+				cfg.getConnTimeoutMilli(), cfg.getBorrowTimeoutMilli());
+		//test connection
+		boolean testFail = false;
+		Jedis conn = null;
+		Throwable eOut = null;
+		try{
+			conn = pool.getResource();
+			conn.ping();
+		}catch(Throwable e){
+			testFail = true;
+			eOut = e;
+		}finally{
+			if(conn != null){
+				conn.close();
+			}
+			if(testFail && pool != null){
+				pool.close();
+			}
+		}
+		if(eOut != null){
+			throw eOut;
+		}
+		//
+		RedisPoolWrap wrap = new RedisPoolWrap(pool, cfg.strId);
+		lockRedisWrite.lock();
+		try{
 			int curId = redisIdCount;
 			mapRedis.put(curId, wrap);
 			mapRedisId.put(cfg.strId, curId);

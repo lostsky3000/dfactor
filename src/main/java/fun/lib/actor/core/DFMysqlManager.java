@@ -2,6 +2,7 @@ package fun.lib.actor.core;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,17 +29,48 @@ public final class DFMysqlManager {
 	
 	private int idCount = 1;
 	
-	protected int initPool(DFDbCfg cfg){
-		lockDbWrite.lock();
+	protected int initPool(DFDbCfg cfg) throws Throwable{
+		lockDbRead.lock();
 		try{
 			Integer idExist = mapDbId.get(cfg.strId);
 			if(idExist != null){ //exist
 				return idExist;
 			}
+		}finally{
+			lockDbRead.unlock();
+		}
+		//
+		DataSource dbSrc = DFDbUtil.createMysqlDbSource(cfg.getUrl(), cfg.getUser(), cfg.getPwd(), 
+				cfg.getInitSize(), cfg.getMaxActive(), cfg.getMaxWait(), cfg.getMaxIdle(), cfg.getMinIdle());
+		//conn test
+		boolean testFail = false;
+		Connection conn = null;
+		Throwable eOut = null;
+		try{
+			conn = dbSrc.getConnection();
+			Statement stmt = conn.createStatement();
+			stmt.executeQuery("select 1");
+		}catch(Throwable e){
+			testFail = true;
+			eOut = e;
+		}finally{
+			if(conn != null){
+				conn.close();
+			}
+			if(testFail){
+				if(dbSrc != null){
+					dbSrc.close(); dbSrc = null;
+				}
+			}
+		}
+		if(eOut != null){
+			throw eOut;
+		}
+		//
+		DbPoolWrap wrap = new DbPoolWrap(dbSrc, cfg.strId);
+		lockDbWrite.lock();
+		try{
 			int curId = idCount;
-			final DataSource dbSrc = DFDbUtil.createMysqlDbSource(cfg.getUrl(), cfg.getUser(), cfg.getPwd(), 
-					cfg.getInitSize(), cfg.getMaxActive(), cfg.getMaxWait(), cfg.getMaxIdle(), cfg.getMinIdle());
-			DbPoolWrap wrap = new DbPoolWrap(dbSrc, cfg.strId);
 			mapDb.put(curId, wrap);
 			mapDbId.put(cfg.strId, curId);
 			if(idCount >= Integer.MAX_VALUE){
@@ -51,7 +83,7 @@ public final class DFMysqlManager {
 			lockDbWrite.unlock();
 		}
 	}
-	protected Connection getConn(int id){
+	protected Connection getConn(int id) throws SQLException{
 		Connection conn = null;
 		lockDbRead.lock();
 		try{
@@ -107,13 +139,13 @@ public final class DFMysqlManager {
 			dbSrc = src;
 			this.strId = strId;
 		}
-		private Connection getConn(){
+		private Connection getConn() throws SQLException{
 			Connection conn = null;
 			if(dbSrc != null){
 				try {
 					return dbSrc.getConnection();
 				} catch (SQLException e) {
-					e.printStackTrace();
+					throw e;
 				}
 			}
 			return conn;

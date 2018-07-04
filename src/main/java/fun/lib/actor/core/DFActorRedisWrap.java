@@ -7,12 +7,19 @@ import redis.clients.jedis.Jedis;
 public final class DFActorRedisWrap implements DFActorRedis{
 	private final DFDbManager dbMgr;
 	
+	private String lastError = null;
+	
 	protected DFActorRedisWrap() {
 		dbMgr = DFDbManager.get();
 	}
 	@Override
 	public int initPool(DFRedisCfg cfg) {
-		return dbMgr.initRedisPool(cfg);
+		try {
+			return dbMgr.initRedisPool(cfg);
+		} catch (Throwable e) {
+			lastError = e.getMessage();
+		}
+		return -1;
 	}
 	@Override
 	public Jedis getConn(int id) {
@@ -27,6 +34,10 @@ public final class DFActorRedisWrap implements DFActorRedis{
 		if(conn != null){
 			conn.close();
 		}
+	}
+	@Override
+	public String getLastError() {
+		return lastError;
 	}
 
 }

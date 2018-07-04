@@ -1,6 +1,7 @@
 package fun.lib.actor.core;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 import com.mongodb.client.MongoDatabase;
 
@@ -47,10 +48,10 @@ public final class DFDbManager {
 	}	
 	
 	//db(mysql)
-	protected int initDbPool(DFDbCfg cfg){
+	protected int initDbPool(DFDbCfg cfg) throws Throwable{
 		return mysqlMgr.initPool(cfg);
 	}
-	protected Connection getDbConn(int id){
+	protected Connection getDbConn(int id) throws SQLException{
 		return mysqlMgr.getConn(id);
 	}
 	protected void closeDbPool(int id){
@@ -61,7 +62,7 @@ public final class DFDbManager {
 	}
 	
 	//redis
-	protected int initRedisPool(DFRedisCfg cfg){
+	protected int initRedisPool(DFRedisCfg cfg) throws Throwable{
 		return redisMgr.initPool(cfg);
 	}
 	protected Jedis getRedisConn(int id){
